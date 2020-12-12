@@ -25,8 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/jmorganca/ollama/api"
 )
 
 //go:embed llama.cpp/*/build/*/bin/*
@@ -187,7 +185,7 @@ type Running struct {
 }
 
 type llama struct {
-	api.Options
+	Options
 	Running
 }
 
@@ -218,7 +216,7 @@ func CheckVRAM() (int64, error) {
 	return total, nil
 }
 
-func NumGPU(numLayer, fileSizeBytes int64, opts api.Options) int {
+func NumGPU(numLayer, fileSizeBytes int64, opts Options) int {
 	if opts.NumGPU != -1 {
 		return opts.NumGPU
 	}
@@ -248,7 +246,7 @@ func NumGPU(numLayer, fileSizeBytes int64, opts api.Options) int {
 	return 1
 }
 
-func newLlama(model string, adapters []string, runners []ModelRunner, numLayers int64, opts api.Options) (*llama, error) {
+func newLlama(model string, adapters []string, runners []ModelRunner, numLayers int64, opts Options) (*llama, error) {
 	fileInfo, err := os.Stat(model)
 	if err != nil {
 		return nil, err
@@ -374,7 +372,7 @@ func (llm *llama) Close() {
 	llm.Cancel()
 }
 
-func (llm *llama) SetOptions(opts api.Options) {
+func (llm *llama) SetOptions(opts Options) {
 	llm.Options = opts
 }
 
@@ -444,7 +442,7 @@ type PredictRequest struct {
 
 const maxBufferSize = 512 * 1024 // 512KB
 
-func (llm *llama) Predict(ctx context.Context, prevContext []int, prompt string, fn func(api.GenerateResponse)) error {
+func (llm *llama) Predict(ctx context.Context, prevContext []int, prompt string, fn func(GenerateResponse)) error {
 	prevConvo, err := llm.Decode(ctx, prevContext)
 	if err != nil {
 		return err
@@ -527,7 +525,7 @@ func (llm *llama) Predict(ctx context.Context, prevContext []int, prompt string,
 				}
 
 				if p.Content != "" {
-					fn(api.GenerateResponse{Response: p.Content})
+					fn(GenerateResponse{Response: p.Content})
 					nextContext.WriteString(p.Content)
 				}
 
@@ -537,7 +535,7 @@ func (llm *llama) Predict(ctx context.Context, prevContext []int, prompt string,
 						return fmt.Errorf("encoding context: %v", err)
 					}
 
-					fn(api.GenerateResponse{
+					fn(GenerateResponse{
 						Done:               true,
 						Context:            embd,
 						PromptEvalCount:    p.PromptN,
