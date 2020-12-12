@@ -3,7 +3,6 @@ package llm
 //go:generate git submodule init
 
 //go:generate git submodule update --force ggml
-//go:generate git -C ggml apply ../patches/0001-add-detokenize-endpoint.patch
 //go:generate git -C ggml apply ../patches/0002-34B-model-support.patch
 //go:generate git -C ggml apply ../patches/0003-metal-fix-synchronization-in-new-matrix-multiplicati.patch
 //go:generate git -C ggml apply ../patches/0004-metal-add-missing-barriers-for-mul-mat-2699.patch
