@@ -18,9 +18,6 @@ var (
 	builtBy = "unknown"
 )
 
-//go:embed web/dist/*
-var static embed.FS
-
 func main() {
 	cmd.Version = version
 	cmd.Commit = commit

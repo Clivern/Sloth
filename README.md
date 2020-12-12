@@ -1,7 +1,7 @@
 <p align="center">
     <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="200" />
     <h3 align="center">Sloth</h3>
-    <p align="center">🐺 A Fast, Secure and Reliable Self Hosted Monitoring and Status Page System, Set up in Minutes.</p>
+    <p align="center">🐺 A Lightweight and Reliable Large Language Model System, Set up in Minutes.</p>
     <p align="center">
         <a href="https://github.com/clivern/sloth/actions/workflows/api.yml">
             <img src="https://github.com/clivern/sloth/actions/workflows/api.yml/badge.svg">
@@ -23,8 +23,6 @@
         </a>
     </p>
 </p>
-
-Sloth is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Sloth supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and local `Commands`.
 
 
 ### Getting Started
