@@ -7,7 +7,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -165,20 +164,8 @@ var serverCmd = &cobra.Command{
 			return c.String(http.StatusNoContent, "")
 		})
 
-		dist, err := fs.Sub(Static, "web/dist")
-
-		if err != nil {
-			panic(fmt.Sprintf(
-				"Error while accessing dist files: %s",
-				err.Error(),
-			))
-		}
-
-		staticServer := http.StripPrefix("/", http.FileServer(http.FS(dist)))
-
 		e.GET("/_health", controller.Health)
 		e.GET("/_ready", controller.Ready)
-		e.GET("/*", echo.WrapHandler(staticServer))
 
 		var runerr error
 

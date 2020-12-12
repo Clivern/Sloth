@@ -6,8 +6,6 @@
 package main
 
 import (
-	"embed"
-
 	"github.com/clivern/sloth/cmd"
 )
 
@@ -23,7 +21,6 @@ func main() {
 	cmd.Commit = commit
 	cmd.Date = date
 	cmd.BuiltBy = builtBy
-	cmd.Static = static
 
 	cmd.Execute()
 }

@@ -5,10 +5,8 @@
 package llm
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"reflect"
 	"strings"
