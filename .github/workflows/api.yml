@@ -27,7 +27,9 @@ jobs:
       - name: Run make ci
         run: |
           export PATH=${PATH}:`go env GOPATH`/bin
+          git submodule update
           go get -t .
+          go generate ./...
           make ci
           make integration
           git status
