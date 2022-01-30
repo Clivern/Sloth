@@ -17,7 +17,7 @@ var licenseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(`MIT License
 
-Copyright (c) 2022 Clivern
+Copyright (c) 2023 Clivern
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -18,7 +18,7 @@ var rootCmd = &cobra.Command{
 	Short: `🐺 A Fast, Secure and Reliable Self Hosted Monitoring and Status Page System, Set up in Minutes.
 
 If you have any suggestions, bug reports, or annoyances please report
-them to our issue tracker at <https://github.com/Clivern/Sloth/issues>`,
+them to our issue tracker at <https://github.com/clivern/sloth/issues>`,
 }
 
 // Execute runs cmd tool

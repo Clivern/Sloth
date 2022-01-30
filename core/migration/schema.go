@@ -76,8 +76,9 @@ type Check struct {
 
 	UUID       string `json:"uuid"`
 	Name       string `json:"name"`
-	Kind       string `json:"kind"`
+	Slug       string `json:"slug"`
 	ServiceID  string `json:"serviceId"`
+	Command    string `json:"command"`
 	Parameters string `json:"parameters"`
 	Interval   int64  `json:"interval"`
 	Status     string `json:"status"`
@@ -121,6 +122,7 @@ type Metric struct {
 	UUID    string  `json:"uuid"`
 	Name    string  `json:"name"`
 	Value   float64 `json:"value"`
+	Tags    string  `json:"tags"`
 	CheckID int64   `json:"checkId"`
 }
 
