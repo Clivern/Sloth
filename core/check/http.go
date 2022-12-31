@@ -3,3 +3,9 @@
 // license that can be found in the LICENSE file.
 
 package check
+
+// HttpCheck health check
+type HttpCheck struct {
+	ID   string
+	Type string
+}
