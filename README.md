@@ -24,6 +24,8 @@
     </p>
 </p>
 
+Chipmunk is a Self Hosted Health Checks and Status Page. Chipmunk supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`. It implements a lot of storage providers like Amazon `S3`, `Local` file system, `GitHub`, `MySQL`, `PostgreSQL` and `SQLite3`
+
 
 ### Getting Started
 
