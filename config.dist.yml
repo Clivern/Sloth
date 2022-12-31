@@ -1,0 +1,32 @@
+# App configs
+app:
+  # App name
+  name: ${CHIMPMUNK_NAME:-chipmunk}
+  # Env mode (dev or prod)
+  mode: ${CHIMPMUNK_MODE:-dev}
+  # HTTP port
+  port: ${CHIMPMUNK_PORT:-8000}
+  # Hostname
+  hostname: ${CHIMPMUNK_HOSTNAME:-127.0.0.1}
+  # TLS configs
+  tls:
+    status: ${CHIMPMUNK_TLS_STATUS:-off}
+    crt_path: ${CHIMPMUNK_TLS_PEMPATH:-cert/server.crt}
+    key_path: ${CHIMPMUNK_TLS_KEYPATH:-cert/server.key}
+
+  # API Credentials
+  api:
+    # API Key
+    key: ${CHIMPMUNK_API_KEY:-b08a1a8d-aefa-40fe-8473-59412ae46d11}
+
+  # Global timeout
+  timeout: ${CHIMPMUNK_TIMEOUT:-50}
+
+  # Log configs
+  log:
+    # Log level, it can be debug, info, warn, error, panic, fatal
+    level: ${CHIMPMUNK_LOG_LEVEL:-debug}
+    # Output can be stdout or abs path to log file /var/logs/chipmunk.log
+    output: ${CHIMPMUNK_LOG_OUTPUT:-stdout}
+    # Format can be json
+    format: ${CHIMPMUNK_LOG_FORMAT:-json}
