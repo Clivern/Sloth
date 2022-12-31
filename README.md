@@ -24,7 +24,7 @@
     </p>
 </p>
 
-Sloth is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Sloth supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`.
+Sloth is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Sloth supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and local `Commands`.
 
 
 ### Getting Started
