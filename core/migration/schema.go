@@ -20,8 +20,8 @@ type Option struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -42,8 +42,8 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -60,12 +60,13 @@ func (u *User) ConvertToJSON() (string, error) {
 type Service struct {
 	gorm.Model
 
-	UUID string `json:"uuid"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	UUID        string `json:"uuid"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -82,11 +83,16 @@ func (s *Service) ConvertToJSON() (string, error) {
 type Check struct {
 	gorm.Model
 
-	UUID string `json:"uuid"`
-	Name string `json:"name"`
+	UUID       string `json:"uuid"`
+	Name       string `json:"name"`
+	Kind       string `json:"kind"`
+	ServiceID  string `json:"serviceId"`
+	Parameters string `json:"parameters"`
+	Interval   int64  `json:"interval"`
+	Status     string `json:"status"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -99,16 +105,41 @@ func (c *Check) ConvertToJSON() (string, error) {
 	return utils.ConvertToJSON(c)
 }
 
+// Silence struct
+type Silence struct {
+	gorm.Model
+
+	UUID      string    `json:"uuid"`
+	Name      string    `json:"name"`
+	CheckID   int64     `json:"checkId"`
+	StartTime time.Time `json:"startTime"`
+	EndTime   time.Time `json:"endTime"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// LoadFromJSON update object from json
+func (s *Silence) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(s, data)
+}
+
+// ConvertToJSON convert object to json
+func (s *Silence) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(s)
+}
+
 // Metric struct
 type Metric struct {
 	gorm.Model
 
-	UUID  string `json:"uuid"`
-	Name  string `json:"name"`
-	Value int64  `json:"value"`
+	UUID    string  `json:"uuid"`
+	Name    string  `json:"name"`
+	Value   float64 `json:"value"`
+	CheckID int64   `json:"checkId"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -125,11 +156,14 @@ func (m *Metric) ConvertToJSON() (string, error) {
 type Alert struct {
 	gorm.Model
 
-	UUID string `json:"uuid"`
-	Name string `json:"name"`
+	UUID    string `json:"uuid"`
+	Name    string `json:"name"`
+	CheckID int64  `json:"checkId"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -146,11 +180,13 @@ func (a *Alert) ConvertToJSON() (string, error) {
 type Incident struct {
 	gorm.Model
 
-	UUID    string `json:"uuid"`
-	Subject string `json:"subject"`
+	UUID        string `json:"uuid"`
+	Subject     string `json:"subject"`
+	AlertID     int64  `json:"alertId"`
+	Description string `json:"description"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -167,19 +203,21 @@ func (i *Incident) ConvertToJSON() (string, error) {
 type IncidentUpdate struct {
 	gorm.Model
 
-	UUID    string `json:"uuid"`
-	Subject string `json:"subject"`
+	UUID        string `json:"uuid"`
+	Subject     string `json:"subject"`
+	IncidentID  int64  `json:"incidentId"`
+	Description string `json:"description"`
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
-func (i *IncidentUpdate) LoadFromJSON(data []byte) error {
-	return utils.LoadFromJSON(i, data)
+func (u *IncidentUpdate) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(u, data)
 }
 
 // ConvertToJSON convert object to json
-func (i *IncidentUpdate) ConvertToJSON() (string, error) {
-	return utils.ConvertToJSON(i)
+func (u *IncidentUpdate) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(u)
 }
