@@ -18,6 +18,7 @@ import (
 
 	"github.com/clivern/sloth/core/controller"
 	"github.com/clivern/sloth/core/service"
+	"github.com/clivern/sloth/core/module"
 
 	"github.com/drone/envsubst"
 	"github.com/labstack/echo-contrib/prometheus"
@@ -123,6 +124,25 @@ var serverCmd = &cobra.Command{
 			log.SetFormatter(&log.TextFormatter{})
 		}
 
+		context := &controller.Context{
+			DB: &module.Database{},
+		}
+
+		err = context.GetDatabase().AutoConnect()
+
+		if err != nil {
+			panic(err.Error())
+		}
+
+		// Migrate Database
+		success := context.GetDatabase().Migrate()
+
+		if !success {
+			panic("Error! Unable to migrate database tables.")
+		}
+
+		defer context.GetDatabase().Close()
+
 		viper.SetDefault("config", config)
 
 		e := echo.New()
@@ -158,7 +178,6 @@ var serverCmd = &cobra.Command{
 
 		e.GET("/_health", controller.Health)
 		e.GET("/_ready", controller.Ready)
-
 		e.GET("/*", echo.WrapHandler(staticServer))
 
 		var runerr error

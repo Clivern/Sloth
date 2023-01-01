@@ -19,9 +19,6 @@ type Option struct {
 
 	Name  string `json:"name"`
 	Value string `json:"value"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -41,9 +38,6 @@ type User struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -64,9 +58,6 @@ type Service struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -90,9 +81,6 @@ type Check struct {
 	Parameters string `json:"parameters"`
 	Interval   int64  `json:"interval"`
 	Status     string `json:"status"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -114,9 +102,6 @@ type Silence struct {
 	CheckID   int64     `json:"checkId"`
 	StartTime time.Time `json:"startTime"`
 	EndTime   time.Time `json:"endTime"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -137,9 +122,6 @@ type Metric struct {
 	Name    string  `json:"name"`
 	Value   float64 `json:"value"`
 	CheckID int64   `json:"checkId"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -161,9 +143,6 @@ type Alert struct {
 	CheckID int64  `json:"checkId"`
 	Status  string `json:"status"`
 	Message string `json:"message"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -184,9 +163,6 @@ type Incident struct {
 	Subject     string `json:"subject"`
 	AlertID     int64  `json:"alertId"`
 	Description string `json:"description"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
@@ -207,9 +183,6 @@ type IncidentUpdate struct {
 	Subject     string `json:"subject"`
 	IncidentID  int64  `json:"incidentId"`
 	Description string `json:"description"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // LoadFromJSON update object from json
