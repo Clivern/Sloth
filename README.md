@@ -10,7 +10,7 @@
             <img src="https://github.com/clivern/sloth/actions/workflows/ui.yml/badge.svg">
         </a>
         <a href="https://github.com/clivern/sloth/releases">
-            <img src="https://img.shields.io/badge/Version-v0.1.0-red.svg">
+            <img src="https://img.shields.io/badge/Version-v0.1.0-yellow.svg">
         </a>
         <a href="https://goreportcard.com/report/github.com/clivern/sloth">
             <img src="https://goreportcard.com/badge/github.com/clivern/sloth?v=0.1.0">
