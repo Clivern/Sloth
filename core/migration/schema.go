@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT
 // license that can be found in the LICENSE file.
 
+// Package migration provides database migrations
 package migration
 
 import (
@@ -59,6 +60,7 @@ func (u *User) ConvertToJSON() (string, error) {
 type Service struct {
 	gorm.Model
 
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 
@@ -80,8 +82,8 @@ func (s *Service) ConvertToJSON() (string, error) {
 type Check struct {
 	gorm.Model
 
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
-	Slug string `json:"slug"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -95,4 +97,89 @@ func (c *Check) LoadFromJSON(data []byte) error {
 // ConvertToJSON convert object to json
 func (c *Check) ConvertToJSON() (string, error) {
 	return utils.ConvertToJSON(c)
+}
+
+// Metric struct
+type Metric struct {
+	gorm.Model
+
+	UUID  string `json:"uuid"`
+	Name  string `json:"name"`
+	Value int64  `json:"value"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// LoadFromJSON update object from json
+func (m *Metric) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(m, data)
+}
+
+// ConvertToJSON convert object to json
+func (m *Metric) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(m)
+}
+
+// Alert struct
+type Alert struct {
+	gorm.Model
+
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// LoadFromJSON update object from json
+func (a *Alert) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(a, data)
+}
+
+// ConvertToJSON convert object to json
+func (a *Alert) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(a)
+}
+
+// Incident struct
+type Incident struct {
+	gorm.Model
+
+	UUID    string `json:"uuid"`
+	Subject string `json:"subject"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// LoadFromJSON update object from json
+func (i *Incident) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(i, data)
+}
+
+// ConvertToJSON convert object to json
+func (i *Incident) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(i)
+}
+
+// IncidentUpdate struct
+type IncidentUpdate struct {
+	gorm.Model
+
+	UUID    string `json:"uuid"`
+	Subject string `json:"subject"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// LoadFromJSON update object from json
+func (i *IncidentUpdate) LoadFromJSON(data []byte) error {
+	return utils.LoadFromJSON(i, data)
+}
+
+// ConvertToJSON convert object to json
+func (i *IncidentUpdate) ConvertToJSON() (string, error) {
+	return utils.ConvertToJSON(i)
 }

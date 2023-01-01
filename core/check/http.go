@@ -4,8 +4,8 @@
 
 package check
 
-// HttpCheck health check
-type HttpCheck struct {
+// HTTPCheck health check
+type HTTPCheck struct {
 	ID   string
 	Type string
 }
