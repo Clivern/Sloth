@@ -7,7 +7,7 @@ npx          ?= npx
 
 help: Makefile
 	@echo
-	@echo " Choose a command run in Chipmunk:"
+	@echo " Choose a command run in Sloth:"
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
@@ -149,7 +149,7 @@ package:
 .PHONY: run
 run:
 	@echo ">> ============= Run API Server ============= <<"
-	$(go) run chipmunk.go server -c config.dist.yml
+	$(go) run sloth.go server -c config.dist.yml
 
 
 ## ci: Run all CI tests.

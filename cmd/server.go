@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/chipmunk/core/controller"
-	"github.com/clivern/chipmunk/core/service"
+	"github.com/clivern/sloth/core/controller"
+	"github.com/clivern/sloth/core/service"
 
 	"github.com/drone/envsubst"
 	"github.com/labstack/echo-contrib/prometheus"

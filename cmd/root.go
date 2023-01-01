@@ -14,11 +14,11 @@ import (
 var config string
 
 var rootCmd = &cobra.Command{
-	Use: "chipmunk",
+	Use: "sloth",
 	Short: `🐺 A Fast, Secure and Reliable Self Hosted Monitoring and Status Page System, Set up in Minutes.
 
 If you have any suggestions, bug reports, or annoyances please report
-them to our issue tracker at <https://github.com/Clivern/Chipmunk/issues>`,
+them to our issue tracker at <https://github.com/Clivern/Sloth/issues>`,
 }
 
 // Execute runs cmd tool

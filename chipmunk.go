@@ -7,7 +7,7 @@ package main
 import (
 	"embed"
 
-	"github.com/clivern/chipmunk/cmd"
+	"github.com/clivern/sloth/cmd"
 )
 
 var (

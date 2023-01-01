@@ -11,32 +11,32 @@ function deps {
     echo "Installing dependencies done!"
 }
 
-function chipmunk {
-    echo "Installing chipmunk ..."
+function sloth {
+    echo "Installing sloth ..."
 
-    mkdir -p /etc/chipmunk
-    cd /etc/chipmunk
-    LATEST_VERSION=$(curl --silent "https://api.github.com/repos/clivern/chipmunk/releases/latest" | jq '.tag_name' | sed -E 's/.*"([^"]+)".*/\1/' | tr -d v)
-    curl -sL https://github.com/clivern/chipmunk/releases/download/v{$LATEST_VERSION}/chipmunk_{$LATEST_VERSION}_Linux_x86_64.tar.gz | tar xz
+    mkdir -p /etc/sloth
+    cd /etc/sloth
+    LATEST_VERSION=$(curl --silent "https://api.github.com/repos/clivern/sloth/releases/latest" | jq '.tag_name' | sed -E 's/.*"([^"]+)".*/\1/' | tr -d v)
+    curl -sL https://github.com/clivern/sloth/releases/download/v{$LATEST_VERSION}/sloth_{$LATEST_VERSION}_Linux_x86_64.tar.gz | tar xz
 
     echo "[Unit]
-Description=Chipmunk
-Documentation=https://github.com/clivern/Chipmunk
+Description=Sloth
+Documentation=https://github.com/clivern/Sloth
 
 [Service]
-ExecStart=/etc/chipmunk/chipmunk server -c /etc/chipmunk/config.prod.yml
+ExecStart=/etc/sloth/sloth server -c /etc/sloth/config.prod.yml
 Restart=on-failure
 RestartSec=2
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/chipmunk.service
+WantedBy=multi-user.target" > /etc/systemd/system/sloth.service
 
     systemctl daemon-reload
-    systemctl enable chipmunk.service
-    systemctl start chipmunk.service
+    systemctl enable sloth.service
+    systemctl start sloth.service
 
-    echo "Chipmunk installation done!"
+    echo "Sloth installation done!"
 }
 
 deps
-chipmunk
+sloth

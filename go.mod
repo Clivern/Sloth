@@ -1,4 +1,4 @@
-module github.com/clivern/chipmunk
+module github.com/clivern/sloth
 
 go 1.19
 

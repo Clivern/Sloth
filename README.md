@@ -1,60 +1,60 @@
 <p align="center">
-    <img alt="Chipmunk Logo" src="/static/logo.png?v=0.1.0" width="200" />
-    <h3 align="center">Chipmunk</h3>
+    <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="200" />
+    <h3 align="center">Sloth</h3>
     <p align="center">🐺 A Fast, Secure and Reliable Self Hosted Monitoring and Status Page System, Set up in Minutes.</p>
     <p align="center">
-        <a href="https://github.com/clivern/chipmunk/actions/workflows/api.yml">
-            <img src="https://github.com/clivern/chipmunk/actions/workflows/api.yml/badge.svg">
+        <a href="https://github.com/clivern/sloth/actions/workflows/api.yml">
+            <img src="https://github.com/clivern/sloth/actions/workflows/api.yml/badge.svg">
         </a>
-        <a href="https://github.com/clivern/chipmunk/actions/workflows/ui.yml">
-            <img src="https://github.com/clivern/chipmunk/actions/workflows/ui.yml/badge.svg">
+        <a href="https://github.com/clivern/sloth/actions/workflows/ui.yml">
+            <img src="https://github.com/clivern/sloth/actions/workflows/ui.yml/badge.svg">
         </a>
-        <a href="https://github.com/clivern/chipmunk/releases">
+        <a href="https://github.com/clivern/sloth/releases">
             <img src="https://img.shields.io/badge/Version-v0.1.0-red.svg">
         </a>
-        <a href="https://goreportcard.com/report/github.com/clivern/chipmunk">
-            <img src="https://goreportcard.com/badge/github.com/clivern/chipmunk?v=0.1.0">
+        <a href="https://goreportcard.com/report/github.com/clivern/sloth">
+            <img src="https://goreportcard.com/badge/github.com/clivern/sloth?v=0.1.0">
         </a>
-        <a href="https://godoc.org/github.com/clivern/chipmunk">
-            <img src="https://godoc.org/github.com/clivern/chipmunk?status.svg">
+        <a href="https://godoc.org/github.com/clivern/sloth">
+            <img src="https://godoc.org/github.com/clivern/sloth?status.svg">
         </a>
-        <a href="https://github.com/clivern/chipmunk/blob/main/LICENSE">
+        <a href="https://github.com/clivern/sloth/blob/main/LICENSE">
             <img src="https://img.shields.io/badge/LICENSE-MIT-orange.svg">
         </a>
     </p>
 </p>
 
-Chipmunk is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Chipmunk supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`.
+Sloth is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Sloth supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`.
 
 
 ### Getting Started
 
-To install `Chipmunk`, Use the following script:
+To install `Sloth`, Use the following script:
 
 ```zsh
-# To install chipmunk
-$ bash < <(curl -s https://raw.githubusercontent.com/clivern/chipmunk/main/deployment/ubuntu/install.sh)
+# To install sloth
+$ bash < <(curl -s https://raw.githubusercontent.com/clivern/sloth/main/deployment/ubuntu/install.sh)
 
-# To upgrade chipmunk
-$ bash < <(curl -s https://raw.githubusercontent.com/clivern/chipmunk/main/deployment/ubuntu/upgrade.sh)
+# To upgrade sloth
+$ bash < <(curl -s https://raw.githubusercontent.com/clivern/sloth/main/deployment/ubuntu/upgrade.sh)
 ```
 
 
 ### Versioning
 
-For transparency into our release cycle and in striving to maintain backward compatibility, Chipmunk is maintained under the [Semantic Versioning guidelines](https://semver.org/) and release process is predictable and business-friendly.
+For transparency into our release cycle and in striving to maintain backward compatibility, Sloth is maintained under the [Semantic Versioning guidelines](https://semver.org/) and release process is predictable and business-friendly.
 
-See the [Releases section of our GitHub project](https://github.com/clivern/chipmunk/releases) for changelogs for each release version of Chipmunk. It contains summaries of the most noteworthy changes made in each release. Also see the [Milestones section](https://github.com/clivern/chipmunk/milestones) for the future roadmap.
+See the [Releases section of our GitHub project](https://github.com/clivern/sloth/releases) for changelogs for each release version of Sloth. It contains summaries of the most noteworthy changes made in each release. Also see the [Milestones section](https://github.com/clivern/sloth/milestones) for the future roadmap.
 
 
 ### Bug tracker
 
-If you have any suggestions, bug reports, or annoyances please report them to our issue tracker at https://github.com/clivern/chipmunk/issues
+If you have any suggestions, bug reports, or annoyances please report them to our issue tracker at https://github.com/clivern/sloth/issues
 
 
 ### Security Issues
 
-If you discover a security vulnerability within Chipmunk, please send an email to [hello@clivern.com](mailto:hello@clivern.com)
+If you discover a security vulnerability within Sloth, please send an email to [hello@clivern.com](mailto:hello@clivern.com)
 
 
 ### Contributing

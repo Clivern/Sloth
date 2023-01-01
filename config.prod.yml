@@ -1,32 +1,47 @@
 # App configs
 app:
   # App name
-  name: ${CHIMPMUNK_NAME:-chipmunk}
+  name: ${SLOTH_NAME:-sloth}
   # Env mode (dev or prod)
-  mode: ${CHIMPMUNK_MODE:-prod}
+  mode: ${SLOTH_MODE:-prod}
   # HTTP port
-  port: ${CHIMPMUNK_PORT:-8000}
+  port: ${SLOTH_PORT:-8000}
   # Hostname
-  hostname: ${CHIMPMUNK_HOSTNAME:-127.0.0.1}
+  hostname: ${SLOTH_HOSTNAME:-127.0.0.1}
   # TLS configs
   tls:
-    status: ${CHIMPMUNK_TLS_STATUS:-off}
-    crt_path: ${CHIMPMUNK_TLS_PEMPATH:-cert/server.crt}
-    key_path: ${CHIMPMUNK_TLS_KEYPATH:-cert/server.key}
+    status: ${SLOTH_TLS_STATUS:-off}
+    crt_path: ${SLOTH_TLS_PEMPATH:-cert/server.crt}
+    key_path: ${SLOTH_TLS_KEYPATH:-cert/server.key}
 
   # API Credentials
   api:
     # API Key
-    key: ${CHIMPMUNK_API_KEY:-b08a1a8d-aefa-40fe-8473-59412ae46d11}
+    key: ${SLOTH_API_KEY:-b08a1a8d-aefa-40fe-8473-59412ae46d11}
 
   # Global timeout
-  timeout: ${CHIMPMUNK_TIMEOUT:-50}
+  timeout: ${SLOTH_TIMEOUT:-50}
+
+  # Application Database
+  database:
+      # Database driver (sqlite3, mysql)
+      driver: ${SLOTH_DATABASE_DRIVER:-sqlite3}
+      # Database Host
+      host: ${SLOTH_DATABASE_MYSQL_HOST:-localhost}
+      # Database Port
+      port: ${SLOTH_DATABASE_MYSQL_PORT:-3306}
+      # Database Name
+      name: ${SLOTH_DATABASE_MYSQL_DATABASE:-sloth.db}
+      # Database Username
+      username: ${SLOTH_DATABASE_MYSQL_USERNAME:-root}
+      # Database Password
+      password: ${SLOTH_DATABASE_MYSQL_PASSWORD:-root}
 
   # Log configs
   log:
     # Log level, it can be debug, info, warn, error, panic, fatal
-    level: ${CHIMPMUNK_LOG_LEVEL:-info}
-    # Output can be stdout or abs path to log file /var/logs/chipmunk.log
-    output: ${CHIMPMUNK_LOG_OUTPUT:-/var/logs/chipmunk.log}
+    level: ${SLOTH_LOG_LEVEL:-info}
+    # Output can be stdout or abs path to log file /var/logs/sloth.log
+    output: ${SLOTH_LOG_OUTPUT:-/var/logs/sloth.log}
     # Format can be json
-    format: ${CHIMPMUNK_LOG_FORMAT:-json}
+    format: ${SLOTH_LOG_FORMAT:-json}
