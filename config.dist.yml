@@ -42,6 +42,6 @@ app:
     # Log level, it can be debug, info, warn, error, panic, fatal
     level: ${SLOTH_LOG_LEVEL:-info}
     # Output can be stdout or abs path to log file /var/logs/sloth.log
-    output: ${SLOTH_LOG_OUTPUT:-/var/logs/sloth.log}
+    output: ${SLOTH_LOG_OUTPUT:-stdout}
     # Format can be json
     format: ${SLOTH_LOG_FORMAT:-json}
