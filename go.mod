@@ -3,6 +3,7 @@ module github.com/clivern/sloth
 go 1.19
 
 require (
+	github.com/DataDog/gohai v0.0.0-20230502094350-a44cf5f8244b
 	github.com/drone/envsubst v1.0.3
 	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
 	github.com/jinzhu/gorm v1.9.16
@@ -17,6 +18,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cihub/seelog v0.0.0-20151216151435-d2c6e5aa9fbf // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
