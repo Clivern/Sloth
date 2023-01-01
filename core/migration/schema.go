@@ -7,7 +7,7 @@ package migration
 import (
 	"time"
 
-	"github.com/clivern/sloth/core/util"
+	"github.com/clivern/sloth/core/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -25,12 +25,12 @@ type Option struct {
 
 // LoadFromJSON update object from json
 func (o *Option) LoadFromJSON(data []byte) error {
-	return util.LoadFromJSON(o, data)
+	return utils.LoadFromJSON(o, data)
 }
 
 // ConvertToJSON convert object to json
 func (o *Option) ConvertToJSON() (string, error) {
-	return util.ConvertToJSON(o)
+	return utils.ConvertToJSON(o)
 }
 
 // User struct
@@ -47,12 +47,12 @@ type User struct {
 
 // LoadFromJSON update object from json
 func (u *User) LoadFromJSON(data []byte) error {
-	return util.LoadFromJSON(u, data)
+	return utils.LoadFromJSON(u, data)
 }
 
 // ConvertToJSON convert object to json
 func (u *User) ConvertToJSON() (string, error) {
-	return util.ConvertToJSON(u)
+	return utils.ConvertToJSON(u)
 }
 
 // Service struct
@@ -68,12 +68,12 @@ type Service struct {
 
 // LoadFromJSON update object from json
 func (s *Service) LoadFromJSON(data []byte) error {
-	return util.LoadFromJSON(s, data)
+	return utils.LoadFromJSON(s, data)
 }
 
 // ConvertToJSON convert object to json
 func (s *Service) ConvertToJSON() (string, error) {
-	return util.ConvertToJSON(s)
+	return utils.ConvertToJSON(s)
 }
 
 // Check struct
@@ -89,10 +89,10 @@ type Check struct {
 
 // LoadFromJSON update object from json
 func (c *Check) LoadFromJSON(data []byte) error {
-	return util.LoadFromJSON(c, data)
+	return utils.LoadFromJSON(c, data)
 }
 
 // ConvertToJSON convert object to json
 func (c *Check) ConvertToJSON() (string, error) {
-	return util.ConvertToJSON(c)
+	return utils.ConvertToJSON(c)
 }
