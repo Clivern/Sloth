@@ -1,7 +1,7 @@
 <p align="center">
     <img alt="Chipmunk Logo" src="/static/logo.png?v=0.1.0" width="200" />
     <h3 align="center">Chipmunk</h3>
-    <p align="center">A Self Hosted Health Checks and Status Page, Set up in Minutes.</p>
+    <p align="center">🐺 A Fast, Secure and Reliable Self Hosted Monitoring and Status Page System, Set up in Minutes.</p>
     <p align="center">
         <a href="https://github.com/clivern/chipmunk/actions/workflows/api.yml">
             <img src="https://github.com/clivern/chipmunk/actions/workflows/api.yml/badge.svg">
@@ -24,7 +24,7 @@
     </p>
 </p>
 
-Chipmunk is a Self Hosted Health Checks and Status Page. Chipmunk supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`. It implements a lot of storage providers like Amazon `S3`, `Local` file system, `GitHub`, `MySQL`, `PostgreSQL` and `SQLite3`
+Chipmunk is a Fast, Secure and Reliable Self Hosted Monitoring and Status Page System. Chipmunk supports a broad range of health checks like `HTTP`, `TCP`, `DNS`, `TLS` and `Commands`.
 
 
 ### Getting Started
