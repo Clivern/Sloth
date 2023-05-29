@@ -3,7 +3,7 @@ module github.com/clivern/sloth
 go 1.19
 
 require (
-	github.com/DataDog/gohai v0.0.0-20230502094350-a44cf5f8244b
+	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/drone/envsubst v1.0.3
 	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
 	github.com/jinzhu/gorm v1.9.16
