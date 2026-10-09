@@ -64,8 +64,6 @@ type IntentionMetaRepositoryPostgres struct {
 	db *sql.DB
 }
 
-const intentionColumns = `id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at`
-
 // NewIntentionRepository returns the repository for intentions.
 func NewIntentionRepository(db *sql.DB) IntentionRepository {
 	return &IntentionRepositoryPostgres{db: db}
@@ -97,7 +95,7 @@ func (r *IntentionRepositoryPostgres) Create(intention *Intention) error {
 func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 	intention := &Intention{}
 	err := r.db.QueryRow(
-		`SELECT `+intentionColumns+`
+		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
 		FROM intentions
 		WHERE id = $1`,
 		id.String(),
@@ -145,7 +143,7 @@ func (r *IntentionRepositoryPostgres) Delete(id Id) error {
 // ListByWorkspaceId lists intentions in a workspace.
 func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Intention, error) {
 	rows, err := r.db.Query(
-		`SELECT `+intentionColumns+`
+		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
 		FROM intentions
 		WHERE workspace_id = $1
 		ORDER BY source_agent, destination_agent, skill
@@ -199,7 +197,7 @@ func (r *IntentionRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64,
 func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination, skill string) (*Intention, error) {
 	intention := &Intention{}
 	err := r.db.QueryRow(
-		`SELECT `+intentionColumns+`
+		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
 		FROM intentions
 		WHERE workspace_id = $1
 			AND source_agent = $2

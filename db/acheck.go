@@ -33,8 +33,6 @@ type AgentCheckRepositoryPostgres struct {
 	db *sql.DB
 }
 
-const agentCheckColumns = `id, agent_id, check_id, name, type, definition, created_at, updated_at`
-
 // NewAgentCheckRepository returns the repository for agent check templates.
 func NewAgentCheckRepository(db *sql.DB) AgentCheckRepository {
 	return &AgentCheckRepositoryPostgres{db: db}
@@ -66,7 +64,7 @@ func (r *AgentCheckRepositoryPostgres) Create(check *AgentCheck) error {
 func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId string) (*AgentCheck, error) {
 	check := &AgentCheck{}
 	err := r.db.QueryRow(
-		`SELECT `+agentCheckColumns+`
+		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
 		FROM agent_checks
 		WHERE agent_id = $1 AND check_id = $2`,
 		agentId.String(),
@@ -115,7 +113,7 @@ func (r *AgentCheckRepositoryPostgres) Delete(id Id) error {
 // ListByAgentId lists the check templates of an agent.
 func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck, error) {
 	rows, err := r.db.Query(
-		`SELECT `+agentCheckColumns+`
+		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
 		FROM agent_checks
 		WHERE agent_id = $1
 		ORDER BY check_id`,

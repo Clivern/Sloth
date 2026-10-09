@@ -67,8 +67,6 @@ type AgentInstanceMetaRepositoryPostgres struct {
 	db *sql.DB
 }
 
-const agentInstanceColumns = `id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at`
-
 // NewAgentInstanceRepository returns the repository for agent instances.
 func NewAgentInstanceRepository(db *sql.DB) AgentInstanceRepository {
 	return &AgentInstanceRepositoryPostgres{db: db}
@@ -106,7 +104,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT `+agentInstanceColumns+`
+		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE id = $1`,
 		id.String(),
@@ -133,7 +131,7 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, instanceId string) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT `+agentInstanceColumns+`
+		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1 AND instance_id = $2`,
 		agentId.String(),
@@ -185,7 +183,7 @@ func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 // ListByAgentId lists instances for an agent.
 func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT `+agentInstanceColumns+`
+		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id`,
@@ -225,7 +223,7 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 // ListLiveByAgentId lists instances with a live lease and no critical or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT `+agentInstanceColumns+`
+		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
 			AND EXISTS (
