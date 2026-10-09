@@ -52,9 +52,15 @@ func (s *Scheduler) Run(ctx context.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	log.Info().
+		Str("subject", HealthCheckRunSubject).
+		Msg("Health check scheduler started")
+
 	for {
 		select {
 		case <-ctx.Done():
+			log.Info().
+				Msg("Health check scheduler stopped")
 			return
 		case now := <-ticker.C:
 			err := s.Tick(now)
@@ -72,6 +78,7 @@ func (s *Scheduler) Tick(now time.Time) error {
 		return err
 	}
 
+	count := 0
 	for _, check := range checks {
 		instance, err := s.instances.GetById(check.InstanceId)
 		if err != nil || instance == nil {
@@ -99,7 +106,25 @@ func (s *Scheduler) Tick(now time.Time) error {
 		if err != nil {
 			return err
 		}
+
+		count++
+		log.Debug().
+			Str("check_id", check.Id.String()).
+			Str("type", check.Type).
+			Msg("Health check job published")
 	}
 
-	return s.publisher.Flush()
+	err = s.publisher.Flush()
+	if err != nil {
+		return err
+	}
+
+	if len(checks) > 0 {
+		log.Info().
+			Int("claimed", len(checks)).
+			Int("published", count).
+			Msg("Health check jobs scheduled")
+	}
+
+	return nil
 }
