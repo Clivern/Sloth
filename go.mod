@@ -12,6 +12,7 @@ require (
 	github.com/leonelquinteros/gotext v1.7.2
 	github.com/lib/pq v1.12.3
 	github.com/nats-io/nats.go v1.54.0
+	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/resend/resend-go/v4 v4.8.2
 	github.com/rs/zerolog v1.35.1
@@ -59,6 +60,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
