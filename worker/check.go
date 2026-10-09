@@ -21,6 +21,7 @@ import (
 // HandleHealthCheck probes one health check job and records the result and next run time.
 func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error {
 	var job module.HealthCheckJob
+
 	err := json.Unmarshal(msg.Data, &job)
 	if err != nil {
 		return ErrInvalidPayload
