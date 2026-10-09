@@ -113,6 +113,15 @@ coverage:
 	go tool cover -html=cover.out -o coverage.html
 
 
+## complexity: Report cyclomatic and cognitive complexity for db and module.
+.PHONY: complexity
+complexity:
+	@echo ">> ============= Cyclomatic Complexity ============= <<"
+	$(go) run github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0 -ignore '_test.go' -top 30 db/ module/
+	@echo ">> ============= Cognitive Complexity ============= <<"
+	$(go) run github.com/uudashr/gocognit/cmd/gocognit@v1.2.0 -ignore '_test.go' -top 30 db/ module/
+
+
 ## deps: Start local Postgres and NATS
 .PHONY: deps
 deps:
