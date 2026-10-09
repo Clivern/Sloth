@@ -2,19 +2,19 @@ openapi: 3.0.3
 info:
   title: Cognit API
   description: |
-    HTTP API for the Cognit workspace control plane (agents, instances, policy, and workspace administration).
+    Cognit is a Service Discovery Registry for AI Agents. Agents register, discover each other by skill,
+    and call through a gateway that manages load balancing, health, and policy on every request.
 
-    **Authentication** (except public routes): session cookie `_cognit_session`, `X-API-Key` (user API key), or `X-Access-Key` (workspace access key).
-    Workspace-scoped routes require membership (session) or an access key for that workspace.
+    **Authentication**: session cookie `_cognit_session` or user API key `X-API-Key`. Workspace access keys `X-Access-Key`
 
-    This document reflects routes registered in `core/server.go`. Planned A2A gateway and catalog paths described in `docs/api.md` are not included until implemented.
+    Errors are returned as `{"errorMessage": "..."}`.
   version: 1.0.0
   license:
     name: Proprietary
 
 servers:
   - url: /
-    description: App origin (configure `app.url`)
+    description: App URL
 
 tags:
   - name: Public
@@ -38,7 +38,6 @@ tags:
 security:
   - sessionCookie: []
   - userApiKey: []
-  - workspaceAccessKey: []
 
 paths:
   /api/v1/public/_health:
@@ -52,11 +51,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: "#/components/schemas/Status"
 
   /api/v1/public/_ready:
     get:
@@ -66,12 +61,16 @@ paths:
       responses:
         "200":
           description: Dependencies healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
         "503":
           description: Not ready
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/Status"
 
   /api/v1/public/action/setup:
     post:
@@ -87,6 +86,10 @@ paths:
       responses:
         "200":
           description: Setup completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
         "400":
           $ref: "#/components/responses/BadRequest"
         "500":
@@ -107,6 +110,8 @@ paths:
                 properties:
                   installed:
                     type: boolean
+                  edition:
+                    type: string
 
   /api/v1/public/action/logout:
     post:
@@ -116,6 +121,10 @@ paths:
       responses:
         "200":
           description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
 
   /api/v1/public/action/oauth/github:
     get:
@@ -158,10 +167,21 @@ paths:
       tags: [Billing]
       summary: Stripe webhook (SaaS edition only)
       security: []
-      description: Registered only when the app runs in SaaS mode.
+      description: Registered only when the app runs in SaaS mode. Verified with the `Stripe-Signature` header.
       responses:
         "200":
           description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/public/_metrics:
     get:
@@ -190,6 +210,13 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/MeAPIKey"
                   - $ref: "#/components/schemas/MeAccessKey"
+                discriminator:
+                  propertyName: principalType
+                  mapping:
+                    api_key: "#/components/schemas/MeAPIKey"
+                    access_key: "#/components/schemas/MeAccessKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
 
@@ -200,6 +227,10 @@ paths:
       responses:
         "200":
           description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
     put:
@@ -214,8 +245,16 @@ paths:
       responses:
         "200":
           description: Updated profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ProfileResponse"
+                  - $ref: "#/components/schemas/SuccessMessage"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /api/v1/action/settings:
     get:
@@ -224,6 +263,17 @@ paths:
       responses:
         "200":
           description: Settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    $ref: "#/components/schemas/Settings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
     put:
       tags: [Settings]
       summary: Update app settings (admin)
@@ -236,6 +286,16 @@ paths:
       responses:
         "200":
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessMessage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/v1/apiKeys:
     post:
@@ -254,6 +314,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIKey"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
     get:
       tags: [API keys]
       summary: List user API keys
@@ -268,12 +336,18 @@ paths:
               schema:
                 type: object
                 properties:
-                  apiKeys:
+                  keys:
                     type: array
                     items:
                       $ref: "#/components/schemas/APIKey"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/apiKeys/{apiKeyId}:
     get:
@@ -288,6 +362,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/APIKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [API keys]
       summary: Delete user API key
@@ -296,6 +378,14 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces:
     post:
@@ -314,6 +404,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Workspace"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
     get:
       tags: [Workspaces]
       summary: List workspaces for current user
@@ -334,6 +432,12 @@ paths:
                       $ref: "#/components/schemas/Workspace"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}:
     get:
@@ -348,6 +452,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Workspace"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
       tags: [Workspaces]
       summary: Update workspace
@@ -366,6 +478,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Workspace"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Workspaces]
       summary: Delete workspace
@@ -374,6 +496,14 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/invites:
     post:
@@ -394,6 +524,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Invite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     get:
       tags: [Invites]
       summary: List invites
@@ -415,6 +555,14 @@ paths:
                       $ref: "#/components/schemas/Invite"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/invites/{inviteId}:
     get:
@@ -430,6 +578,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Invite"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Invites]
       summary: Revoke invite
@@ -439,6 +595,14 @@ paths:
       responses:
         "204":
           description: Revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/members:
     get:
@@ -462,6 +626,14 @@ paths:
                       $ref: "#/components/schemas/WorkspaceMember"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/members/{memberUserId}:
     put:
@@ -483,6 +655,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Members]
       summary: Remove member
@@ -492,6 +674,14 @@ paths:
       responses:
         "204":
           description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/keys:
     post:
@@ -512,6 +702,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AccessKey"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     get:
       tags: [Access keys]
       summary: List workspace access keys
@@ -533,6 +733,14 @@ paths:
                       $ref: "#/components/schemas/AccessKey"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/keys/{keyId}:
     get:
@@ -548,6 +756,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AccessKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Access keys]
       summary: Delete access key
@@ -557,11 +773,24 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/billing:
     get:
       tags: [Billing]
       summary: Billing status (SaaS only)
+      description: Registered only in SaaS mode. Accepts workspace access keys.
+      security:
+        - sessionCookie: []
+        - userApiKey: []
+        - workspaceAccessKey: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
       responses:
@@ -571,11 +800,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/billing/usage:
     get:
       tags: [Billing]
       summary: Billing usage (SaaS only)
+      description: Registered only in SaaS mode. Accepts workspace access keys.
+      security:
+        - sessionCookie: []
+        - userApiKey: []
+        - workspaceAccessKey: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
       responses:
@@ -585,14 +827,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingUsage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/billing/checkout:
     post:
       tags: [Billing]
       summary: Start Stripe checkout (SaaS only)
+      description: Buys AI token credit for the workspace.
       parameters:
         - $ref: "#/components/parameters/workspaceId"
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -604,6 +856,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/billing/portal:
     post:
@@ -618,6 +882,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/audits:
     get:
@@ -641,6 +915,14 @@ paths:
                       $ref: "#/components/schemas/AuditEvent"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/audits/{auditId}:
     get:
@@ -656,6 +938,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuditEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/agents:
     get:
@@ -679,6 +969,14 @@ paths:
                       $ref: "#/components/schemas/Agent"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/agents/{agentName}:
     put:
@@ -706,6 +1004,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     get:
       tags: [Agents]
       summary: Get agent
@@ -719,6 +1027,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Agents]
       summary: Delete agent
@@ -728,6 +1044,14 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances:
     get:
@@ -753,6 +1077,14 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Instance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}:
     get:
@@ -769,6 +1101,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Instance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
       tags: [Instances]
       summary: Register or update instance and start lease
@@ -776,9 +1116,9 @@ paths:
         Accepts workspace access keys (`X-Access-Key`) without a user session.
         The agent card must exist before registering an instance.
       security:
-        - workspaceAccessKey: []
         - sessionCookie: []
         - userApiKey: []
+        - workspaceAccessKey: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -802,13 +1142,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Instance"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Instances]
       summary: Deregister instance
       security:
-        - workspaceAccessKey: []
         - sessionCookie: []
         - userApiKey: []
+        - workspaceAccessKey: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -816,15 +1166,23 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/renew:
     put:
       tags: [Instances]
       summary: Renew instance lease
       security:
-        - workspaceAccessKey: []
         - sessionCookie: []
         - userApiKey: []
+        - workspaceAccessKey: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -836,6 +1194,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Instance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/intentions:
     get:
@@ -859,6 +1225,14 @@ paths:
                       $ref: "#/components/schemas/Intention"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
       tags: [Intentions]
       summary: Create intention
@@ -877,6 +1251,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Intention"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/intentions/check:
     post:
@@ -897,6 +1281,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CheckIntentionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/intentions/{intentionId}:
     get:
@@ -912,6 +1306,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Intention"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
       tags: [Intentions]
       summary: Update intention
@@ -931,6 +1333,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Intention"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Intentions]
       summary: Delete intention
@@ -940,6 +1352,14 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/kv:
     get:
@@ -955,10 +1375,24 @@ paths:
               schema:
                 type: object
                 properties:
-                  keys:
+                  items:
                     type: array
                     items:
-                      type: string
+                      $ref: "#/components/schemas/KeyValueItem"
+                  _meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        format: int64
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/kv/{key}:
     get:
@@ -975,6 +1409,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/KeyValueItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     put:
       tags: [Key-value]
       summary: Write workspace key
@@ -994,6 +1436,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/KeyValueItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
     delete:
       tags: [Key-value]
       summary: Delete workspace key
@@ -1003,6 +1455,14 @@ paths:
       responses:
         "204":
           description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/traffic:
     get:
@@ -1020,12 +1480,20 @@ paths:
               schema:
                 type: object
                 properties:
-                  traffic:
+                  calls:
                     type: array
                     items:
                       $ref: "#/components/schemas/TrafficCall"
                   _meta:
                     $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/v1/workspaces/{workspaceId}/traffic/{trafficId}:
     get:
@@ -1041,6 +1509,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TrafficCall"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
 components:
   securitySchemes:
@@ -1173,6 +1649,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: Dependency or billing provider not configured
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     InternalError:
       description: Server error
       content:
@@ -1187,6 +1675,71 @@ components:
       properties:
         errorMessage:
           type: string
+
+    Status:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, not_ok]
+
+    SuccessMessage:
+      type: object
+      properties:
+        successMessage:
+          type: string
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, regular, readonly]
+        isActive:
+          type: boolean
+        isEmailVerified:
+          type: boolean
+        name:
+          type: string
+        avatar:
+          type: string
+          format: uri
+        language:
+          type: string
+          enum: [en, fr]
+        theme:
+          type: string
+          enum: [default, blue, slate, emerald, dark]
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/Profile"
+
+    Settings:
+      type: object
+      description: Values are stored as strings.
+      properties:
+        platform_email:
+          type: string
+        maintenance_mode:
+          type: string
+          example: "false"
 
     PaginationMeta:
       type: object
@@ -1206,13 +1759,22 @@ components:
         platformEmail:
           type: string
           format: email
+          minLength: 4
+          maxLength: 60
 
     UpdateProfileRequest:
       type: object
+      required: [language, theme]
       properties:
         name:
           type: string
-          maxLength: 60
+          maxLength: 255
+        language:
+          type: string
+          enum: [en, fr]
+        theme:
+          type: string
+          enum: [default, blue, slate, emerald, dark]
 
     UpdateSettingsRequest:
       type: object
@@ -1221,19 +1783,21 @@ components:
         platformEmail:
           type: string
           format: email
+          maxLength: 255
         maintenanceMode:
           type: boolean
 
     CreateAPIKeyRequest:
       type: object
+      required: [name]
       properties:
         name:
           type: string
-          maxLength: 60
+          maxLength: 255
         expiresAt:
           type: string
           format: date-time
-          nullable: true
+          maxLength: 64
 
     APIKey:
       type: object
@@ -1253,41 +1817,54 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     MeAPIKey:
       type: object
       properties:
-        type:
+        principalType:
           type: string
           example: api_key
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        expiresAt:
-          type: string
-          format: date-time
-          nullable: true
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+            name:
+              type: string
+            role:
+              type: string
+        apiKey:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
 
     MeAccessKey:
       type: object
       properties:
-        type:
+        principalType:
           type: string
           example: access_key
-        id:
-          type: string
-          format: uuid
-        workspaceId:
-          type: string
-          format: uuid
-        name:
-          type: string
-        expiresAt:
-          type: string
-          format: date-time
-          nullable: true
+        accessKey:
+          $ref: "#/components/schemas/AccessKey"
 
     CreateWorkspaceRequest:
       type: object
@@ -1330,8 +1907,14 @@ components:
         email:
           type: string
           format: email
+          minLength: 4
+          maxLength: 255
         role:
-          type: string
+          $ref: "#/components/schemas/WorkspaceRole"
+
+    WorkspaceRole:
+      type: string
+      enum: [admin, regular, readonly]
 
     Invite:
       type: object
@@ -1342,12 +1925,31 @@ components:
         email:
           type: string
         role:
+          $ref: "#/components/schemas/WorkspaceRole"
+        token:
           type: string
+          description: Returned only on create
+        status:
+          type: string
+        inviterUserId:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        workspaceName:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
         acceptedAt:
           type: string
           format: date-time
           nullable: true
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -1356,26 +1958,36 @@ components:
       required: [role]
       properties:
         role:
-          type: string
+          $ref: "#/components/schemas/WorkspaceRole"
 
     WorkspaceMember:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
         userId:
           type: string
           format: uuid
-        email:
-          type: string
         name:
           type: string
-        role:
+        email:
           type: string
-        joinedAt:
+        role:
+          $ref: "#/components/schemas/WorkspaceRole"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
     CreateAccessKeyRequest:
       type: object
+      required: [name]
       properties:
         name:
           type: string
@@ -1383,7 +1995,11 @@ components:
         expiresAt:
           type: string
           format: date-time
-          nullable: true
+          maxLength: 64
+        permissions:
+          type: array
+          items:
+            type: string
 
     AccessKey:
       type: object
@@ -1391,32 +2007,87 @@ components:
         id:
           type: string
           format: uuid
+        workspaceId:
+          type: string
+          format: uuid
         name:
           type: string
+        permissions:
+          type: array
+          items:
+            type: string
         key:
           type: string
           description: Returned only on create
         expiresAt:
           type: string
           format: date-time
-          nullable: true
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
     BillingStatus:
       type: object
-      additionalProperties: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        providerCustomerId:
+          type: string
+        aiTokensBalance:
+          type: integer
+          format: int64
+        tokensPerUsd:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     BillingUsage:
       type: object
-      additionalProperties: true
+      properties:
+        periodReset:
+          type: string
+          format: date-time
+        used:
+          type: object
+          properties:
+            workspaceMembers:
+              type: integer
+              format: int64
+            aiTokens:
+              type: integer
+              format: int64
+            aiCost:
+              type: number
+        limits:
+          type: object
+          properties:
+            workspaceMembers:
+              type: integer
+              format: int64
+            aiTokens:
+              type: integer
+              format: int64
 
     BillingCheckoutRequest:
       type: object
+      required: [amountCents]
       properties:
-        plan:
-          type: string
+        amountCents:
+          type: integer
+          format: int64
+          minimum: 100
 
     BillingSession:
       type: object
@@ -1431,13 +2102,24 @@ components:
         id:
           type: string
           format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
         action:
           type: string
-        actor:
+        resourceType:
           type: string
-        resource:
+        resourceId:
           type: string
-        metadata:
+          format: uuid
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        meta:
           type: object
           additionalProperties: true
         createdAt:
@@ -1678,14 +2360,27 @@ components:
       properties:
         value:
           type: string
+        expiresAt:
+          type: string
+          format: date-time
+          maxLength: 64
 
     KeyValueItem:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
         key:
           type: string
         value:
           type: string
+        expiresAt:
+          type: string
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -1699,15 +2394,25 @@ components:
         id:
           type: string
           format: uuid
-        verb:
+        workspaceId:
           type: string
-        sourceAgent:
+          format: uuid
+        sourceInstance:
           type: string
-        destinationAgent:
+        destinationInstance:
           type: string
         skill:
           type: string
+        verb:
+          type: string
+        decision:
+          type: string
         result:
+          type: string
+        latencyMs:
+          type: integer
+          format: int64
+        taskId:
           type: string
         createdAt:
           type: string
