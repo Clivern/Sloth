@@ -2,7 +2,7 @@
 
 Generated on 2026-10-08 with `gocyclo` v0.6.0 (cyclomatic) and `gocognit` v1.2.0 (cognitive). Test files are excluded.
 
-Re-run manually with `make complexity`, or:
+Re-run manually with:
 
 ```sh
 go run github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0 -ignore '_test.go' db/ module/
