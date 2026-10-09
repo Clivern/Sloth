@@ -16,35 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type fakeWorkspaces struct {
-	db.WorkspaceRepository
-	workspace *db.Workspace
-}
-
-func (f *fakeWorkspaces) GetById(id db.Id) (*db.Workspace, error) {
-	return f.workspace, nil
-}
-
-type fakeAgents struct {
-	db.AgentRepository
-	agent *db.Agent
-}
-
-func (f *fakeAgents) GetByWorkspaceAndName(workspaceId db.Id, name string) (*db.Agent, error) {
-	if f.agent == nil || f.agent.Name != name {
-		return nil, nil
-	}
-	return f.agent, nil
-}
-
-type fakeInstances struct {
-	db.AgentInstanceRepository
-}
-
-func (f *fakeInstances) ListByAgentId(agentId db.Id) ([]*db.AgentInstance, error) {
-	return nil, nil
-}
-
 func TestUnitAgentCardEndpoint(t *testing.T) {
 	workspaceId := db.Id("")
 	card := `{"name":"User Directory","version":"1.0.0"}`
@@ -59,10 +30,10 @@ func TestUnitAgentCardEndpoint(t *testing.T) {
 
 	api := &API{
 		Agent: module.NewAgent(
-			&fakeAgents{agent: agent},
-			&fakeInstances{},
+			&fakeAgentCatalog{agent: agent},
+			&fakeInstanceRecords{},
 			nil,
-			&fakeWorkspaces{workspace: &db.Workspace{Id: workspaceId}},
+			&fakeWorkspaceRecords{workspace: &db.Workspace{Id: workspaceId}},
 		),
 	}
 
