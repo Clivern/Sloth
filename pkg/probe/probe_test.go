@@ -45,10 +45,14 @@ func TestUnitProbe(t *testing.T) {
 		assert.Equal(t, Critical, result.Status)
 	})
 
-	t.Run("HTTP critical on empty url", func(t *testing.T) {
-		result := HTTP(context.Background(), HTTPTarget{})
-		assert.Equal(t, Critical, result.Status)
-		assert.Contains(t, result.Output, "invalid target")
+	t.Run("Targets validate with Validate method", func(t *testing.T) {
+		assert.Error(t, HTTPTarget{}.Validate())
+		assert.Error(t, HTTPTarget{URL: "not a url"}.Validate())
+		assert.NoError(t, HTTPTarget{URL: "http://10.0.0.12:8080/health"}.Validate())
+
+		assert.Error(t, TCPTarget{Port: 5432}.Validate())
+		assert.Error(t, TCPTarget{Address: "10.0.0.12"}.Validate())
+		assert.NoError(t, TCPTarget{Address: "10.0.0.12", Port: 5432}.Validate())
 	})
 
 	t.Run("TCP passing when port open", func(t *testing.T) {

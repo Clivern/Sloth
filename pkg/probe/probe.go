@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/clivern/cognit/pkg/util"
 )
 
 const (
@@ -22,14 +24,14 @@ const (
 
 // HTTPTarget is a full URL to probe with an HTTP GET.
 type HTTPTarget struct {
-	URL     string
+	URL     string `validate:"required,url" label:"URL"`
 	Timeout time.Duration
 }
 
 // TCPTarget is an instance address to probe with a TCP dial.
 type TCPTarget struct {
-	Address string
-	Port    int
+	Address string `validate:"required,max=255" label:"Address"`
+	Port    int    `validate:"required,min=1,max=65535" label:"Port"`
 	Timeout time.Duration
 }
 
@@ -39,12 +41,18 @@ type Result struct {
 	Output string
 }
 
+// Validate checks the target fields and returns the first validation error.
+func (t HTTPTarget) Validate() error {
+	return util.ValidateStruct(t)
+}
+
+// Validate checks the target fields and returns the first validation error.
+func (t TCPTarget) Validate() error {
+	return util.ValidateStruct(t)
+}
+
 // HTTP sends a GET to the target and reports passing for a 2xx response.
 func HTTP(ctx context.Context, target HTTPTarget) Result {
-	if target.URL == "" {
-		return Result{Status: Critical, Output: "invalid target: url is required"}
-	}
-
 	client := &http.Client{Timeout: target.Timeout}
 	req, err := http.NewRequestWithContext(
 		ctx,
@@ -84,10 +92,6 @@ func HTTP(ctx context.Context, target HTTPTarget) Result {
 
 // TCP dials the target and reports passing when the connection opens.
 func TCP(ctx context.Context, target TCPTarget) Result {
-	if target.Address == "" || target.Port == 0 {
-		return Result{Status: Critical, Output: "invalid target: address and port are required"}
-	}
-
 	dialer := net.Dialer{Timeout: target.Timeout}
 	conn, err := dialer.DialContext(
 		ctx,
