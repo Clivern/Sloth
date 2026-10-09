@@ -389,8 +389,7 @@ type checkFixture struct {
 	instances    *fakeInstances
 }
 
-// newCheckFixture wires a Check module to in-memory fakes. Pass a nil workspace
-// or agent to simulate a missing one.
+// newCheckFixture wires a Check module to in-memory fakes; a nil workspace or agent simulates a missing one.
 func newCheckFixture(workspace *db.Workspace, agent *db.Agent) *checkFixture {
 	f := &checkFixture{
 		agentChecks:  &fakeAgentChecks{},
@@ -422,8 +421,7 @@ type agentFixture struct {
 	healthChecks *fakeHealthChecks
 }
 
-// newAgentFixture wires an Agent module to in-memory fakes. Pass a nil workspace
-// or agent to simulate a missing one.
+// newAgentFixture wires an Agent module to in-memory fakes; a nil workspace or agent simulates a missing one.
 func newAgentFixture(workspace *db.Workspace, agent *db.Agent) *agentFixture {
 	f := &agentFixture{
 		agents:       &fakeAgents{agent: agent},
@@ -462,8 +460,7 @@ type instanceFixture struct {
 	agentChecks  *fakeAgentChecks
 }
 
-// newInstanceFixture wires an Instance module to in-memory fakes. Pass a nil
-// workspace or agent to simulate a missing one.
+// newInstanceFixture wires an Instance module to in-memory fakes; a nil workspace or agent simulates a missing one.
 func newInstanceFixture(workspace *db.Workspace, agent *db.Agent) *instanceFixture {
 	f := &instanceFixture{
 		agents:       &fakeAgents{agent: agent},
@@ -953,8 +950,7 @@ func (f *fakeTokenPurchases) Create(purchase *db.TokenPurchase) (bool, error) {
 	return f.inserted, f.err
 }
 
-// enableBilling switches the process to the SaaS edition with Stripe configured.
-// The Stripe client only builds with this set, and it is reset after the test.
+// enableBilling switches the process to the SaaS edition with Stripe, reset after the test.
 func enableBilling(t *testing.T) *stripe.Client {
 	t.Helper()
 	t.Setenv("COGNIT_EDITION", "saas")
@@ -1022,8 +1018,7 @@ func newOAuthAuth(users *fakeUsers, sessions *fakeSessions, configs *fakeConfigs
 	return NewAuth(users, sessions, configs)
 }
 
-// newPerm builds a checker without a database. The workspace repository is
-// swapped for an in-memory fake that reports the given membership.
+// newPerm builds a checker without a database, with an in-memory workspace repository reporting membership.
 func newPerm(membership *db.WorkspaceUser) *Perm {
 	perm := NewPerm(nil)
 	perm.WorkspaceRepository = &fakeWorkspaces{membership: membership, workspace: &db.Workspace{Id: "ws-1"}}
