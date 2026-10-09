@@ -36,6 +36,7 @@ func (c *AppCtx) HasFeature(name string) bool {
 	if c == nil {
 		return false
 	}
+
 	return c.Features[name]
 }
 
@@ -49,6 +50,7 @@ func WithAppCtx(ctx context.Context, ac *AppCtx) context.Context {
 // AppCtxFrom retrieves AppCtx from a context.
 func AppCtxFrom(ctx context.Context) (*AppCtx, bool) {
 	ac, ok := ctx.Value(appCtxKey{}).(*AppCtx)
+
 	return ac, ok
 }
 
@@ -78,6 +80,7 @@ func WithPrincipal(ctx context.Context, p *Principal) context.Context {
 // PrincipalFrom retrieves the authenticated principal from a context.
 func PrincipalFrom(ctx context.Context) (*Principal, bool) {
 	p, ok := ctx.Value(principalKey{}).(*Principal)
+
 	return p, ok
 }
 
@@ -87,6 +90,7 @@ func UserFrom(ctx context.Context) (*db.User, bool) {
 	if !ok || p == nil || p.User == nil {
 		return nil, false
 	}
+
 	return p.User, true
 }
 
@@ -96,5 +100,6 @@ func AccessKeyFrom(ctx context.Context) (*db.AccessKey, bool) {
 	if !ok || p == nil || p.AccessKey == nil {
 		return nil, false
 	}
+
 	return p.AccessKey, true
 }

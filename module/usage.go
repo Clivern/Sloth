@@ -62,6 +62,7 @@ func (u *Usage) GetWorkspaceUsage(deps UsageSnapshotDeps, workspaceId db.Id) (*W
 // AITokens returns AI token usage for the current calendar month.
 func (u *Usage) AITokens(usage db.UsageRepository, workspaceId db.Id) (int64, error) {
 	start, _ := util.CurrentMonthPeriod()
+
 	return usage.GetQuantityByPeriod(workspaceId, db.UsageTypeAITokens, start)
 }
 

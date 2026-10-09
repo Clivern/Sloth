@@ -97,6 +97,7 @@ func (k *KeyValue) ListKeyValue(workspaceId db.Id, prefix string) (*ListKeyValue
 		if item.ExpiresAt != nil {
 			expiresAt = new(item.ExpiresAt.UTC().Format(time.RFC3339))
 		}
+
 		list = append(list, &KeyValueResponse{
 			Id:          item.Id,
 			WorkspaceId: item.WorkspaceId,
@@ -187,6 +188,7 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 		if err != nil {
 			return nil, ErrInvalidExpiresAt
 		}
+
 		expiresAt = new(t)
 	}
 
@@ -197,7 +199,6 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 		ExpiresAt:   expiresAt,
 	}
 	err = k.KeyValueRepository.Upsert(item)
-
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedPutKeyValue, err)
 	}

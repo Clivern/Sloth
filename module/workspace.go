@@ -71,6 +71,7 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 		if err != nil {
 			return nil, err
 		}
+
 		existing, err := w.WorkspaceRepository.GetByHandle(h)
 		if err != nil {
 			return nil, err

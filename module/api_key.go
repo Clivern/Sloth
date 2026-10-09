@@ -64,6 +64,7 @@ func (a *APIKey) CreateAPIKey(req *CreateAPIKeyRequest, user *db.User) (*APIKeyR
 		if err != nil {
 			return nil, ErrInvalidExpiresAt
 		}
+
 		expiresAt = new(t)
 	}
 
@@ -126,6 +127,7 @@ func (a *APIKey) ListAPIKeys(user *db.User, limit, offset int) (*ListAPIKeysResu
 			),
 		})
 	}
+
 	return &ListAPIKeysResult{APIKeys: list, Total: total}, nil
 }
 

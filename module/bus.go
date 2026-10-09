@@ -63,6 +63,7 @@ func EnqueueTask(taskType string, payload map[string]string, workspaceId db.Id) 
 	if err != nil {
 		return err
 	}
+
 	body := string(raw)
 
 	err = db.NewAsyncTaskRepository(db.GetDB()).Create(&db.AsyncTask{

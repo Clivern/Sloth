@@ -65,6 +65,7 @@ func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (
 		if user == nil {
 			continue
 		}
+
 		members = append(members, &WorkspaceMemberResponse{
 			Id:          member.Id,
 			WorkspaceId: member.WorkspaceId,

@@ -183,8 +183,10 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 		if !hasLease {
 			item.Status = db.AgentInstanceStatusCritical
 		}
+
 		list = append(list, item)
 	}
+
 	return list, nil
 }
 
@@ -279,6 +281,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 	if !hasLease {
 		item.Status = db.AgentInstanceStatusCritical
 	}
+
 	return item, nil
 }
 
@@ -317,6 +320,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	if created {
 		instance = &db.AgentInstance{AgentId: agent.Id, InstanceId: instanceId}
 	}
+
 	instance.Address = req.Address
 	instance.Port = req.Port
 	instance.Datacenter = req.Datacenter
@@ -325,6 +329,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		meta := string(req.Meta)
 		instance.Meta = &meta
 	}
+
 	instance.Status = db.AgentInstanceStatusPassing
 
 	if created {
@@ -340,6 +345,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	if ttl == 0 {
 		ttl = DefaultLeaseTTL
 	}
+
 	raw, _ := json.Marshal(LeaseDefinition{TTL: ttl})
 	definition := string(raw)
 	now := time.Now().UTC()
@@ -398,6 +404,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			if err != nil {
 				return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
+
 			existing = nil
 		}
 
@@ -410,6 +417,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			if isPull {
 				existing.NextRunAt = &now
 			}
+
 			err = i.HealthCheckRepository.Update(existing)
 		} else {
 			check := &db.HealthCheck{
@@ -434,6 +442,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 				check.Output = &output
 				check.TTLExpiresAt = &expiresAt
 			}
+
 			err = i.HealthCheckRepository.Create(check)
 		}
 		if err != nil {
@@ -446,6 +455,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
+
 	for _, check := range current {
 		if check.Source == db.HealthCheckSourceAgent && !wanted[check.CheckId] {
 			err = i.HealthCheckRepository.Delete(check.Id)
@@ -512,6 +522,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	if !hasLease {
 		item.Status = db.AgentInstanceStatusCritical
 	}
+
 	return item, created, nil
 }
 
@@ -624,6 +635,7 @@ func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string
 	if !hasLease {
 		item.Status = db.AgentInstanceStatusCritical
 	}
+
 	return item, nil
 }
 
@@ -665,5 +677,6 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
+
 	return nil
 }

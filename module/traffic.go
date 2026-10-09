@@ -78,6 +78,7 @@ func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTraffi
 		if call.TaskId != nil {
 			taskId = *call.TaskId
 		}
+
 		list = append(list, &TrafficCallResponse{
 			Id:                  call.Id,
 			WorkspaceId:         call.WorkspaceId,

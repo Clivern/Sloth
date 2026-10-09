@@ -110,6 +110,7 @@ func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListI
 		if item.Skill != nil {
 			skill = *item.Skill
 		}
+
 		list = append(list, &IntentionResponse{
 			Id:          item.Id,
 			WorkspaceId: item.WorkspaceId,
@@ -121,6 +122,7 @@ func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListI
 			UpdatedAt:   item.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
+
 	return &ListIntentionsResponse{Intentions: list, Total: total}, nil
 }
 
@@ -146,6 +148,7 @@ func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResp
 	if intention.Skill != nil {
 		skill = *intention.Skill
 	}
+
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
@@ -193,6 +196,7 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 	if intention.Skill != nil {
 		storedSkill = *intention.Skill
 	}
+
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
@@ -250,6 +254,7 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 	if intention.Skill != nil {
 		storedSkill = *intention.Skill
 	}
+
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
@@ -284,6 +289,7 @@ func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteIntention, err)
 	}
+
 	return nil
 }
 
@@ -314,6 +320,7 @@ func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest
 	if intention.Skill != nil {
 		skill = *intention.Skill
 	}
+
 	return &CheckIntentionResponse{
 		Action: intention.Action,
 		Intention: &IntentionResponse{

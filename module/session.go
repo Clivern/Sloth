@@ -37,6 +37,7 @@ func (s *SessionManager) CreateSession(ctx context.Context, userId db.Id, durati
 	if user == nil {
 		return nil, errors.New("user not found")
 	}
+
 	token, err := util.GenerateSecureToken(32)
 	if err != nil {
 		return nil, err

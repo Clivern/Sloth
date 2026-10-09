@@ -54,6 +54,7 @@ func (a *Auth) LoginWithOAuth(ctx context.Context, identity *OAuthIdentity) (*Lo
 		if lo.IsNotEmpty(identity.Name) {
 			user.Name = identity.Name
 		}
+
 		err = a.UserRepository.Update(user)
 		if err != nil {
 			return nil, fmt.Errorf("convert local user to oauth: %w", err)
@@ -107,7 +108,6 @@ func (a *Auth) LoginWithOAuth(ctx context.Context, identity *OAuthIdentity) (*Lo
 		user.Email = identity.Email
 		user.IsEmailVerified = true
 		err = a.UserRepository.Update(user)
-
 		if err != nil {
 			return nil, fmt.Errorf("sync oauth email: %w", err)
 		}

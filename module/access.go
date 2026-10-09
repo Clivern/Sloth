@@ -89,6 +89,7 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, req *CreateAccessKeyRequest)
 		if err != nil {
 			return nil, ErrInvalidExpiresAt
 		}
+
 		expiresAt = new(t)
 	}
 

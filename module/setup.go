@@ -42,6 +42,7 @@ func (s *Setup) IsInstalled() bool {
 	if err != nil {
 		return false
 	}
+
 	return config != nil
 }
 

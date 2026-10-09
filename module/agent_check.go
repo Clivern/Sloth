@@ -146,6 +146,7 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string) ([]*AgentCh
 			UpdatedAt: template.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
+
 	return list, nil
 }
 
@@ -164,6 +165,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		if req.TTL == 0 {
 			return nil, false, ErrInvalidCheckTiming
 		}
+
 		definition.TTL = req.TTL
 
 	case db.HealthCheckTypeHTTP, db.HealthCheckTypeTCP:
@@ -184,6 +186,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 			if !strings.HasPrefix(req.Path, "/") || strings.ContainsAny(req.Path, " \t\r\n") {
 				return nil, false, ErrInvalidCheckPath
 			}
+
 			definition.Path = req.Path
 			definition.Scheme = req.Scheme
 			if definition.Scheme == "" {
@@ -197,6 +200,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 	default:
 		return nil, false, ErrUnsupportedCheckType
 	}
+
 	raw, _ := json.Marshal(definition)
 
 	if !agentNamePattern.MatchString(agentName) {
@@ -228,10 +232,12 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 	if created {
 		template = &db.AgentCheck{AgentId: agent.Id, CheckId: checkId}
 	}
+
 	template.Name = strings.TrimSpace(req.Name)
 	if template.Name == "" {
 		template.Name = checkId
 	}
+
 	template.Type = req.Type
 	template.Definition = string(raw)
 
@@ -268,6 +274,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 			if err != nil {
 				return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
 			}
+
 			existing = nil
 		}
 
@@ -279,6 +286,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 			if isPull {
 				existing.NextRunAt = &now
 			}
+
 			err = c.HealthCheckRepository.Update(existing)
 		} else {
 			check := &db.HealthCheck{
@@ -301,6 +309,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 				check.Output = &output
 				check.TTLExpiresAt = &expiresAt
 			}
+
 			err = c.HealthCheckRepository.Create(check)
 		}
 		if err != nil {
@@ -361,10 +370,12 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
 	}
+
 	err = c.AgentCheckRepository.Delete(template.Id)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
 	}
+
 	return nil
 }
 
@@ -423,6 +434,7 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 	if check.Definition != nil {
 		_ = json.Unmarshal([]byte(*check.Definition), &definition)
 	}
+
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
 	output := req.Output
@@ -447,5 +459,6 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 	if output != "" {
 		response.Output = &output
 	}
+
 	return response, nil
 }
