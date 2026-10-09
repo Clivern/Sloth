@@ -41,7 +41,7 @@ func NewAuditEventRepository(db *sql.DB) AuditEventRepository {
 	return &AuditEventRepositoryPostgres{db: db}
 }
 
-// Create inserts an audit event row.
+// Create inserts an audit event row. TODO: remove if not used in future.
 func (r *AuditEventRepositoryPostgres) Create(event *AuditEvent) error {
 	id, err := NewId()
 	if err != nil {

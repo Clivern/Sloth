@@ -102,7 +102,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 	).Scan(&instance.CreatedAt, &instance.UpdatedAt)
 }
 
-// GetById returns an agent instance by id.
+// GetById returns an agent instance by id. TODO: remove if not used in future.
 func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
@@ -285,7 +285,7 @@ func NewAgentInstanceMetaRepository(db *sql.DB) AgentInstanceMetaRepository {
 	return &AgentInstanceMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts an agent instance metadata row.
+// Create inserts an agent instance metadata row. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -304,7 +304,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Create(id Id, key, value string) e
 	return err
 }
 
-// Get returns agent instance metadata by key.
+// Get returns agent instance metadata by key. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInstanceMeta, error) {
 	meta := &AgentInstanceMeta{}
 	err := r.db.QueryRow(
@@ -328,7 +328,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInst
 	return meta, err
 }
 
-// Update updates an existing agent instance metadata row.
+// Update updates an existing agent instance metadata row. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE agent_instances_meta
@@ -343,7 +343,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Update(id Id, key, value string) e
 	return err
 }
 
-// Delete deletes an agent instance metadata row.
+// Delete deletes an agent instance metadata row. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM agent_instances_meta WHERE agent_instance_id = $1 AND key = $2`,
@@ -354,7 +354,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByAgentInstanceId lists agent instance metadata rows.
+// ListByAgentInstanceId lists agent instance metadata rows. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*AgentInstanceMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_instance_id, key, value #>> '{}', created_at, updated_at
@@ -390,7 +390,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*A
 	return list, rows.Err()
 }
 
-// Upsert creates or updates agent instance metadata.
+// Upsert creates or updates agent instance metadata. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

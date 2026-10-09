@@ -99,7 +99,7 @@ func (r *SessionRepositoryPostgres) GetByToken(token string) (*Session, error) {
 	return s, err
 }
 
-// GetById returns a session by Id
+// GetById returns a session by Id. TODO: remove if not used in future.
 func (r *SessionRepositoryPostgres) GetById(id Id) (*Session, error) {
 	s := &Session{}
 	err := r.db.QueryRow(
@@ -174,7 +174,7 @@ func (r *SessionRepositoryPostgres) Delete(id Id) error {
 	return err
 }
 
-// DeleteByToken removes a session by token
+// DeleteByToken removes a session by token. TODO: remove if not used in future.
 func (r *SessionRepositoryPostgres) DeleteByToken(token string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM user_sessions WHERE token = $1`,
@@ -208,7 +208,7 @@ func (r *SessionRepositoryPostgres) DeleteExpired() (int64, error) {
 	return result.RowsAffected()
 }
 
-// IsValid checks if a session is valid
+// IsValid checks if a session is valid. TODO: remove if not used in future.
 func (r *SessionRepositoryPostgres) IsValid(token string) (bool, error) {
 	session, err := r.GetByToken(token)
 	if err != nil {
@@ -221,7 +221,7 @@ func (r *SessionRepositoryPostgres) IsValid(token string) (bool, error) {
 	return session.ExpiresAt.After(time.Now().UTC()), nil
 }
 
-// UpdateExpiration updates the expiration time of a session
+// UpdateExpiration updates the expiration time of a session. TODO: remove if not used in future.
 func (r *SessionRepositoryPostgres) UpdateExpiration(id Id, expiresAt time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE user_sessions
@@ -248,7 +248,7 @@ func (r *SessionRepositoryPostgres) Count() (int64, error) {
 	return count, err
 }
 
-// CountByUserId returns the total number of sessions by user Id
+// CountByUserId returns the total number of sessions by user Id. TODO: remove if not used in future.
 func (r *SessionRepositoryPostgres) CountByUserId(userId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(

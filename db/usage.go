@@ -41,7 +41,7 @@ func NewUsageRepository(db *sql.DB) UsageRepository {
 	return &UsageRepositoryPostgres{db: db}
 }
 
-// Create inserts an usage row.
+// Create inserts an usage row. TODO: remove if not used in future.
 func (r *UsageRepositoryPostgres) Create(usage *Usage) error {
 	id, err := NewId()
 	if err != nil {
@@ -69,7 +69,7 @@ func (r *UsageRepositoryPostgres) Create(usage *Usage) error {
 	return err
 }
 
-// GetById returns an usage by id.
+// GetById returns an usage by id. TODO: remove if not used in future.
 func (r *UsageRepositoryPostgres) GetById(id Id) (*Usage, error) {
 	item := &Usage{}
 	err := r.db.QueryRow(
@@ -98,7 +98,7 @@ func (r *UsageRepositoryPostgres) GetById(id Id) (*Usage, error) {
 	return item, err
 }
 
-// ListByWorkspaceId lists usage rows by workspace id.
+// ListByWorkspaceId lists usage rows by workspace id. TODO: remove if not used in future.
 func (r *UsageRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Usage, error) {
 	rows, err := r.db.Query(
 		`SELECT
@@ -142,7 +142,7 @@ func (r *UsageRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offse
 	return list, rows.Err()
 }
 
-// CountByWorkspaceId counts usage rows by workspace id.
+// CountByWorkspaceId counts usage rows by workspace id. TODO: remove if not used in future.
 func (r *UsageRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(

@@ -233,7 +233,7 @@ func NewIntentionMetaRepository(db *sql.DB) IntentionMetaRepository {
 	return &IntentionMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts an intention metadata row.
+// Create inserts an intention metadata row. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -252,7 +252,7 @@ func (r *IntentionMetaRepositoryPostgres) Create(id Id, key, value string) error
 	return err
 }
 
-// Get returns intention metadata by key.
+// Get returns intention metadata by key. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta, error) {
 	meta := &IntentionMeta{}
 	err := r.db.QueryRow(
@@ -276,7 +276,7 @@ func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta
 	return meta, err
 }
 
-// Update updates an existing intention metadata row.
+// Update updates an existing intention metadata row. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE intentions_meta
@@ -291,7 +291,7 @@ func (r *IntentionMetaRepositoryPostgres) Update(id Id, key, value string) error
 	return err
 }
 
-// Delete deletes an intention metadata row.
+// Delete deletes an intention metadata row. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM intentions_meta WHERE intention_id = $1 AND key = $2`,
@@ -302,7 +302,7 @@ func (r *IntentionMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByIntentionId lists intention metadata rows.
+// ListByIntentionId lists intention metadata rows. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) ListByIntentionId(id Id) ([]*IntentionMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, intention_id, key, value #>> '{}', created_at, updated_at
@@ -338,7 +338,7 @@ func (r *IntentionMetaRepositoryPostgres) ListByIntentionId(id Id) ([]*Intention
 	return list, rows.Err()
 }
 
-// Upsert creates or updates intention metadata.
+// Upsert creates or updates intention metadata. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

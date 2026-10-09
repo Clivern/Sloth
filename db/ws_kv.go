@@ -143,7 +143,7 @@ func (r *WorkspaceKeyValueRepositoryPostgres) ListByPrefix(workspaceId Id, prefi
 	return list, rows.Err()
 }
 
-// DeleteExpired removes rows that have passed their expiry.
+// DeleteExpired removes rows that have passed their expiry. TODO: remove if not used in future.
 func (r *WorkspaceKeyValueRepositoryPostgres) DeleteExpired() (int64, error) {
 	result, err := r.db.Exec(
 		`DELETE FROM workspace_kv WHERE expires_at IS NOT NULL AND expires_at <= $1`,

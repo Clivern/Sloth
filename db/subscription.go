@@ -85,7 +85,7 @@ func (r *SubscriptionRepositoryPostgres) Create(subscription *Subscription) erro
 	return err
 }
 
-// GetById returns a subscription by id.
+// GetById returns a subscription by id. TODO: remove if not used in future.
 func (r *SubscriptionRepositoryPostgres) GetById(id Id) (*Subscription, error) {
 	item := &Subscription{}
 	err := r.db.QueryRow(
@@ -186,7 +186,7 @@ func NewSubscriptionMetaRepository(db *sql.DB) SubscriptionMetaRepository {
 	return &SubscriptionMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts a subscription metadata row.
+// Create inserts a subscription metadata row. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -202,7 +202,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Create(id Id, key, value string) er
 	return err
 }
 
-// Get returns subscription metadata by key.
+// Get returns subscription metadata by key. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) Get(id Id, key string) (*SubscriptionMeta, error) {
 	meta := &SubscriptionMeta{}
 	err := r.db.QueryRow(
@@ -226,7 +226,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Get(id Id, key string) (*Subscripti
 	return meta, err
 }
 
-// Update updates an existing subscription metadata row.
+// Update updates an existing subscription metadata row. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE subscriptions_meta
@@ -238,7 +238,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Update(id Id, key, value string) er
 	return err
 }
 
-// Delete deletes a subscription metadata row.
+// Delete deletes a subscription metadata row. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM subscriptions_meta
@@ -249,7 +249,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListBySubscriptionId lists subscription metadata rows by subscription id.
+// ListBySubscriptionId lists subscription metadata rows by subscription id. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) ListBySubscriptionId(id Id) ([]*SubscriptionMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, subscription_id, key, value #>> '{}', created_at, updated_at
@@ -285,7 +285,7 @@ func (r *SubscriptionMetaRepositoryPostgres) ListBySubscriptionId(id Id) ([]*Sub
 	return list, rows.Err()
 }
 
-// Upsert creates or updates subscription metadata.
+// Upsert creates or updates subscription metadata. TODO: remove if not used in future.
 func (r *SubscriptionMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

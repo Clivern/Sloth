@@ -53,7 +53,7 @@ func NewTrafficRepository(db *sql.DB) TrafficRepository {
 	return &TrafficRepositoryPostgres{db: db}
 }
 
-// Create inserts a traffic call row.
+// Create inserts a traffic call row. TODO: remove if not used in future.
 func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 	id, err := NewId()
 	if err != nil {

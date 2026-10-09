@@ -45,7 +45,7 @@ func NewAgentIdentityRepository(db *sql.DB) AgentIdentityRepository {
 	return &AgentIdentityRepositoryPostgres{db: db}
 }
 
-// Create inserts an agent identity row.
+// Create inserts an agent identity row. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) Create(identity *AgentIdentity) error {
 	id, err := NewId()
 	if err != nil {
@@ -67,7 +67,7 @@ func (r *AgentIdentityRepositoryPostgres) Create(identity *AgentIdentity) error 
 	).Scan(&identity.CreatedAt, &identity.UpdatedAt)
 }
 
-// GetById returns an agent identity by id.
+// GetById returns an agent identity by id. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error) {
 	identity := &AgentIdentity{}
 	err := r.db.QueryRow(
@@ -92,7 +92,7 @@ func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error)
 	return identity, err
 }
 
-// GetByAgentAndName returns an agent identity by agent and name.
+// GetByAgentAndName returns an agent identity by agent and name. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name string) (*AgentIdentity, error) {
 	identity := &AgentIdentity{}
 	err := r.db.QueryRow(
@@ -118,7 +118,7 @@ func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name str
 	return identity, err
 }
 
-// Update updates an agent identity row.
+// Update updates an agent identity row. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) Update(identity *AgentIdentity) error {
 	_, err := r.db.Exec(
 		`UPDATE agent_identity
@@ -135,14 +135,14 @@ func (r *AgentIdentityRepositoryPostgres) Update(identity *AgentIdentity) error 
 	return err
 }
 
-// Delete removes an agent identity row.
+// Delete removes an agent identity row. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_identity WHERE id = $1`, id.String())
 
 	return err
 }
 
-// ListByAgentId lists the identity rows of an agent.
+// ListByAgentId lists the identity rows of an agent. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIdentity, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
@@ -180,7 +180,7 @@ func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIde
 	return list, rows.Err()
 }
 
-// ListActiveByAgentId lists the active identity rows of an agent.
+// ListActiveByAgentId lists the active identity rows of an agent. TODO: remove if not used in future.
 func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentIdentity, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at

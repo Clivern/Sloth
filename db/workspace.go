@@ -271,7 +271,7 @@ func NewWorkspaceMetaRepository(db *sql.DB) WorkspaceMetaRepository {
 	return &WorkspaceMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts a workspace metadata row.
+// Create inserts a workspace metadata row. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -290,7 +290,7 @@ func (r *WorkspaceMetaRepositoryPostgres) Create(id Id, key, value string) error
 	return err
 }
 
-// Get returns workspace metadata by key.
+// Get returns workspace metadata by key. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) Get(id Id, key string) (*WorkspaceMeta, error) {
 	meta := &WorkspaceMeta{}
 	err := r.db.QueryRow(
@@ -314,7 +314,7 @@ func (r *WorkspaceMetaRepositoryPostgres) Get(id Id, key string) (*WorkspaceMeta
 	return meta, err
 }
 
-// Update updates an existing workspace metadata row.
+// Update updates an existing workspace metadata row. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE workspaces_meta
@@ -329,7 +329,7 @@ func (r *WorkspaceMetaRepositoryPostgres) Update(id Id, key, value string) error
 	return err
 }
 
-// Delete deletes a workspace metadata row.
+// Delete deletes a workspace metadata row. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM workspaces_meta
@@ -341,7 +341,7 @@ func (r *WorkspaceMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByWorkspaceId lists workspace metadata rows by workspace id.
+// ListByWorkspaceId lists workspace metadata rows by workspace id. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) ListByWorkspaceId(id Id) ([]*WorkspaceMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, key, value, created_at, updated_at
@@ -377,7 +377,7 @@ func (r *WorkspaceMetaRepositoryPostgres) ListByWorkspaceId(id Id) ([]*Workspace
 	return list, rows.Err()
 }
 
-// Upsert creates or updates workspace metadata.
+// Upsert creates or updates workspace metadata. TODO: remove if not used in future.
 func (r *WorkspaceMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

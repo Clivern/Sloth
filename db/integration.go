@@ -65,7 +65,7 @@ func NewIntegrationRepository(db *sql.DB) IntegrationRepository {
 
 // --- Postgres ---
 
-// Create inserts a row
+// Create inserts a row. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) Create(integration *Integration) error {
 	id, err := NewId()
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *IntegrationRepositoryPostgres) Create(integration *Integration) error {
 	return err
 }
 
-// GetById returns a integration by Id
+// GetById returns a integration by Id. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) GetById(id Id) (*Integration, error) {
 	inv := &Integration{}
 	err := r.db.QueryRow(
@@ -113,7 +113,7 @@ func (r *IntegrationRepositoryPostgres) GetById(id Id) (*Integration, error) {
 	return inv, err
 }
 
-// Update updates a integration
+// Update updates a integration. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) Update(integration *Integration) error {
 	_, err := r.db.Exec(
 		`UPDATE integrations
@@ -135,7 +135,7 @@ func (r *IntegrationRepositoryPostgres) Update(integration *Integration) error {
 	return err
 }
 
-// Delete removes a integration
+// Delete removes a integration. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(
 		`DELETE FROM integrations WHERE id = $1`,
@@ -145,7 +145,7 @@ func (r *IntegrationRepositoryPostgres) Delete(id Id) error {
 	return err
 }
 
-// ListByWorkspaceId returns a list of integrations by workspace Id
+// ListByWorkspaceId returns a list of integrations by workspace Id. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Integration, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, type, name, config, created_at, updated_at
@@ -183,7 +183,7 @@ func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit,
 	return list, rows.Err()
 }
 
-// CountByWorkspaceId returns the total number of integrations by workspace Id
+// CountByWorkspaceId returns the total number of integrations by workspace Id. TODO: remove if not used in future.
 func (r *IntegrationRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
@@ -201,7 +201,7 @@ func NewIntegrationMetaRepository(db *sql.DB) IntegrationMetaRepository {
 	return &IntegrationMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts an integration metadata row.
+// Create inserts an integration metadata row. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -217,7 +217,7 @@ func (r *IntegrationMetaRepositoryPostgres) Create(id Id, key, value string) err
 	return err
 }
 
-// Get returns integration metadata by key.
+// Get returns integration metadata by key. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) Get(id Id, key string) (*IntegrationMeta, error) {
 	meta := &IntegrationMeta{}
 	err := r.db.QueryRow(
@@ -233,7 +233,7 @@ func (r *IntegrationMetaRepositoryPostgres) Get(id Id, key string) (*Integration
 	return meta, err
 }
 
-// Update updates an existing integration metadata row.
+// Update updates an existing integration metadata row. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE integrations_meta
@@ -245,7 +245,7 @@ func (r *IntegrationMetaRepositoryPostgres) Update(id Id, key, value string) err
 	return err
 }
 
-// Delete deletes an integration metadata row.
+// Delete deletes an integration metadata row. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM integrations_meta
@@ -256,7 +256,7 @@ func (r *IntegrationMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByIntegrationId lists integration metadata rows by integration id.
+// ListByIntegrationId lists integration metadata rows by integration id. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) ListByIntegrationId(id Id) ([]*IntegrationMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, integration_id, key, value, created_at, updated_at
@@ -285,7 +285,7 @@ func (r *IntegrationMetaRepositoryPostgres) ListByIntegrationId(id Id) ([]*Integ
 	return list, rows.Err()
 }
 
-// Upsert creates or updates integration metadata.
+// Upsert creates or updates integration metadata. TODO: remove if not used in future.
 func (r *IntegrationMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

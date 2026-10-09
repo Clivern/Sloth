@@ -72,7 +72,7 @@ func NewAgentProtectionRepository(db *sql.DB) AgentProtectionRepository {
 	return &AgentProtectionRepositoryPostgres{db: db}
 }
 
-// Create inserts an agent protection row.
+// Create inserts an agent protection row. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) error {
 	id, err := NewId()
 	if err != nil {
@@ -94,7 +94,7 @@ func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) 
 	).Scan(&protection.CreatedAt, &protection.UpdatedAt)
 }
 
-// GetById returns an agent protection by id.
+// GetById returns an agent protection by id. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, error) {
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
@@ -119,7 +119,7 @@ func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, er
 	return protection, err
 }
 
-// GetByAgentAndName returns an agent protection by agent and name.
+// GetByAgentAndName returns an agent protection by agent and name. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name string) (*AgentProtection, error) {
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
@@ -145,7 +145,7 @@ func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name s
 	return protection, err
 }
 
-// Update updates an agent protection row.
+// Update updates an agent protection row. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) Update(protection *AgentProtection) error {
 	_, err := r.db.Exec(
 		`UPDATE agent_protection
@@ -162,14 +162,14 @@ func (r *AgentProtectionRepositoryPostgres) Update(protection *AgentProtection) 
 	return err
 }
 
-// Delete removes an agent protection row.
+// Delete removes an agent protection row. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_protection WHERE id = $1`, id.String())
 
 	return err
 }
 
-// ListByAgentId lists the protection rows of an agent.
+// ListByAgentId lists the protection rows of an agent. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentProtection, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
@@ -207,7 +207,7 @@ func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentP
 	return list, rows.Err()
 }
 
-// ListActiveByAgentId lists the active protection rows of an agent.
+// ListActiveByAgentId lists the active protection rows of an agent. TODO: remove if not used in future.
 func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentProtection, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
@@ -250,7 +250,7 @@ func NewAgentProtectionTokenRepository(db *sql.DB) AgentProtectionTokenRepositor
 	return &AgentProtectionTokenRepositoryPostgres{db: db}
 }
 
-// Create inserts an agent protection token row.
+// Create inserts an agent protection token row. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) Create(token *AgentProtectionToken) error {
 	id, err := NewId()
 	if err != nil {
@@ -273,7 +273,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) Create(token *AgentProtectionTo
 	).Scan(&token.CreatedAt, &token.UpdatedAt)
 }
 
-// GetById returns an agent protection token by id.
+// GetById returns an agent protection token by id. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) GetById(id Id) (*AgentProtectionToken, error) {
 	token := &AgentProtectionToken{}
 	err := r.db.QueryRow(
@@ -298,7 +298,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetById(id Id) (*AgentProtectio
 	return token, err
 }
 
-// GetByTokenHash returns a non-revoked, non-expired token by hash.
+// GetByTokenHash returns a non-revoked, non-expired token by hash. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string) (*AgentProtectionToken, error) {
 	token := &AgentProtectionToken{}
 	err := r.db.QueryRow(
@@ -326,7 +326,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string
 	return token, err
 }
 
-// ListByProtectionId lists tokens for a protection row.
+// ListByProtectionId lists tokens for a protection row. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId Id) ([]*AgentProtectionToken, error) {
 	rows, err := r.db.Query(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
@@ -364,7 +364,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId
 	return list, rows.Err()
 }
 
-// Revoke marks a token as revoked.
+// Revoke marks a token as revoked. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) Revoke(id Id) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
@@ -378,7 +378,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) Revoke(id Id) error {
 	return err
 }
 
-// DeleteExpired removes expired token rows.
+// DeleteExpired removes expired token rows. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) DeleteExpired() (int64, error) {
 	result, err := r.db.Exec(
 		`DELETE FROM agent_protection_tokens WHERE expires_at <= $1`,

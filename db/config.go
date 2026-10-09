@@ -83,7 +83,7 @@ func (r *ConfigRepositoryPostgres) Update(key, value string) error {
 	return err
 }
 
-// Delete removes a config
+// Delete removes a config. TODO: remove if not used in future.
 func (r *ConfigRepositoryPostgres) Delete(key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM configs WHERE key = $1`,
@@ -93,7 +93,7 @@ func (r *ConfigRepositoryPostgres) Delete(key string) error {
 	return err
 }
 
-// List returns a list of configs
+// List returns a list of configs. TODO: remove if not used in future.
 func (r *ConfigRepositoryPostgres) List() ([]*Config, error) {
 	rows, err := r.db.Query(
 		`SELECT id, key, value #>> '{}', created_at, updated_at

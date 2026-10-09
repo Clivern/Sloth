@@ -37,7 +37,7 @@ func NewPasswordResetTokenRepository(db *sql.DB) PasswordResetTokenRepository {
 
 // --- Postgres ---
 
-// Create inserts a password reset token row.
+// Create inserts a password reset token row. TODO: remove if not used in future.
 func (r *PasswordResetTokenRepositoryPostgres) Create(t *PasswordResetToken) error {
 	id, err := NewId()
 	if err != nil {
@@ -58,7 +58,7 @@ func (r *PasswordResetTokenRepositoryPostgres) Create(t *PasswordResetToken) err
 	return err
 }
 
-// GetByToken returns a token by its string value.
+// GetByToken returns a token by its string value. TODO: remove if not used in future.
 func (r *PasswordResetTokenRepositoryPostgres) GetByToken(token string) (*PasswordResetToken, error) {
 	tok := &PasswordResetToken{}
 	err := r.db.QueryRow(
@@ -85,7 +85,7 @@ func (r *PasswordResetTokenRepositoryPostgres) GetByToken(token string) (*Passwo
 	return tok, err
 }
 
-// Delete removes a password reset token by Id.
+// Delete removes a password reset token by Id. TODO: remove if not used in future.
 func (r *PasswordResetTokenRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(
 		`DELETE FROM password_reset_tokens WHERE id = $1`,
@@ -95,7 +95,7 @@ func (r *PasswordResetTokenRepositoryPostgres) Delete(id Id) error {
 	return err
 }
 
-// DeleteByToken removes a password reset token by token string.
+// DeleteByToken removes a password reset token by token string. TODO: remove if not used in future.
 func (r *PasswordResetTokenRepositoryPostgres) DeleteByToken(token string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM password_reset_tokens WHERE token = $1`,
@@ -105,7 +105,7 @@ func (r *PasswordResetTokenRepositoryPostgres) DeleteByToken(token string) error
 	return err
 }
 
-// DeleteExpired removes expired tokens and returns the count deleted.
+// DeleteExpired removes expired tokens and returns the count deleted. TODO: remove if not used in future.
 func (r *PasswordResetTokenRepositoryPostgres) DeleteExpired() (int64, error) {
 	result, err := r.db.Exec(
 		`DELETE FROM password_reset_tokens

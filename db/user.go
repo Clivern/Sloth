@@ -175,7 +175,7 @@ func (r *UserRepositoryPostgres) GetById(id Id) (*User, error) {
 	return user, err
 }
 
-// GetBot returns the platform bot user.
+// GetBot returns the platform bot user. TODO: remove if not used in future.
 func (r *UserRepositoryPostgres) GetBot() (*User, error) {
 	return r.GetById(BotUserId)
 }
@@ -344,7 +344,7 @@ func (r *UserRepositoryPostgres) UpdateLastLogin(id Id) error {
 	return err
 }
 
-// Delete removes a user
+// Delete removes a user. TODO: remove if not used in future.
 func (r *UserRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(
 		`DELETE FROM users WHERE id = $1`,
@@ -354,7 +354,7 @@ func (r *UserRepositoryPostgres) Delete(id Id) error {
 	return err
 }
 
-// List returns a list of users
+// List returns a list of users. TODO: remove if not used in future.
 func (r *UserRepositoryPostgres) List(limit, offset int) ([]*User, error) {
 	rows, err := r.db.Query(
 		`SELECT
@@ -416,7 +416,7 @@ func NewUserMetaRepository(db *sql.DB) UserMetaRepository {
 	return &UserMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts a user meta
+// Create inserts a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -435,7 +435,7 @@ func (r *UserMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	return err
 }
 
-// Get returns a user meta
+// Get returns a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Get(id Id, key string) (*UserMeta, error) {
 	meta := &UserMeta{}
 	err := r.db.QueryRow(
@@ -459,7 +459,7 @@ func (r *UserMetaRepositoryPostgres) Get(id Id, key string) (*UserMeta, error) {
 	return meta, err
 }
 
-// Update updates a user meta
+// Update updates a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE users_meta
@@ -476,7 +476,7 @@ func (r *UserMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	return err
 }
 
-// Delete removes a user meta
+// Delete removes a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM users_meta WHERE user_id = $1 AND key = $2`,
@@ -487,7 +487,7 @@ func (r *UserMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByUser returns a list of user meta
+// ListByUser returns a list of user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) ListByUser(id Id) ([]*UserMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, key, value, user_id, created_at, updated_at
@@ -522,7 +522,7 @@ func (r *UserMetaRepositoryPostgres) ListByUser(id Id) ([]*UserMeta, error) {
 	return list, rows.Err()
 }
 
-// Upsert upserts a user meta
+// Upsert upserts a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

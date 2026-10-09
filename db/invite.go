@@ -109,7 +109,7 @@ func (r *UserInviteRepositoryPostgres) GetById(id Id) (*UserInvite, error) {
 	return u, err
 }
 
-// GetByToken returns a user invite by token
+// GetByToken returns a user invite by token. TODO: remove if not used in future.
 func (r *UserInviteRepositoryPostgres) GetByToken(token string) (*UserInvite, error) {
 	u := &UserInvite{}
 	err := r.db.QueryRow(
@@ -187,7 +187,7 @@ func (r *UserInviteRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, 
 	return list, rows.Err()
 }
 
-// ListByEmail returns a paginated list of invites for an email address.
+// ListByEmail returns a paginated list of invites for an email address. TODO: remove if not used in future.
 func (r *UserInviteRepositoryPostgres) ListByEmail(email string, limit, offset int) ([]*UserInvite, error) {
 	if limit <= 0 {
 		limit = 50
@@ -347,7 +347,7 @@ func (r *UserInviteRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64
 	return count, err
 }
 
-// CountByEmail returns the total number of user invites for an email address.
+// CountByEmail returns the total number of user invites for an email address. TODO: remove if not used in future.
 func (r *UserInviteRepositoryPostgres) CountByEmail(email string) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(

@@ -65,7 +65,7 @@ func (r *WorkspaceUserRepositoryPostgres) Create(m *WorkspaceUser) error {
 	return err
 }
 
-// GetById returns a workspace user by Id
+// GetById returns a workspace user by Id. TODO: remove if not used in future.
 func (r *WorkspaceUserRepositoryPostgres) GetById(id Id) (*WorkspaceUser, error) {
 	m := &WorkspaceUser{}
 	err := r.db.QueryRow(
@@ -135,7 +135,7 @@ func (r *WorkspaceUserRepositoryPostgres) Delete(id Id) error {
 	return err
 }
 
-// List returns a list of workspace users
+// List returns a list of workspace users. TODO: remove if not used in future.
 func (r *WorkspaceUserRepositoryPostgres) List(limit, offset int) ([]*WorkspaceUser, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, user_id, role, created_at, updated_at
@@ -171,7 +171,7 @@ func (r *WorkspaceUserRepositoryPostgres) List(limit, offset int) ([]*WorkspaceU
 	return list, rows.Err()
 }
 
-// Count returns the total number of workspace users
+// Count returns the total number of workspace users. TODO: remove if not used in future.
 func (r *WorkspaceUserRepositoryPostgres) Count() (int64, error) {
 	var count int64
 	err := r.db.QueryRow(

@@ -128,7 +128,7 @@ func (r *AsyncTaskRepositoryPostgres) Complete(id Id, result string) error {
 	return err
 }
 
-// Fail marks a task as failed.
+// Fail marks a task as failed. TODO: remove if not used in future.
 func (r *AsyncTaskRepositoryPostgres) Fail(id Id, message string) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
@@ -217,7 +217,7 @@ func NewAsyncTaskMetaRepository(db *sql.DB) AsyncTaskMetaRepository {
 	return &AsyncTaskMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts an async task metadata row.
+// Create inserts an async task metadata row. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -233,7 +233,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Create(id Id, key, value string) error
 	return err
 }
 
-// Get returns async task metadata by key.
+// Get returns async task metadata by key. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) Get(id Id, key string) (*AsyncTaskMeta, error) {
 	meta := &AsyncTaskMeta{}
 	err := r.db.QueryRow(
@@ -256,7 +256,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Get(id Id, key string) (*AsyncTaskMeta
 	return meta, err
 }
 
-// Update updates an existing async task metadata row.
+// Update updates an existing async task metadata row. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE async_tasks_meta
@@ -268,7 +268,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Update(id Id, key, value string) error
 	return err
 }
 
-// Delete deletes an async task metadata row.
+// Delete deletes an async task metadata row. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM async_tasks_meta
@@ -279,7 +279,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByAsyncTaskId lists async task metadata rows by async task id.
+// ListByAsyncTaskId lists async task metadata rows by async task id. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) ListByAsyncTaskId(id Id) ([]*AsyncTaskMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, async_task_id, key, value #>> '{}', created_at, updated_at
@@ -315,7 +315,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) ListByAsyncTaskId(id Id) ([]*AsyncTask
 	return list, rows.Err()
 }
 
-// Upsert creates or updates async task metadata.
+// Upsert creates or updates async task metadata. TODO: remove if not used in future.
 func (r *AsyncTaskMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {

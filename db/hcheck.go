@@ -134,7 +134,7 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	).Scan(&check.CreatedAt, &check.UpdatedAt)
 }
 
-// GetById returns a health check by id.
+// GetById returns a health check by id. TODO: remove if not used in future.
 func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
@@ -311,7 +311,7 @@ func (r *HealthCheckRepositoryPostgres) Pass(id Id, output string, ttlExpiresAt 
 	return err
 }
 
-// Warn marks a check warning. The instance stays in discovery.
+// Warn marks a check warning. The instance stays in discovery. TODO: remove if not used in future.
 func (r *HealthCheckRepositoryPostgres) Warn(id Id, output string) error {
 	now := time.Now().UTC()
 	var raw *string
@@ -332,7 +332,7 @@ func (r *HealthCheckRepositoryPostgres) Warn(id Id, output string) error {
 	return err
 }
 
-// Fail marks a check critical and drops the instance from discovery.
+// Fail marks a check critical and drops the instance from discovery. TODO: remove if not used in future.
 func (r *HealthCheckRepositoryPostgres) Fail(id Id, output string) error {
 	now := time.Now().UTC()
 	var raw *string
@@ -376,7 +376,7 @@ func (r *HealthCheckRepositoryPostgres) Report(id Id, status, output string, ttl
 	return err
 }
 
-// ClaimDue locks due http and tcp checks and pushes their next run out by hold.
+// ClaimDue locks due http and tcp checks and pushes their next run out by hold. TODO: remove if not used in future.
 func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold time.Duration) ([]*HealthCheck, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -446,7 +446,7 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 	return list, tx.Commit()
 }
 
-// Record stores the result of a probe and schedules the next one.
+// Record stores the result of a probe and schedules the next one. TODO: remove if not used in future.
 func (r *HealthCheckRepositoryPostgres) Record(id Id, status, output string, nextRunAt time.Time) error {
 	now := time.Now().UTC()
 	var raw *string
@@ -473,7 +473,7 @@ func NewHealthCheckMetaRepository(db *sql.DB) HealthCheckMetaRepository {
 	return &HealthCheckMetaRepositoryPostgres{db: db}
 }
 
-// Create inserts a health check metadata row.
+// Create inserts a health check metadata row. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	metaId, err := NewId()
 	if err != nil {
@@ -492,7 +492,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Create(id Id, key, value string) err
 	return err
 }
 
-// Get returns health check metadata by key.
+// Get returns health check metadata by key. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheckMeta, error) {
 	meta := &HealthCheckMeta{}
 	err := r.db.QueryRow(
@@ -516,7 +516,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheck
 	return meta, err
 }
 
-// Update updates an existing health check metadata row.
+// Update updates an existing health check metadata row. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
 		`UPDATE health_checks_meta
@@ -531,7 +531,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Update(id Id, key, value string) err
 	return err
 }
 
-// Delete deletes a health check metadata row.
+// Delete deletes a health check metadata row. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
 		`DELETE FROM health_checks_meta WHERE health_check_id = $1 AND key = $2`,
@@ -542,7 +542,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Delete(id Id, key string) error {
 	return err
 }
 
-// ListByHealthCheckId lists health check metadata rows.
+// ListByHealthCheckId lists health check metadata rows. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) ListByHealthCheckId(id Id) ([]*HealthCheckMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, health_check_id, key, value #>> '{}', created_at, updated_at
@@ -578,7 +578,7 @@ func (r *HealthCheckMetaRepositoryPostgres) ListByHealthCheckId(id Id) ([]*Healt
 	return list, rows.Err()
 }
 
-// Upsert creates or updates health check metadata.
+// Upsert creates or updates health check metadata. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	existing, err := r.Get(id, key)
 	if err != nil {
