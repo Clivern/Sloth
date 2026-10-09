@@ -276,7 +276,20 @@
     "failed_delete_session": "Failed to delete session",
     "memory_kind_summary": "Summary",
     "memory_kind_fact": "Fact",
-    "memory_kind_preference": "Preference"
+    "memory_kind_preference": "Preference",
+    "register": "Register agent",
+    "register_title": "Register agent",
+    "register_desc": "Add an agent to this workspace by name with its A2A agent card.",
+    "edit_card_title": "Edit agent card",
+    "edit_card_desc": "Replace the agent card. Instances keep running and pick up the new card.",
+    "name_hint": "Letters, numbers, dots, dashes and underscores. Cannot be changed later.",
+    "version_hint": "Optional. Defaults to the card's version.",
+    "card_json": "Agent card (JSON)",
+    "card_json_hint": "An A2A agent card: name, description, version, url, skills, input and output modes, capabilities.",
+    "invalid_name": "Use 1–100 letters, numbers, dots, dashes or underscores, starting with a letter or number.",
+    "invalid_card_json": "The agent card must be a valid JSON object.",
+    "version_required": "Set a version here or add a \"version\" field to the card.",
+    "already_exists": "An agent named \"{name}\" already exists. Open it to edit its card."
   },
   "members_page": {
     "title": "Members",

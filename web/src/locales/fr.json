@@ -276,7 +276,20 @@
     "failed_delete_session": "Échec de la suppression de la session",
     "memory_kind_summary": "Résumé",
     "memory_kind_fact": "Fait",
-    "memory_kind_preference": "Préférence"
+    "memory_kind_preference": "Préférence",
+    "register": "Enregistrer un agent",
+    "register_title": "Enregistrer un agent",
+    "register_desc": "Ajoutez un agent à cet espace avec son nom et sa carte d'agent A2A.",
+    "edit_card_title": "Modifier la carte d'agent",
+    "edit_card_desc": "Remplacez la carte d'agent. Les instances continuent de tourner et utilisent la nouvelle carte.",
+    "name_hint": "Lettres, chiffres, points, tirets et underscores. Non modifiable ensuite.",
+    "version_hint": "Facultatif. Par défaut, la version de la carte.",
+    "card_json": "Carte d'agent (JSON)",
+    "card_json_hint": "Une carte d'agent A2A : name, description, version, url, skills, modes d'entrée et de sortie, capabilities.",
+    "invalid_name": "Utilisez 1 à 100 lettres, chiffres, points, tirets ou underscores, en commençant par une lettre ou un chiffre.",
+    "invalid_card_json": "La carte d'agent doit être un objet JSON valide.",
+    "version_required": "Indiquez une version ici ou ajoutez un champ « version » à la carte.",
+    "already_exists": "Un agent nommé « {name} » existe déjà. Ouvrez-le pour modifier sa carte."
   },
   "members_page": {
     "title": "Membres",
