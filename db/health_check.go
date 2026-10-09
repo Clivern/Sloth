@@ -22,6 +22,11 @@ const (
 
 	// HealthCheckIDTTL is the check_id for the instance lease.
 	HealthCheckIDTTL = "ttl"
+
+	// HealthCheckSourceLease marks the instance lease check.
+	HealthCheckSourceLease = "lease"
+	// HealthCheckSourceAgent marks a check copied from an agent check template.
+	HealthCheckSourceAgent = "agent"
 )
 
 // HealthCheck is a single row in the health_checks table.
@@ -31,11 +36,13 @@ type HealthCheck struct {
 	CheckId         string
 	Name            string
 	Type            string
+	Source          string
 	Status          string
 	Definition      *string
 	Output          *string
 	TTLExpiresAt    *time.Time
 	LastRunAt       *time.Time
+	NextRunAt       *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -48,9 +55,13 @@ type HealthCheckRepository interface {
 	Update(check *HealthCheck) error
 	Delete(id Id) error
 	ListByAgentInstanceId(agentInstanceId Id) ([]*HealthCheck, error)
+	DeleteByAgentAndCheckId(agentId Id, checkId string) error
 	Pass(id Id, output string, ttlExpiresAt *time.Time) error
 	Warn(id Id, output string) error
 	Fail(id Id, output string) error
+	Report(id Id, status, output string, ttlExpiresAt *time.Time) error
+	ClaimDue(now time.Time, limit int, hold time.Duration) ([]*HealthCheck, error)
+	Record(id Id, status, output string, nextRunAt time.Time) error
 }
 
 type HealthCheckRepositoryPostgres struct {
@@ -81,8 +92,6 @@ type HealthCheckMetaRepositoryPostgres struct {
 	db *sql.DB
 }
 
-const healthCheckColumns = `id, agent_instance_id, check_id, name, type, status, definition, output, ttl_expires_at, last_run_at, created_at, updated_at`
-
 // NewHealthCheckRepository returns the repository for health checks.
 func NewHealthCheckRepository(db *sql.DB) HealthCheckRepository {
 	return &HealthCheckRepositoryPostgres{db: db}
@@ -98,22 +107,27 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	if check.Status == "" {
 		check.Status = HealthCheckStatusCritical
 	}
+	if check.Source == "" {
+		check.Source = HealthCheckSourceAgent
+	}
 
 	return r.db.QueryRow(
 		`INSERT INTO health_checks
-		(id, agent_instance_id, check_id, name, type, status, definition, output, ttl_expires_at, last_run_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10)
+		(id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11, $12)
 		RETURNING created_at, updated_at`,
 		check.Id.String(),
 		check.AgentInstanceId.String(),
 		check.CheckId,
 		check.Name,
 		check.Type,
+		check.Source,
 		check.Status,
 		check.Definition,
 		check.Output,
 		check.TTLExpiresAt,
 		check.LastRunAt,
+		check.NextRunAt,
 	).Scan(&check.CreatedAt, &check.UpdatedAt)
 }
 
@@ -121,11 +135,26 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
-		`SELECT `+healthCheckColumns+`
+		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE id = $1`,
 		id.String(),
-	).Scan(scanHealthCheck(check)...)
+	).Scan(
+		&check.Id,
+		&check.AgentInstanceId,
+		&check.CheckId,
+		&check.Name,
+		&check.Type,
+		&check.Source,
+		&check.Status,
+		&check.Definition,
+		&check.Output,
+		&check.TTLExpiresAt,
+		&check.LastRunAt,
+		&check.NextRunAt,
+		&check.CreatedAt,
+		&check.UpdatedAt,
+	)
 	if isNotFound(err) {
 		return nil, nil
 	}
@@ -136,27 +165,43 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(agentInstanceId Id, checkId string) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
-		`SELECT `+healthCheckColumns+`
+		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE agent_instance_id = $1 AND check_id = $2`,
 		agentInstanceId.String(),
 		checkId,
-	).Scan(scanHealthCheck(check)...)
+	).Scan(
+		&check.Id,
+		&check.AgentInstanceId,
+		&check.CheckId,
+		&check.Name,
+		&check.Type,
+		&check.Source,
+		&check.Status,
+		&check.Definition,
+		&check.Output,
+		&check.TTLExpiresAt,
+		&check.LastRunAt,
+		&check.NextRunAt,
+		&check.CreatedAt,
+		&check.UpdatedAt,
+	)
 	if isNotFound(err) {
 		return nil, nil
 	}
 	return check, err
 }
 
-// Update updates a health check definition.
+// Update updates a health check definition and when it next runs.
 func (r *HealthCheckRepositoryPostgres) Update(check *HealthCheck) error {
 	_, err := r.db.Exec(
 		`UPDATE health_checks
-		SET name = $1, type = $2, definition = $3::jsonb, updated_at = $4
-		WHERE id = $5`,
+		SET name = $1, type = $2, definition = $3::jsonb, next_run_at = $4, updated_at = $5
+		WHERE id = $6`,
 		check.Name,
 		check.Type,
 		check.Definition,
+		check.NextRunAt,
 		time.Now().UTC(),
 		check.Id.String(),
 	)
@@ -172,7 +217,7 @@ func (r *HealthCheckRepositoryPostgres) Delete(id Id) error {
 // ListByAgentInstanceId lists health checks for an instance.
 func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id) ([]*HealthCheck, error) {
 	rows, err := r.db.Query(
-		`SELECT `+healthCheckColumns+`
+		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE agent_instance_id = $1
 		ORDER BY check_id`,
@@ -186,7 +231,22 @@ func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id
 	var list []*HealthCheck
 	for rows.Next() {
 		check := &HealthCheck{}
-		err := rows.Scan(scanHealthCheck(check)...)
+		err := rows.Scan(
+			&check.Id,
+			&check.AgentInstanceId,
+			&check.CheckId,
+			&check.Name,
+			&check.Type,
+			&check.Source,
+			&check.Status,
+			&check.Definition,
+			&check.Output,
+			&check.TTLExpiresAt,
+			&check.LastRunAt,
+			&check.NextRunAt,
+			&check.CreatedAt,
+			&check.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -195,22 +255,86 @@ func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id
 	return list, rows.Err()
 }
 
+// DeleteByAgentAndCheckId removes a template check from every instance of an agent.
+func (r *HealthCheckRepositoryPostgres) DeleteByAgentAndCheckId(agentId Id, checkId string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM health_checks hc
+		USING agent_instances ai
+		WHERE hc.agent_instance_id = ai.id
+			AND ai.agent_id = $1
+			AND hc.check_id = $2
+			AND hc.source = $3`,
+		agentId.String(),
+		checkId,
+		HealthCheckSourceAgent,
+	)
+	return err
+}
+
 // Pass marks a check passing and optionally extends a TTL.
 func (r *HealthCheckRepositoryPostgres) Pass(id Id, output string, ttlExpiresAt *time.Time) error {
-	return r.setStatus(id, HealthCheckStatusPassing, output, ttlExpiresAt)
+	now := time.Now().UTC()
+	var raw *string
+	if output != "" {
+		raw = &output
+	}
+
+	_, err := r.db.Exec(
+		`UPDATE health_checks
+		SET status = $1, output = $2, ttl_expires_at = COALESCE($3, ttl_expires_at),
+			last_run_at = $4, updated_at = $4
+		WHERE id = $5`,
+		HealthCheckStatusPassing,
+		raw,
+		ttlExpiresAt,
+		now,
+		id.String(),
+	)
+	return err
 }
 
 // Warn marks a check warning. The instance stays in discovery.
 func (r *HealthCheckRepositoryPostgres) Warn(id Id, output string) error {
-	return r.setStatus(id, HealthCheckStatusWarning, output, nil)
+	now := time.Now().UTC()
+	var raw *string
+	if output != "" {
+		raw = &output
+	}
+
+	_, err := r.db.Exec(
+		`UPDATE health_checks
+		SET status = $1, output = $2, last_run_at = $3, updated_at = $3
+		WHERE id = $4`,
+		HealthCheckStatusWarning,
+		raw,
+		now,
+		id.String(),
+	)
+	return err
 }
 
 // Fail marks a check critical and drops the instance from discovery.
 func (r *HealthCheckRepositoryPostgres) Fail(id Id, output string) error {
-	return r.setStatus(id, HealthCheckStatusCritical, output, nil)
+	now := time.Now().UTC()
+	var raw *string
+	if output != "" {
+		raw = &output
+	}
+
+	_, err := r.db.Exec(
+		`UPDATE health_checks
+		SET status = $1, output = $2, last_run_at = $3, updated_at = $3
+		WHERE id = $4`,
+		HealthCheckStatusCritical,
+		raw,
+		now,
+		id.String(),
+	)
+	return err
 }
 
-func (r *HealthCheckRepositoryPostgres) setStatus(id Id, status, output string, ttlExpiresAt *time.Time) error {
+// Report sets a check status and output, optionally extending its TTL.
+func (r *HealthCheckRepositoryPostgres) Report(id Id, status, output string, ttlExpiresAt *time.Time) error {
 	now := time.Now().UTC()
 	var raw *string
 	if output != "" {
@@ -231,21 +355,90 @@ func (r *HealthCheckRepositoryPostgres) setStatus(id Id, status, output string, 
 	return err
 }
 
-func scanHealthCheck(check *HealthCheck) []any {
-	return []any{
-		&check.Id,
-		&check.AgentInstanceId,
-		&check.CheckId,
-		&check.Name,
-		&check.Type,
-		&check.Status,
-		&check.Definition,
-		&check.Output,
-		&check.TTLExpiresAt,
-		&check.LastRunAt,
-		&check.CreatedAt,
-		&check.UpdatedAt,
+// ClaimDue locks due http and tcp checks and pushes their next run out by hold.
+func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold time.Duration) ([]*HealthCheck, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
 	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(
+		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
+		FROM health_checks
+		WHERE next_run_at <= $1 AND type IN ($2, $3)
+		ORDER BY next_run_at
+		LIMIT $4
+		FOR UPDATE SKIP LOCKED`,
+		now,
+		HealthCheckTypeHTTP,
+		HealthCheckTypeTCP,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var list []*HealthCheck
+	for rows.Next() {
+		check := &HealthCheck{}
+		err := rows.Scan(
+			&check.Id,
+			&check.AgentInstanceId,
+			&check.CheckId,
+			&check.Name,
+			&check.Type,
+			&check.Source,
+			&check.Status,
+			&check.Definition,
+			&check.Output,
+			&check.TTLExpiresAt,
+			&check.LastRunAt,
+			&check.NextRunAt,
+			&check.CreatedAt,
+			&check.UpdatedAt,
+		)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		list = append(list, check)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	held := now.Add(hold)
+	for _, check := range list {
+		_, err := tx.Exec(`UPDATE health_checks SET next_run_at = $1 WHERE id = $2`, held, check.Id.String())
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return list, tx.Commit()
+}
+
+// Record stores the result of a probe and schedules the next one.
+func (r *HealthCheckRepositoryPostgres) Record(id Id, status, output string, nextRunAt time.Time) error {
+	now := time.Now().UTC()
+	var raw *string
+	if output != "" {
+		raw = &output
+	}
+
+	_, err := r.db.Exec(
+		`UPDATE health_checks
+		SET status = $1, output = $2, last_run_at = $3, next_run_at = $4, updated_at = $3
+		WHERE id = $5`,
+		status,
+		raw,
+		now,
+		nextRunAt,
+		id.String(),
+	)
+	return err
 }
 
 // NewHealthCheckMetaRepository returns the repository for health check metadata.

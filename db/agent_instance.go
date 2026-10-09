@@ -109,7 +109,18 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 		FROM agent_instances
 		WHERE id = $1`,
 		id.String(),
-	).Scan(scanAgentInstance(instance)...)
+	).Scan(
+		&instance.Id,
+		&instance.AgentId,
+		&instance.InstanceId,
+		&instance.Address,
+		&instance.Port,
+		&instance.Datacenter,
+		&instance.Meta,
+		&instance.Status,
+		&instance.CreatedAt,
+		&instance.UpdatedAt,
+	)
 	if isNotFound(err) {
 		return nil, nil
 	}
@@ -125,7 +136,18 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 		WHERE agent_id = $1 AND instance_id = $2`,
 		agentId.String(),
 		instanceId,
-	).Scan(scanAgentInstance(instance)...)
+	).Scan(
+		&instance.Id,
+		&instance.AgentId,
+		&instance.InstanceId,
+		&instance.Address,
+		&instance.Port,
+		&instance.Datacenter,
+		&instance.Meta,
+		&instance.Status,
+		&instance.CreatedAt,
+		&instance.UpdatedAt,
+	)
 	if isNotFound(err) {
 		return nil, nil
 	}
@@ -157,45 +179,13 @@ func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 
 // ListByAgentId lists instances for an agent.
 func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentInstance, error) {
-	return r.list(
+	rows, err := r.db.Query(
 		`SELECT `+agentInstanceColumns+`
 		FROM agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id`,
 		agentId.String(),
 	)
-}
-
-// ListLiveByAgentId lists instances still in the discovery pool.
-// The lease is the TTL health check. An instance is dropped when that TTL has
-// expired, or when any check is critical. Warning checks stay in the pool.
-func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
-	return r.list(
-		`SELECT `+agentInstanceColumns+`
-		FROM agent_instances
-		WHERE agent_id = $1
-			AND EXISTS (
-				SELECT 1 FROM health_checks ttl
-				WHERE ttl.agent_instance_id = agent_instances.id
-					AND ttl.type = $3
-					AND ttl.status <> $4
-					AND ttl.ttl_expires_at > $2
-			)
-			AND NOT EXISTS (
-				SELECT 1 FROM health_checks hc
-				WHERE hc.agent_instance_id = agent_instances.id
-					AND hc.status = $4
-			)
-		ORDER BY instance_id`,
-		agentId.String(),
-		now,
-		HealthCheckTypeTTL,
-		HealthCheckStatusCritical,
-	)
-}
-
-func (r *AgentInstanceRepositoryPostgres) list(query string, args ...any) ([]*AgentInstance, error) {
-	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +194,18 @@ func (r *AgentInstanceRepositoryPostgres) list(query string, args ...any) ([]*Ag
 	var list []*AgentInstance
 	for rows.Next() {
 		instance := &AgentInstance{}
-		err := rows.Scan(scanAgentInstance(instance)...)
+		err := rows.Scan(
+			&instance.Id,
+			&instance.AgentId,
+			&instance.InstanceId,
+			&instance.Address,
+			&instance.Port,
+			&instance.Datacenter,
+			&instance.Meta,
+			&instance.Status,
+			&instance.CreatedAt,
+			&instance.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -213,19 +214,59 @@ func (r *AgentInstanceRepositoryPostgres) list(query string, args ...any) ([]*Ag
 	return list, rows.Err()
 }
 
-func scanAgentInstance(instance *AgentInstance) []any {
-	return []any{
-		&instance.Id,
-		&instance.AgentId,
-		&instance.InstanceId,
-		&instance.Address,
-		&instance.Port,
-		&instance.Datacenter,
-		&instance.Meta,
-		&instance.Status,
-		&instance.CreatedAt,
-		&instance.UpdatedAt,
+// ListLiveByAgentId lists instances with a live lease and no critical or expired checks.
+func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
+	rows, err := r.db.Query(
+		`SELECT `+agentInstanceColumns+`
+		FROM agent_instances
+		WHERE agent_id = $1
+			AND EXISTS (
+				SELECT 1 FROM health_checks lease
+				WHERE lease.agent_instance_id = agent_instances.id
+					AND lease.source = $5
+					AND lease.ttl_expires_at > $2
+			)
+			AND NOT EXISTS (
+				SELECT 1 FROM health_checks hc
+				WHERE hc.agent_instance_id = agent_instances.id
+					AND (
+						hc.status = $4
+						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+					)
+			)
+		ORDER BY instance_id`,
+		agentId.String(),
+		now,
+		HealthCheckTypeTTL,
+		HealthCheckStatusCritical,
+		HealthCheckSourceLease,
+	)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
+
+	var list []*AgentInstance
+	for rows.Next() {
+		instance := &AgentInstance{}
+		err := rows.Scan(
+			&instance.Id,
+			&instance.AgentId,
+			&instance.InstanceId,
+			&instance.Address,
+			&instance.Port,
+			&instance.Datacenter,
+			&instance.Meta,
+			&instance.Status,
+			&instance.CreatedAt,
+			&instance.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, instance)
+	}
+	return list, rows.Err()
 }
 
 // NewAgentInstanceMetaRepository returns the repository for agent instance metadata.
