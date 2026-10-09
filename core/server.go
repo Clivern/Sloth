@@ -150,6 +150,17 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			})
 		})
 
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/discover", a.DiscoverAgentsAction)                                   // TODO: perm for discovery
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Post("/discover/resolve", a.ResolveDiscoverAction)                         // TODO: perm for discovery
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/catalog/skills", a.ListCatalogSkillsAction)                          // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/catalog/skills/{skill}/agents", a.ListCatalogSkillAgentsAction)      // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/catalog/agents/{agentName}/card", a.GetCatalogAgentCardAction)         // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/agents/{agentName}/.well-known/agent-card.json", a.GetAgentCardAction) // TODO: perm for agent card
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Post("/a2a/agents/{agentName}/message:send", a.SendAgentMessageAction)       // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Post("/a2a/skills/{skill}/message:send", a.SendSkillMessageAction)           // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/a2a/tasks/{taskId}", a.GetTaskAction)                                  // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/watch/catalog", a.WatchCatalogAction)                                // TODO: perm for watch
+
 		r.Route("/intentions", func(r chi.Router) {
 			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListIntentions})).Get("/", a.ListIntentionsAction)                   // list intentions
 			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanCreateIntention})).Put("/", a.CreateIntentionAction)                 // create an intention
