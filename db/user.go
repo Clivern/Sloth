@@ -116,8 +116,10 @@ func (r *UserRepositoryPostgres) Create(user *User) error {
 	}
 
 	_, err := r.db.Exec(
-		`INSERT INTO users
-		(id, name, email, pwd_hash, provider, provider_user_id, role, is_active, is_email_verified, email_verify_token, last_login_at, language, theme)
+		`INSERT INTO users (
+			id, name, email, pwd_hash, provider, provider_user_id, role, is_active,
+			is_email_verified, email_verify_token, last_login_at, language, theme
+		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
 		user.Id.String(),
 		user.Name,
