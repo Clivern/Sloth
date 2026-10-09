@@ -4,7 +4,6 @@ app:
   port: ${COGNIT_SERVER_PORT:-8000}
   url: ${COGNIT_SERVER_URL:-http://localhost}
   timeout: ${COGNIT_SERVER_TIMEOUT:-50}
-  checks_workers: ${COGNIT_CHECKS_WORKERS:-16}
 
   encryption:
     key: ${COGNIT_ENCRYPTION_KEY:-}

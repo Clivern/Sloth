@@ -8,8 +8,8 @@ import (
 	"errors"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/module"
 	"github.com/clivern/cognit/pkg/broker"
-	"github.com/clivern/cognit/pkg/pool"
 
 	"github.com/rs/zerolog/log"
 )
@@ -30,20 +30,21 @@ var Registrations []Registration
 
 // Dependencies are the services required by worker handlers.
 type Dependencies struct {
-	Tasks db.AsyncTaskRepository
-	Pool  *pool.Pool
+	Tasks  db.AsyncTaskRepository
+	Checks db.HealthCheckRepository
 }
 
 type handlers struct {
-	tasks db.AsyncTaskRepository
-	pool  *pool.Pool
+	tasks  db.AsyncTaskRepository
+	checks db.HealthCheckRepository
 }
 
 // Register attaches all worker handlers.
 func Register(deps Dependencies) {
-	h := &handlers{tasks: deps.Tasks, pool: deps.Pool}
+	h := &handlers{tasks: deps.Tasks, checks: deps.Checks}
 
 	On(db.AsyncTaskTypeNoop, h.HandleNoop)
+	On(module.HealthCheckRunSubject, h.HandleHealthCheck)
 }
 
 // On registers a queue worker handler for subject.

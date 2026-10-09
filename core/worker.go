@@ -12,11 +12,9 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/broker"
-	"github.com/clivern/cognit/pkg/pool"
 	"github.com/clivern/cognit/worker"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 // RunWorker starts the NATS worker and blocks until shutdown.
@@ -44,14 +42,9 @@ func RunWorker() error {
 
 	nats := client.Config().NATS
 
-	workers, err := pool.New(pool.Options{Size: viper.GetInt("app.checks_workers")})
-	if err != nil {
-		return fmt.Errorf("failed to create worker pool: %w", err)
-	}
-
 	worker.Register(worker.Dependencies{
-		Tasks: db.NewAsyncTaskRepository(db.GetDB(false)),
-		Pool:  workers,
+		Tasks:  db.NewAsyncTaskRepository(db.GetDB(false)),
+		Checks: db.NewHealthCheckRepository(db.GetDB(true)),
 	})
 
 	err = worker.Bind(client, nats.Queue)
@@ -77,13 +70,6 @@ func RunWorker() error {
 	err = client.Conn().Drain()
 	if err != nil {
 		return fmt.Errorf("failed to drain nats connection: %w", err)
-	}
-
-	err = workers.Close(30 * time.Second)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("Timed out waiting for worker goroutines")
 	}
 
 	deadline := time.After(30 * time.Second)
