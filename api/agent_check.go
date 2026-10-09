@@ -34,7 +34,9 @@ func (a *API) ListAgentChecksAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checks, err := a.Check.ListAgentChecks(db.Id(wid), agentName)
+	limit, offset := a.ParsePagination(r)
+
+	result, err := a.Check.ListAgentChecks(db.Id(wid), agentName, limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -64,7 +66,12 @@ func (a *API) ListAgentChecksAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
-		"checks": checks,
+		"checks": result.Checks,
+		"_meta": map[string]any{
+			"limit":  limit,
+			"offset": offset,
+			"total":  result.Total,
+		},
 	})
 }
 

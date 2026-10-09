@@ -80,6 +80,12 @@ type AgentCheckResponse struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+// ListAgentChecksResponse is returned when listing the check templates of an agent.
+type ListAgentChecksResponse struct {
+	Checks []*AgentCheckResponse
+	Total  int64
+}
+
 // Check is the module for agent check templates and instance check reports.
 type Check struct {
 	AgentRepository       db.AgentRepository
@@ -100,8 +106,8 @@ func NewCheck(agents db.AgentRepository, agentChecks db.AgentCheckRepository, in
 	}
 }
 
-// ListAgentChecks returns the check templates of an agent.
-func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string) ([]*AgentCheckResponse, error) {
+// ListAgentChecks returns one page of the check templates of an agent.
+func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offset int) (*ListAgentChecksResponse, error) {
 	if !agentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
@@ -122,7 +128,12 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string) ([]*AgentCh
 		return nil, ErrAgentNotFound
 	}
 
-	templates, err := c.AgentCheckRepository.ListByAgentId(agent.Id)
+	total, err := c.AgentCheckRepository.CountByAgentId(agent.Id)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedListChecks, err)
+	}
+
+	templates, err := c.AgentCheckRepository.ListPageByAgentId(agent.Id, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListChecks, err)
 	}
@@ -147,7 +158,10 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string) ([]*AgentCh
 		})
 	}
 
-	return list, nil
+	return &ListAgentChecksResponse{
+		Checks: list,
+		Total:  total,
+	}, nil
 }
 
 // UpsertAgentCheck creates or replaces a check template and applies it to every instance.
