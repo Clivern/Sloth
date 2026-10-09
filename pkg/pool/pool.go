@@ -15,8 +15,10 @@ import (
 type Options struct {
 	// Size is the maximum number of workers running at once.
 	Size int
+
 	// Nonblocking makes Submit return ErrOverload instead of waiting for a free worker.
 	Nonblocking bool
+
 	// Expiry is how long an idle worker lives before it is cleaned up.
 	Expiry time.Duration
 }
