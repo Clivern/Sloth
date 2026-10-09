@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cognit API Reference</title>
+  <meta name="description" content="HTTP API reference for Cognit, a Service Discovery Registry for AI Agents." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <meta name="theme-color" content="#37352f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Analytics Code -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V7G0HKSRRQ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-V7G0HKSRRQ');
+  </script>
+  <style>
+    body { margin: 0; background: #f7f6f3; }
+  </style>
+</head>
+<body>
+  <!-- The spec lives at the repo root; GitHub Pages only serves docs/, so load it from main -->
+  <script
+    id="api-reference"
+    data-url="https://raw.githubusercontent.com/Clivern/Cognit/main/openapi.yaml"
+    data-configuration='{
+      "theme": "default",
+      "layout": "modern",
+      "defaultOpenAllTags": false,
+      "hideDownloadButton": false,
+      "metaData": { "title": "Cognit API Reference" },
+      "servers": [
+        {
+          "url": "{baseUrl}",
+          "description": "Your Cognit instance",
+          "variables": { "baseUrl": { "default": "http://localhost:8080" } }
+        }
+      ],
+      "customCss": ".scalar-app { --scalar-font: \"Sora\", ui-sans-serif, system-ui, sans-serif; }"
+    }'
+  ></script>
+  <script>
+    // When served locally from the repo root, use the working copy of the spec
+    if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+      document.getElementById('api-reference').dataset.url = '../openapi.yaml';
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.71.0"></script>
+</body>
+</html>
