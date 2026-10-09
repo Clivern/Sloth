@@ -243,6 +243,25 @@ func RunServer(Static embed.FS) error {
 
 	defer module.StopBus()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+
+	scheduler := module.NewScheduler(
+		db.NewHealthCheckRepository(db.GetDB()),
+		db.NewAgentInstanceRepository(db.GetDB()),
+		module.GetBus(),
+	)
+
+	go func() {
+		defer close(done)
+		scheduler.Run(ctx)
+	}()
+
+	defer func() {
+		cancel()
+		<-done
+	}()
+
 	timeout := time.Duration(viper.GetInt("app.timeout")) * time.Second
 
 	srv := &http.Server{
