@@ -5,17 +5,12 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/rs/zerolog/log"
 )
-
-func isNotFound(err error) bool {
-	return errors.Is(err, sql.ErrNoRows)
-}
 
 var (
 	// rwConn holds the primary read-write database connection.
