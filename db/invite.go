@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -102,7 +103,7 @@ func (r *UserInviteRepositoryPostgres) GetById(id Id) (*UserInvite, error) {
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -132,7 +133,7 @@ func (r *UserInviteRepositoryPostgres) GetByToken(token string) (*UserInvite, er
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

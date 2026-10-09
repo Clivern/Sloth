@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -84,7 +85,7 @@ func (r *WorkspaceKeyValueRepositoryPostgres) Get(workspaceId Id, key string) (*
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

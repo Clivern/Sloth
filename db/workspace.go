@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -107,7 +108,7 @@ func (r *WorkspaceRepositoryPostgres) GetById(id Id) (*Workspace, error) {
 		&w.CreatedAt,
 		&w.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -134,7 +135,7 @@ func (r *WorkspaceRepositoryPostgres) GetByHandle(handle string) (*Workspace, er
 		&w.CreatedAt,
 		&w.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -259,7 +260,7 @@ func (r *WorkspaceRepositoryPostgres) GetWorkspaceMembership(workspaceId, userId
 		&m.CreatedAt,
 		&m.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -307,7 +308,7 @@ func (r *WorkspaceMetaRepositoryPostgres) Get(id Id, key string) (*WorkspaceMeta
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

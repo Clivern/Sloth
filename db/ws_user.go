@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -80,7 +81,7 @@ func (r *WorkspaceUserRepositoryPostgres) GetById(id Id) (*WorkspaceUser, error)
 		&m.CreatedAt,
 		&m.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -103,7 +104,7 @@ func (r *WorkspaceUserRepositoryPostgres) GetByWorkspaceAndUser(workspaceId, use
 		&m.CreatedAt,
 		&m.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
