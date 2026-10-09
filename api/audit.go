@@ -26,11 +26,9 @@ func (a *API) ListWorkspaceAuditsAction(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	workspaceId := db.Id(wid)
-
 	limit, offset := a.ParsePagination(r)
 
-	result, err := a.Audit.ListAuditEvents(workspaceId, limit, offset)
+	result, err := a.Audit.ListAuditEvents(db.Id(wid), limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -70,8 +68,6 @@ func (a *API) GetWorkspaceAuditAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workspaceId := db.Id(wid)
-
 	auditId := chi.URLParam(r, "auditId")
 	if lo.IsEmpty(auditId) {
 		a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -80,7 +76,7 @@ func (a *API) GetWorkspaceAuditAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := a.Audit.GetAuditEvent(workspaceId, db.Id(auditId))
+	event, err := a.Audit.GetAuditEvent(db.Id(wid), db.Id(auditId))
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
