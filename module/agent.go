@@ -32,9 +32,10 @@ var agentNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Agent is the module for the workspace agent catalog.
 type Agent struct {
-	AgentRepository     db.AgentRepository
-	InstanceRepository  db.AgentInstanceRepository
-	WorkspaceRepository db.WorkspaceRepository
+	AgentRepository       db.AgentRepository
+	InstanceRepository    db.AgentInstanceRepository
+	HealthCheckRepository db.HealthCheckRepository
+	WorkspaceRepository   db.WorkspaceRepository
 }
 
 // UpsertAgentRequest is the body for registering or replacing an agent card.
@@ -77,11 +78,12 @@ type ListAgentsResponse struct {
 }
 
 // NewAgent creates an agent module with the given repositories.
-func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, workspaces db.WorkspaceRepository) *Agent {
+func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, workspaces db.WorkspaceRepository) *Agent {
 	return &Agent{
-		AgentRepository:     agents,
-		InstanceRepository:  instances,
-		WorkspaceRepository: workspaces,
+		AgentRepository:       agents,
+		InstanceRepository:    instances,
+		HealthCheckRepository: checks,
+		WorkspaceRepository:   workspaces,
 	}
 }
 
@@ -112,18 +114,17 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 		}
 
-		health := db.AgentInstanceStatusCritical
-		if len(instances) > 0 {
-			health = db.AgentInstanceStatusPassing
-		}
-
+		now := time.Now().UTC()
+		statuses := make([]string, 0, len(instances))
 		mapped := make([]*AgentInstanceResponse, 0, len(instances))
 		for _, instance := range instances {
-			if instance.Status == db.AgentInstanceStatusCritical {
-				health = db.AgentInstanceStatusCritical
-			} else if instance.Status == db.AgentInstanceStatusWarning && health != db.AgentInstanceStatusCritical {
-				health = db.AgentInstanceStatusWarning
+			checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 			}
+			status := instanceStatus(checks, now)
+			statuses = append(statuses, status)
+
 			mapped = append(mapped, &AgentInstanceResponse{
 				Id:         instance.Id,
 				InstanceId: instance.InstanceId,
@@ -131,11 +132,12 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 				Port:       instance.Port,
 				Datacenter: instance.Datacenter,
 				Meta:       util.JSONRawFromString(instance.Meta),
-				Status:     instance.Status,
+				Status:     status,
 				CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 				UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 			})
 		}
+		health := worstStatus(statuses)
 
 		list = append(list, &AgentResponse{
 			Id:           item.Id,
@@ -181,18 +183,17 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 	}
 
-	health := db.AgentInstanceStatusCritical
-	if len(instances) > 0 {
-		health = db.AgentInstanceStatusPassing
-	}
-
+	now := time.Now().UTC()
+	statuses := make([]string, 0, len(instances))
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		if instance.Status == db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusCritical
-		} else if instance.Status == db.AgentInstanceStatusWarning && health != db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusWarning
+		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 		}
+		status := instanceStatus(checks, now)
+		statuses = append(statuses, status)
+
 		mapped = append(mapped, &AgentInstanceResponse{
 			Id:         instance.Id,
 			InstanceId: instance.InstanceId,
@@ -200,11 +201,12 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 			Port:       instance.Port,
 			Datacenter: instance.Datacenter,
 			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     instance.Status,
+			Status:     status,
 			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
+	health := worstStatus(statuses)
 
 	return &AgentResponse{
 		Id:           agent.Id,
@@ -293,18 +295,16 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 	}
 
-	health := db.AgentInstanceStatusCritical
-	if len(instances) > 0 {
-		health = db.AgentInstanceStatusPassing
-	}
-
+	now := time.Now().UTC()
+	statuses := make([]string, 0, len(instances))
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		if instance.Status == db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusCritical
-		} else if instance.Status == db.AgentInstanceStatusWarning && health != db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusWarning
+		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 		}
+		status := instanceStatus(checks, now)
+		statuses = append(statuses, status)
 
 		mapped = append(mapped, &AgentInstanceResponse{
 			Id:         instance.Id,
@@ -313,11 +313,12 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 			Port:       instance.Port,
 			Datacenter: instance.Datacenter,
 			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     instance.Status,
+			Status:     status,
 			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
+	health := worstStatus(statuses)
 
 	return &AgentResponse{
 		Id:           existing.Id,

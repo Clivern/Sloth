@@ -34,6 +34,7 @@ type Instance struct {
 	AgentRepository       db.AgentRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
+	AgentCheckRepository  db.AgentCheckRepository
 	WorkspaceRepository   db.WorkspaceRepository
 }
 
@@ -51,6 +52,7 @@ type HealthCheckResponse struct {
 	CheckId      string     `json:"checkId"`
 	Name         string     `json:"name"`
 	Type         string     `json:"type"`
+	Source       string     `json:"source"`
 	Status       string     `json:"status"`
 	Output       *string    `json:"output,omitempty"`
 	TTLExpiresAt *time.Time `json:"ttlExpiresAt,omitempty"`
@@ -58,7 +60,6 @@ type HealthCheckResponse struct {
 }
 
 // InstanceResponse is an instance shaped for API responses.
-// Status is passing while the lease is live, critical once it expires.
 type InstanceResponse struct {
 	Id             db.Id                  `json:"id"`
 	AgentId        db.Id                  `json:"agentId"`
@@ -80,36 +81,21 @@ type LeaseDefinition struct {
 }
 
 // NewInstance creates an instance module with the given repositories.
-func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, workspaces db.WorkspaceRepository) *Instance {
+func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
 	return &Instance{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
+		AgentCheckRepository:  agentChecks,
 		WorkspaceRepository:   workspaces,
 	}
 }
 
-// ListInstances returns the instances of an agent. With passing set, only
-// instances still in the discovery pool are returned.
+// ListInstances returns an agent's instances, only live ones when passing is set.
 func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool) ([]*InstanceResponse, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	agent, err := i.getAgent(workspaceId, agentName, ErrFailedListInstances)
 	if err != nil {
 		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
 	}
 
 	now := time.Now().UTC()
@@ -126,42 +112,10 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 	list := make([]*InstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		item, err := i.toInstanceResponse(instance, now)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 		}
-
-		item := &InstanceResponse{
-			Id:         instance.Id,
-			AgentId:    instance.AgentId,
-			InstanceId: instance.InstanceId,
-			Address:    instance.Address,
-			Port:       instance.Port,
-			Datacenter: instance.Datacenter,
-			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     db.AgentInstanceStatusCritical,
-			Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-		}
-		for _, check := range checks {
-			if check.Type == db.HealthCheckTypeTTL {
-				item.LeaseExpiresAt = check.TTLExpiresAt
-				if check.TTLExpiresAt.After(now) {
-					item.Status = db.AgentInstanceStatusPassing
-				}
-			}
-			item.Checks = append(item.Checks, &HealthCheckResponse{
-				CheckId:      check.CheckId,
-				Name:         check.Name,
-				Type:         check.Type,
-				Status:       check.Status,
-				Output:       check.Output,
-				TTLExpiresAt: check.TTLExpiresAt,
-				LastRunAt:    check.LastRunAt,
-			})
-		}
-
 		list = append(list, item)
 	}
 	return list, nil
@@ -169,27 +123,13 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 // GetInstance returns one instance of an agent.
 func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}
 
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	agent, err := i.getAgent(workspaceId, agentName, ErrFailedGetInstance)
 	if err != nil {
 		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -200,68 +140,22 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		return nil, ErrInstanceNotFound
 	}
 
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	item, err := i.toInstanceResponse(instance, time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
-	}
-
-	now := time.Now().UTC()
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusCritical,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-	for _, check := range checks {
-		if check.Type == db.HealthCheckTypeTTL {
-			item.LeaseExpiresAt = check.TTLExpiresAt
-			if check.TTLExpiresAt.After(now) {
-				item.Status = db.AgentInstanceStatusPassing
-			}
-		}
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Status:       check.Status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
 	}
 	return item, nil
 }
 
-// RegisterInstance creates or updates an instance and starts its lease.
+// RegisterInstance creates or updates an instance, starts its lease and syncs its checks.
 func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest) (*InstanceResponse, bool, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, false, ErrInvalidAgentName
-	}
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
 
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	agent, err := i.getAgent(workspaceId, agentName, ErrFailedRegisterInstance)
 	if err != nil {
 		return nil, false, err
-	}
-	if workspace == nil {
-		return nil, false, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-	}
-	if agent == nil {
-		return nil, false, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -311,6 +205,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			CheckId:         db.HealthCheckIDTTL,
 			Name:            "Lease",
 			Type:            db.HealthCheckTypeTTL,
+			Source:          db.HealthCheckSourceLease,
 			Status:          db.HealthCheckStatusPassing,
 			Definition:      &definition,
 			TTLExpiresAt:    &expiresAt,
@@ -328,64 +223,32 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	templates, err := i.AgentCheckRepository.ListByAgentId(agent.Id)
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	}
+	err = syncInstanceChecks(i.HealthCheckRepository, instance.Id, templates, now)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusPassing,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  now.Format(time.RFC3339),
-	}
-	for _, check := range checks {
-		if check.Type == db.HealthCheckTypeTTL {
-			item.LeaseExpiresAt = check.TTLExpiresAt
-		}
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Status:       check.Status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
+	instance.UpdatedAt = now
+	item, err := i.toInstanceResponse(instance, now)
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 	return item, created, nil
 }
 
 // RenewInstance extends an instance lease by its registered TTL.
 func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}
 
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	agent, err := i.getAgent(workspaceId, agentName, ErrFailedRenewInstance)
 	if err != nil {
 		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -415,64 +278,22 @@ func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
 	}
 
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	item, err := i.toInstanceResponse(instance, now)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusPassing,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-	for _, check := range checks {
-		if check.Type == db.HealthCheckTypeTTL {
-			item.LeaseExpiresAt = check.TTLExpiresAt
-		}
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Status:       check.Status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
 	}
 	return item, nil
 }
 
 // DeregisterInstance removes an instance and its health checks.
 func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
-	if !agentNamePattern.MatchString(agentName) {
-		return ErrInvalidAgentName
-	}
 	if !instanceIdPattern.MatchString(instanceId) {
 		return ErrInvalidInstanceId
 	}
 
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	agent, err := i.getAgent(workspaceId, agentName, ErrFailedDeregisterInstance)
 	if err != nil {
 		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
-	}
-	if agent == nil {
-		return ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -488,4 +309,57 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
 	return nil
+}
+
+// getAgent loads an agent by name, wrapping lookup failures with failErr.
+func (i *Instance) getAgent(workspaceId db.Id, agentName string, failErr error) (*db.Agent, error) {
+	if !agentNamePattern.MatchString(agentName) {
+		return nil, ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	if workspace == nil {
+		return nil, ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", failErr, err)
+	}
+	if agent == nil {
+		return nil, ErrAgentNotFound
+	}
+	return agent, nil
+}
+
+// toInstanceResponse loads an instance's checks and shapes it for the API.
+func (i *Instance) toInstanceResponse(instance *db.AgentInstance, now time.Time) (*InstanceResponse, error) {
+	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	item := &InstanceResponse{
+		Id:         instance.Id,
+		AgentId:    instance.AgentId,
+		InstanceId: instance.InstanceId,
+		Address:    instance.Address,
+		Port:       instance.Port,
+		Datacenter: instance.Datacenter,
+		Meta:       util.JSONRawFromString(instance.Meta),
+		Status:     instanceStatus(checks, now),
+		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+	for _, check := range checks {
+		if check.Source == db.HealthCheckSourceLease {
+			item.LeaseExpiresAt = check.TTLExpiresAt
+		}
+		item.Checks = append(item.Checks, toHealthCheckResponse(check, now))
+	}
+	return item, nil
 }

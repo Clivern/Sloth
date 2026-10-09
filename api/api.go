@@ -32,6 +32,7 @@ type API struct {
 	Audit     *module.Audit
 	Agent     *module.Agent
 	Instance  *module.Instance
+	Check     *module.Check
 	Intention *module.Intention
 	KeyValue  *module.KeyValue
 	Traffic   *module.Traffic
@@ -62,6 +63,7 @@ func New() *API {
 	agents := db.NewAgentRepository(conn)
 	instances := db.NewAgentInstanceRepository(conn)
 	healthChecks := db.NewHealthCheckRepository(conn)
+	agentChecks := db.NewAgentCheckRepository(conn)
 	intentions := db.NewIntentionRepository(conn)
 	kv := db.NewWorkspaceKeyValueRepository(conn)
 	traffic := db.NewTrafficRepository(conn)
@@ -80,8 +82,9 @@ func New() *API {
 		Billing:   module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
 		Stats:     module.NewStats(workspaces, stats),
 		Audit:     module.NewAudit(audits, workspaces),
-		Agent:     module.NewAgent(agents, instances, workspaces),
-		Instance:  module.NewInstance(agents, instances, healthChecks, workspaces),
+		Agent:     module.NewAgent(agents, instances, healthChecks, workspaces),
+		Instance:  module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
+		Check:     module.NewCheck(agents, agentChecks, instances, healthChecks, workspaces),
 		Intention: module.NewIntention(intentions, workspaces),
 		KeyValue:  module.NewKeyValue(kv, workspaces),
 		Traffic:   module.NewTraffic(traffic, workspaces),
