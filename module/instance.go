@@ -81,7 +81,13 @@ type LeaseDefinition struct {
 }
 
 // NewInstance creates an instance module with the given repositories.
-func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
+func NewInstance(
+	agents db.AgentRepository,
+	instances db.AgentInstanceRepository,
+	checks db.HealthCheckRepository,
+	agentChecks db.AgentCheckRepository,
+	workspaces db.WorkspaceRepository,
+) *Instance {
 	return &Instance{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
@@ -92,7 +98,11 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 }
 
 // ListInstances returns an agent's instances, only live ones when passing is set.
-func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool) ([]*InstanceResponse, error) {
+func (i *Instance) ListInstances(
+	workspaceId db.Id,
+	agentName string,
+	passing bool,
+) ([]*InstanceResponse, error) {
 	if !agentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
@@ -191,7 +201,10 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 }
 
 // GetInstance returns one instance of an agent.
-func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
+func (i *Instance) GetInstance(
+	workspaceId db.Id,
+	agentName, instanceId string,
+) (*InstanceResponse, error) {
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}
@@ -286,7 +299,11 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 }
 
 // RegisterInstance creates or updates an instance, starts its lease and syncs its checks.
-func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest) (*InstanceResponse, bool, error) {
+func (i *Instance) RegisterInstance(
+	workspaceId db.Id,
+	agentName, instanceId string,
+	req *RegisterInstanceRequest,
+) (*InstanceResponse, bool, error) {
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
@@ -527,7 +544,10 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 }
 
 // RenewInstance extends an instance lease by its registered TTL.
-func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
+func (i *Instance) RenewInstance(
+	workspaceId db.Id,
+	agentName, instanceId string,
+) (*InstanceResponse, error) {
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}

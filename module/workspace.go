@@ -27,7 +27,12 @@ type Workspace struct {
 }
 
 // NewWorkspace creates a workspace module with the given repositories.
-func NewWorkspace(workspaces db.WorkspaceRepository, workspaceUsers db.WorkspaceUserRepository, subscriptions db.SubscriptionRepository, users db.UserRepository) *Workspace {
+func NewWorkspace(
+	workspaces db.WorkspaceRepository,
+	workspaceUsers db.WorkspaceUserRepository,
+	subscriptions db.SubscriptionRepository,
+	users db.UserRepository,
+) *Workspace {
 	return &Workspace{
 		WorkspaceRepository:     workspaces,
 		WorkspaceUserRepository: workspaceUsers,
@@ -64,7 +69,10 @@ type ListWorkspacesResponse struct {
 }
 
 // CreateWorkspace creates a workspace and adds the user as owner.
-func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) (*WorkspaceResponse, error) {
+func (w *Workspace) CreateWorkspace(
+	req *CreateWorkspaceRequest,
+	user *db.User,
+) (*WorkspaceResponse, error) {
 	var handle string
 	for {
 		h, err := util.RandomHandle(4, 8)
@@ -125,7 +133,10 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 }
 
 // ListWorkspaces retrieves workspace responses visible to the user.
-func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorkspacesResponse, error) {
+func (w *Workspace) ListWorkspaces(
+	user *db.User,
+	limit, offset int,
+) (*ListWorkspacesResponse, error) {
 	workspaces, err := w.WorkspaceRepository.List(limit, offset, user.Id)
 	if err != nil {
 		return nil, err
@@ -202,7 +213,11 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 }
 
 // UpdateWorkspace updates a workspace after checking the user's access.
-func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceRequest, user *db.User) (*WorkspaceResponse, error) {
+func (w *Workspace) UpdateWorkspace(
+	workspaceId db.Id,
+	req *UpdateWorkspaceRequest,
+	user *db.User,
+) (*WorkspaceResponse, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err

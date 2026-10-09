@@ -99,7 +99,11 @@ type ListInvitesResponse struct {
 }
 
 // CreateInvite creates a workspace invite and sends the login email.
-func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, inviter *db.User) (*InviteResponse, error) {
+func (i *Invite) CreateInvite(
+	workspaceId db.Id,
+	req *CreateInviteRequest,
+	inviter *db.User,
+) (*InviteResponse, error) {
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)

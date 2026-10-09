@@ -70,7 +70,10 @@ type AccessKeyMeta struct {
 }
 
 // CreateAccessKey creates an access key; the raw key is returned once.
-func (a *Access) CreateAccessKey(workspaceId db.Id, req *CreateAccessKeyRequest) (*AccessKeyResponse, error) {
+func (a *Access) CreateAccessKey(
+	workspaceId db.Id,
+	req *CreateAccessKeyRequest,
+) (*AccessKeyResponse, error) {
 	if !ValidAccessKeyPermissions(req.Permissions) {
 		return nil, ErrInvalidAccessKeyPermissions
 	}
@@ -135,7 +138,10 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, req *CreateAccessKeyRequest)
 }
 
 // ListAccessKeys returns workspace access keys (metadata only, never the secret).
-func (a *Access) ListAccessKeys(workspaceId db.Id, limit, offset int) (*ListAccessKeysResult, error) {
+func (a *Access) ListAccessKeys(
+	workspaceId db.Id,
+	limit, offset int,
+) (*ListAccessKeysResult, error) {
 	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err

@@ -55,7 +55,10 @@ type ListKeyValueResponse struct {
 }
 
 // NewKeyValue creates a workspace KeyValue module with the given repositories.
-func NewKeyValue(items db.WorkspaceKeyValueRepository, workspaces db.WorkspaceRepository) *KeyValue {
+func NewKeyValue(
+	items db.WorkspaceKeyValueRepository,
+	workspaces db.WorkspaceRepository,
+) *KeyValue {
 	return &KeyValue{
 		KeyValueRepository:  items,
 		WorkspaceRepository: workspaces,
@@ -160,7 +163,11 @@ func (k *KeyValue) GetKeyValue(workspaceId db.Id, key string) (*KeyValueResponse
 }
 
 // PutKeyValue writes a workspace key.
-func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRequest) (*KeyValueResponse, error) {
+func (k *KeyValue) PutKeyValue(
+	workspaceId db.Id,
+	key string,
+	req *PutKeyValueRequest,
+) (*KeyValueResponse, error) {
 	valid := keyValueKeyPattern.MatchString(key)
 	if valid {
 		for _, part := range strings.Split(key, "/") {

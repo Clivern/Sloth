@@ -33,7 +33,10 @@ type ListWorkspaceMembersResult struct {
 }
 
 // ListWorkspaceMembers returns members in a workspace with pagination.
-func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (*ListWorkspaceMembersResult, error) {
+func (w *Workspace) ListWorkspaceMembers(
+	workspaceId db.Id,
+	limit, offset int,
+) (*ListWorkspaceMembersResult, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -87,7 +90,10 @@ func (w *Workspace) GetWorkspaceMember(workspaceId, userId db.Id) (*db.Workspace
 }
 
 // UpdateWorkspaceMemberRole updates the role of a member in a workspace.
-func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role string) (*WorkspaceMemberResponse, error) {
+func (w *Workspace) UpdateWorkspaceMemberRole(
+	workspaceId, userId db.Id,
+	role string,
+) (*WorkspaceMemberResponse, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err

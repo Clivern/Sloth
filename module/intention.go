@@ -85,7 +85,10 @@ func NewIntention(intentions db.IntentionRepository, workspaces db.WorkspaceRepo
 }
 
 // ListIntentions returns paginated intentions in a workspace.
-func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListIntentionsResponse, error) {
+func (i *Intention) ListIntentions(
+	workspaceId db.Id,
+	limit, offset int,
+) (*ListIntentionsResponse, error) {
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -162,7 +165,10 @@ func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResp
 }
 
 // CreateIntention inserts an allow or deny rule.
-func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest) (*IntentionResponse, error) {
+func (i *Intention) CreateIntention(
+	workspaceId db.Id,
+	req *SaveIntentionRequest,
+) (*IntentionResponse, error) {
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -210,7 +216,10 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 }
 
 // UpdateIntention replaces an existing rule.
-func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveIntentionRequest) (*IntentionResponse, error) {
+func (i *Intention) UpdateIntention(
+	workspaceId, intentionId db.Id,
+	req *SaveIntentionRequest,
+) (*IntentionResponse, error) {
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -294,7 +303,10 @@ func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
 }
 
 // CheckIntention returns the matching rule, or deny when none exists.
-func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest) (*CheckIntentionResponse, error) {
+func (i *Intention) CheckIntention(
+	workspaceId db.Id,
+	req *CheckIntentionRequest,
+) (*CheckIntentionResponse, error) {
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err

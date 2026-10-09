@@ -78,7 +78,12 @@ type ListAgentsResponse struct {
 }
 
 // NewAgent creates an agent module with the given repositories.
-func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, workspaces db.WorkspaceRepository) *Agent {
+func NewAgent(
+	agents db.AgentRepository,
+	instances db.AgentInstanceRepository,
+	checks db.HealthCheckRepository,
+	workspaces db.WorkspaceRepository,
+) *Agent {
 	return &Agent{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
@@ -293,7 +298,11 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 }
 
 // UpsertAgent creates or replaces the agent card for a name.
-func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequest) (*AgentResponse, bool, error) {
+func (a *Agent) UpsertAgent(
+	workspaceId db.Id,
+	name string,
+	req *UpsertAgentRequest,
+) (*AgentResponse, bool, error) {
 	if !agentNamePattern.MatchString(name) {
 		return nil, false, ErrInvalidAgentName
 	}

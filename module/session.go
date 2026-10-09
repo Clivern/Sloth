@@ -29,7 +29,11 @@ func NewSessionManager(sessions db.SessionRepository, users db.UserRepository) *
 }
 
 // CreateSession creates a new session for a user. TODO: remove if not used in future.
-func (s *SessionManager) CreateSession(ctx context.Context, userId db.Id, duration time.Duration) (*db.Session, error) {
+func (s *SessionManager) CreateSession(
+	ctx context.Context,
+	userId db.Id,
+	duration time.Duration,
+) (*db.Session, error) {
 	user, err := s.UserRepo.GetById(userId)
 	if err != nil {
 		return nil, err
