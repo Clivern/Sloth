@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -92,7 +93,7 @@ func (r *SessionRepositoryPostgres) GetByToken(token string) (*Session, error) {
 		&s.CreatedAt,
 		&s.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -119,7 +120,7 @@ func (r *SessionRepositoryPostgres) GetById(id Id) (*Session, error) {
 		&s.CreatedAt,
 		&s.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

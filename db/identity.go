@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -85,7 +86,7 @@ func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error)
 		&identity.CreatedAt,
 		&identity.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -111,7 +112,7 @@ func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name str
 		&identity.CreatedAt,
 		&identity.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

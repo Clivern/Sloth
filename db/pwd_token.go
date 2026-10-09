@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -78,7 +79,7 @@ func (r *PasswordResetTokenRepositoryPostgres) GetByToken(token string) (*Passwo
 		&tok.ExpiresAt,
 		&tok.CreatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

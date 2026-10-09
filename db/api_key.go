@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -86,7 +87,7 @@ func (r *APIKeyRepositoryPostgres) GetById(id Id) (*APIKey, error) {
 		&k.CreatedAt,
 		&k.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -111,7 +112,7 @@ func (r *APIKeyRepositoryPostgres) GetByKey(key string) (*APIKey, error) {
 		&k.CreatedAt,
 		&k.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

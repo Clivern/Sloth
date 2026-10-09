@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/samber/lo"
@@ -168,7 +169,7 @@ func (r *UserRepositoryPostgres) GetById(id Id) (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -213,7 +214,7 @@ func (r *UserRepositoryPostgres) GetByAPIKey(apiKey string) (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -247,7 +248,7 @@ func (r *UserRepositoryPostgres) GetByEmail(email string) (*User, error) {
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -282,7 +283,7 @@ func (r *UserRepositoryPostgres) GetByProvider(provider, providerUserId string) 
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -452,7 +453,7 @@ func (r *UserMetaRepositoryPostgres) Get(id Id, key string) (*UserMeta, error) {
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
