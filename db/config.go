@@ -48,6 +48,7 @@ func (r *ConfigRepositoryPostgres) Create(key, value string) error {
 		VALUES ($1, $2, to_jsonb($3::text))`,
 		id.String(), key, value,
 	)
+
 	return err
 }
 
@@ -64,6 +65,7 @@ func (r *ConfigRepositoryPostgres) Get(key string) (*Config, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return o, err
 }
 
@@ -77,6 +79,7 @@ func (r *ConfigRepositoryPostgres) Update(key, value string) error {
 		WHERE key = $3`,
 		value, time.Now().UTC(), key,
 	)
+
 	return err
 }
 
@@ -86,6 +89,7 @@ func (r *ConfigRepositoryPostgres) Delete(key string) error {
 		`DELETE FROM configs WHERE key = $1`,
 		key,
 	)
+
 	return err
 }
 
@@ -99,6 +103,7 @@ func (r *ConfigRepositoryPostgres) List() ([]*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var options []*Config
@@ -108,6 +113,7 @@ func (r *ConfigRepositoryPostgres) List() ([]*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		options = append(options, o)
 	}
 

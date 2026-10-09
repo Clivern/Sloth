@@ -61,6 +61,7 @@ func (r *AsyncTaskRepositoryPostgres) Create(task *AsyncTask) error {
 		if err != nil {
 			return err
 		}
+
 		task.Id = id
 	}
 	if task.Status == "" {
@@ -87,6 +88,7 @@ func (r *AsyncTaskRepositoryPostgres) Create(task *AsyncTask) error {
 		task.LockedAt,
 		task.CompletedAt,
 	).Scan(&task.CreatedAt, &task.UpdatedAt)
+
 	return err
 }
 
@@ -101,6 +103,7 @@ func (r *AsyncTaskRepositoryPostgres) MarkRunning(id Id) error {
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -121,6 +124,7 @@ func (r *AsyncTaskRepositoryPostgres) Complete(id Id, result string) error {
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -136,6 +140,7 @@ func (r *AsyncTaskRepositoryPostgres) Fail(id Id, message string) error {
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -148,6 +153,7 @@ func (r *AsyncTaskRepositoryPostgres) CountByStatus(status string) (int64, error
 		WHERE status = $1`,
 		status,
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -163,6 +169,7 @@ func (r *AsyncTaskRepositoryPostgres) ListByStatus(status string) ([]*AsyncTask,
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AsyncTask
@@ -216,11 +223,13 @@ func (r *AsyncTaskMetaRepositoryPostgres) Create(id Id, key, value string) error
 	if err != nil {
 		return err
 	}
+
 	_, err = r.db.Exec(
 		`INSERT INTO async_tasks_meta (id, async_task_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
 		metaId.String(), id.String(), key, value,
 	)
+
 	return err
 }
 
@@ -243,6 +252,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Get(id Id, key string) (*AsyncTaskMeta
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -254,6 +264,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Update(id Id, key, value string) error
 		WHERE async_task_id = $3 AND key = $4`,
 		value, time.Now().UTC(), id.String(), key,
 	)
+
 	return err
 }
 
@@ -264,6 +275,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Delete(id Id, key string) error {
 		WHERE async_task_id = $1 AND key = $2`,
 		id.String(), key,
 	)
+
 	return err
 }
 
@@ -279,6 +291,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) ListByAsyncTaskId(id Id) ([]*AsyncTask
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AsyncTaskMeta
@@ -295,6 +308,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) ListByAsyncTaskId(id Id) ([]*AsyncTask
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
 
@@ -310,5 +324,6 @@ func (r *AsyncTaskMetaRepositoryPostgres) Upsert(id Id, key, value string) error
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

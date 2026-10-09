@@ -34,6 +34,7 @@ func TestIntegrationAsyncTaskRepository(t *testing.T) {
 				break
 			}
 		}
+
 		assert.True(t, found)
 
 		require.NoError(t, repo.MarkRunning(task.Id))

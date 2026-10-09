@@ -70,6 +70,7 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 	if err != nil {
 		return err
 	}
+
 	agent.Id = id
 
 	return r.db.QueryRow(
@@ -106,6 +107,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return agent, err
 }
 
@@ -131,6 +133,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return agent, err
 }
 
@@ -147,12 +150,14 @@ func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 		time.Now().UTC(),
 		agent.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes an agent row.
 func (r *AgentRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agents WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -171,6 +176,7 @@ func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offse
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*Agent
@@ -189,8 +195,10 @@ func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offse
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, agent)
 	}
+
 	return list, rows.Err()
 }
 
@@ -201,6 +209,7 @@ func (r *AgentRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, err
 		`SELECT COUNT(*) FROM agents WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -215,6 +224,7 @@ func (r *AgentMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = r.db.Exec(
 		`INSERT INTO agents_meta (id, agent_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
@@ -223,6 +233,7 @@ func (r *AgentMetaRepositoryPostgres) Create(id Id, key, value string) error {
 		key,
 		value,
 	)
+
 	return err
 }
 
@@ -246,6 +257,7 @@ func (r *AgentMetaRepositoryPostgres) Get(id Id, key string) (*AgentMeta, error)
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -260,6 +272,7 @@ func (r *AgentMetaRepositoryPostgres) Update(id Id, key, value string) error {
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -270,6 +283,7 @@ func (r *AgentMetaRepositoryPostgres) Delete(id Id, key string) error {
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -285,6 +299,7 @@ func (r *AgentMetaRepositoryPostgres) ListByAgentId(id Id) ([]*AgentMeta, error)
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentMeta
@@ -301,8 +316,10 @@ func (r *AgentMetaRepositoryPostgres) ListByAgentId(id Id) ([]*AgentMeta, error)
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
+
 	return list, rows.Err()
 }
 
@@ -315,5 +332,6 @@ func (r *AgentMetaRepositoryPostgres) Upsert(id Id, key, value string) error {
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

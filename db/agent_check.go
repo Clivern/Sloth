@@ -46,6 +46,7 @@ func (r *AgentCheckRepositoryPostgres) Create(check *AgentCheck) error {
 	if err != nil {
 		return err
 	}
+
 	check.Id = id
 
 	return r.db.QueryRow(
@@ -83,6 +84,7 @@ func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId 
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return check, err
 }
 
@@ -99,12 +101,14 @@ func (r *AgentCheckRepositoryPostgres) Update(check *AgentCheck) error {
 		check.UpdatedAt,
 		check.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes an agent check template.
 func (r *AgentCheckRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_checks WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -120,6 +124,7 @@ func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck,
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentCheck
@@ -138,7 +143,9 @@ func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck,
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, check)
 	}
+
 	return list, rows.Err()
 }

@@ -43,6 +43,7 @@ func (r *PasswordResetTokenRepositoryPostgres) Create(t *PasswordResetToken) err
 	if err != nil {
 		return err
 	}
+
 	t.Id = id
 
 	_, err = r.db.Exec(
@@ -53,6 +54,7 @@ func (r *PasswordResetTokenRepositoryPostgres) Create(t *PasswordResetToken) err
 		t.Token,
 		t.ExpiresAt,
 	)
+
 	return err
 }
 
@@ -79,6 +81,7 @@ func (r *PasswordResetTokenRepositoryPostgres) GetByToken(token string) (*Passwo
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return tok, err
 }
 
@@ -88,6 +91,7 @@ func (r *PasswordResetTokenRepositoryPostgres) Delete(id Id) error {
 		`DELETE FROM password_reset_tokens WHERE id = $1`,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -97,6 +101,7 @@ func (r *PasswordResetTokenRepositoryPostgres) DeleteByToken(token string) error
 		`DELETE FROM password_reset_tokens WHERE token = $1`,
 		token,
 	)
+
 	return err
 }
 
@@ -110,5 +115,6 @@ func (r *PasswordResetTokenRepositoryPostgres) DeleteExpired() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return result.RowsAffected()
 }

@@ -71,6 +71,7 @@ func (r *IntegrationRepositoryPostgres) Create(integration *Integration) error {
 	if err != nil {
 		return err
 	}
+
 	integration.Id = id
 
 	err = r.db.QueryRow(
@@ -83,6 +84,7 @@ func (r *IntegrationRepositoryPostgres) Create(integration *Integration) error {
 		integration.Name,
 		integration.Config,
 	).Scan(&integration.CreatedAt, &integration.UpdatedAt)
+
 	return err
 }
 
@@ -107,6 +109,7 @@ func (r *IntegrationRepositoryPostgres) GetById(id Id) (*Integration, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return inv, err
 }
 
@@ -128,6 +131,7 @@ func (r *IntegrationRepositoryPostgres) Update(integration *Integration) error {
 		time.Now().UTC(),
 		integration.Id.String(),
 	)
+
 	return err
 }
 
@@ -137,6 +141,7 @@ func (r *IntegrationRepositoryPostgres) Delete(id Id) error {
 		`DELETE FROM integrations WHERE id = $1`,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -155,6 +160,7 @@ func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit,
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 	var list []*Integration
 	for rows.Next() {
@@ -170,8 +176,10 @@ func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit,
 		); err != nil {
 			return nil, err
 		}
+
 		list = append(list, inv)
 	}
+
 	return list, rows.Err()
 }
 
@@ -184,6 +192,7 @@ func (r *IntegrationRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int6
 		WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -204,6 +213,7 @@ func (r *IntegrationMetaRepositoryPostgres) Create(id Id, key, value string) err
 		VALUES ($1, $2, $3, $4)`,
 		metaId.String(), id.String(), key, value,
 	)
+
 	return err
 }
 
@@ -219,6 +229,7 @@ func (r *IntegrationMetaRepositoryPostgres) Get(id Id, key string) (*Integration
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -230,6 +241,7 @@ func (r *IntegrationMetaRepositoryPostgres) Update(id Id, key, value string) err
 		WHERE integration_id = $3 AND key = $4`,
 		value, time.Now().UTC(), id.String(), key,
 	)
+
 	return err
 }
 
@@ -240,6 +252,7 @@ func (r *IntegrationMetaRepositoryPostgres) Delete(id Id, key string) error {
 		WHERE integration_id = $1 AND key = $2`,
 		id.String(), key,
 	)
+
 	return err
 }
 
@@ -255,6 +268,7 @@ func (r *IntegrationMetaRepositoryPostgres) ListByIntegrationId(id Id) ([]*Integ
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*IntegrationMeta
@@ -264,8 +278,10 @@ func (r *IntegrationMetaRepositoryPostgres) ListByIntegrationId(id Id) ([]*Integ
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
+
 	return list, rows.Err()
 }
 
@@ -278,5 +294,6 @@ func (r *IntegrationMetaRepositoryPostgres) Upsert(id Id, key, value string) err
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

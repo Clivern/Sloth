@@ -80,6 +80,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 	if err != nil {
 		return err
 	}
+
 	instance.Id = id
 	if instance.Status == "" {
 		instance.Status = AgentInstanceStatusPassing
@@ -124,6 +125,7 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return instance, err
 }
 
@@ -151,6 +153,7 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return instance, err
 }
 
@@ -168,12 +171,14 @@ func (r *AgentInstanceRepositoryPostgres) Update(instance *AgentInstance) error 
 		time.Now().UTC(),
 		instance.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes an agent instance row.
 func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_instances WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -189,6 +194,7 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentInstance
@@ -209,8 +215,10 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, instance)
 	}
+
 	return list, rows.Err()
 }
 
@@ -244,6 +252,7 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentInstance
@@ -264,8 +273,10 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, instance)
 	}
+
 	return list, rows.Err()
 }
 
@@ -280,6 +291,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Create(id Id, key, value string) e
 	if err != nil {
 		return err
 	}
+
 	_, err = r.db.Exec(
 		`INSERT INTO agent_instances_meta (id, agent_instance_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
@@ -288,6 +300,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Create(id Id, key, value string) e
 		key,
 		value,
 	)
+
 	return err
 }
 
@@ -311,6 +324,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInst
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -325,6 +339,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Update(id Id, key, value string) e
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -335,6 +350,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -350,6 +366,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*A
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentInstanceMeta
@@ -366,8 +383,10 @@ func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*A
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
+
 	return list, rows.Err()
 }
 
@@ -380,5 +399,6 @@ func (r *AgentInstanceMetaRepositoryPostgres) Upsert(id Id, key, value string) e
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

@@ -51,6 +51,7 @@ func (r *AgentIdentityRepositoryPostgres) Create(identity *AgentIdentity) error 
 	if err != nil {
 		return err
 	}
+
 	identity.Id = id
 
 	return r.db.QueryRow(
@@ -87,6 +88,7 @@ func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error)
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return identity, err
 }
 
@@ -112,6 +114,7 @@ func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name str
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return identity, err
 }
 
@@ -128,12 +131,14 @@ func (r *AgentIdentityRepositoryPostgres) Update(identity *AgentIdentity) error 
 		time.Now().UTC(),
 		identity.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes an agent identity row.
 func (r *AgentIdentityRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_identity WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -149,6 +154,7 @@ func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIde
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentIdentity
@@ -167,8 +173,10 @@ func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIde
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, identity)
 	}
+
 	return list, rows.Err()
 }
 
@@ -184,6 +192,7 @@ func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*Ag
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentIdentity
@@ -202,7 +211,9 @@ func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*Ag
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, identity)
 	}
+
 	return list, rows.Err()
 }

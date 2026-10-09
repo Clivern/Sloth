@@ -77,6 +77,7 @@ func (r *IntentionRepositoryPostgres) Create(intention *Intention) error {
 	if err != nil {
 		return err
 	}
+
 	intention.Id = id
 
 	return r.db.QueryRow(
@@ -113,6 +114,7 @@ func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return intention, err
 }
 
@@ -129,12 +131,14 @@ func (r *IntentionRepositoryPostgres) Update(intention *Intention) error {
 		time.Now().UTC(),
 		intention.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes an intention row.
 func (r *IntentionRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM intentions WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -153,6 +157,7 @@ func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, o
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*Intention
@@ -171,8 +176,10 @@ func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, o
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, intention)
 	}
+
 	return list, rows.Err()
 }
 
@@ -183,6 +190,7 @@ func (r *IntentionRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64,
 		`SELECT COUNT(*) FROM intentions WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -216,6 +224,7 @@ func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination,
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return intention, err
 }
 
@@ -230,6 +239,7 @@ func (r *IntentionMetaRepositoryPostgres) Create(id Id, key, value string) error
 	if err != nil {
 		return err
 	}
+
 	_, err = r.db.Exec(
 		`INSERT INTO intentions_meta (id, intention_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
@@ -238,6 +248,7 @@ func (r *IntentionMetaRepositoryPostgres) Create(id Id, key, value string) error
 		key,
 		value,
 	)
+
 	return err
 }
 
@@ -261,6 +272,7 @@ func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -275,6 +287,7 @@ func (r *IntentionMetaRepositoryPostgres) Update(id Id, key, value string) error
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -285,6 +298,7 @@ func (r *IntentionMetaRepositoryPostgres) Delete(id Id, key string) error {
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -300,6 +314,7 @@ func (r *IntentionMetaRepositoryPostgres) ListByIntentionId(id Id) ([]*Intention
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*IntentionMeta
@@ -316,8 +331,10 @@ func (r *IntentionMetaRepositoryPostgres) ListByIntentionId(id Id) ([]*Intention
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
+
 	return list, rows.Err()
 }
 
@@ -330,5 +347,6 @@ func (r *IntentionMetaRepositoryPostgres) Upsert(id Id, key, value string) error
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

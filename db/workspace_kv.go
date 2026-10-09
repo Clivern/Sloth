@@ -87,6 +87,7 @@ func (r *WorkspaceKeyValueRepositoryPostgres) Get(workspaceId Id, key string) (*
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return item, err
 }
 
@@ -97,6 +98,7 @@ func (r *WorkspaceKeyValueRepositoryPostgres) Delete(workspaceId Id, key string)
 		workspaceId.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -116,6 +118,7 @@ func (r *WorkspaceKeyValueRepositoryPostgres) ListByPrefix(workspaceId Id, prefi
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*WorkspaceKeyValue
@@ -133,8 +136,10 @@ func (r *WorkspaceKeyValueRepositoryPostgres) ListByPrefix(workspaceId Id, prefi
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, item)
 	}
+
 	return list, rows.Err()
 }
 
@@ -147,5 +152,6 @@ func (r *WorkspaceKeyValueRepositoryPostgres) DeleteExpired() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return result.RowsAffected()
 }

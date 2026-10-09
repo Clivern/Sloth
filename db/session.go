@@ -54,6 +54,7 @@ func (r *SessionRepositoryPostgres) Create(session *Session) error {
 	if err != nil {
 		return err
 	}
+
 	session.Id = id
 
 	_, err = r.db.Exec(
@@ -67,6 +68,7 @@ func (r *SessionRepositoryPostgres) Create(session *Session) error {
 		session.UserAgent,
 		session.ExpiresAt,
 	)
+
 	return err
 }
 
@@ -93,6 +95,7 @@ func (r *SessionRepositoryPostgres) GetByToken(token string) (*Session, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return s, err
 }
 
@@ -119,6 +122,7 @@ func (r *SessionRepositoryPostgres) GetById(id Id) (*Session, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return s, err
 }
 
@@ -136,6 +140,7 @@ func (r *SessionRepositoryPostgres) GetByUserId(userId Id) ([]*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 	var list []*Session
 	for rows.Next() {
@@ -152,8 +157,10 @@ func (r *SessionRepositoryPostgres) GetByUserId(userId Id) ([]*Session, error) {
 		); err != nil {
 			return nil, err
 		}
+
 		list = append(list, s)
 	}
+
 	return list, rows.Err()
 }
 
@@ -163,6 +170,7 @@ func (r *SessionRepositoryPostgres) Delete(id Id) error {
 		`DELETE FROM user_sessions WHERE id = $1`,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -172,6 +180,7 @@ func (r *SessionRepositoryPostgres) DeleteByToken(token string) error {
 		`DELETE FROM user_sessions WHERE token = $1`,
 		token,
 	)
+
 	return err
 }
 
@@ -181,6 +190,7 @@ func (r *SessionRepositoryPostgres) DeleteByUserId(userId Id) error {
 		`DELETE FROM user_sessions WHERE user_id = $1`,
 		userId.String(),
 	)
+
 	return err
 }
 
@@ -194,6 +204,7 @@ func (r *SessionRepositoryPostgres) DeleteExpired() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return result.RowsAffected()
 }
 
@@ -206,6 +217,7 @@ func (r *SessionRepositoryPostgres) IsValid(token string) (bool, error) {
 	if session == nil {
 		return false, nil
 	}
+
 	return session.ExpiresAt.After(time.Now().UTC()), nil
 }
 
@@ -219,6 +231,7 @@ func (r *SessionRepositoryPostgres) UpdateExpiration(id Id, expiresAt time.Time)
 		WHERE id = $3`,
 		expiresAt, time.Now().UTC(), id.String(),
 	)
+
 	return err
 }
 
@@ -231,6 +244,7 @@ func (r *SessionRepositoryPostgres) Count() (int64, error) {
 		WHERE expires_at > $1`,
 		time.Now().UTC(),
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -243,5 +257,6 @@ func (r *SessionRepositoryPostgres) CountByUserId(userId Id) (int64, error) {
 		WHERE user_id = $1 AND expires_at > $2`,
 		userId.String(), time.Now().UTC(),
 	).Scan(&count)
+
 	return count, err
 }

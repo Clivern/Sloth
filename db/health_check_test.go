@@ -240,6 +240,7 @@ func TestIntegrationHealthCheckScheduling(t *testing.T) {
 		for _, check := range claimed {
 			ids[check.Id] = true
 		}
+
 		assert.True(t, ids[due.Id])
 		assert.False(t, ids[later.Id])
 
@@ -335,5 +336,6 @@ func mustCheck(t *testing.T, repo HealthCheckRepository, instanceId Id, checkId 
 	got, err := repo.GetByInstanceAndCheckId(instanceId, checkId)
 	require.NoError(t, err)
 	require.NotNil(t, got)
+
 	return got
 }

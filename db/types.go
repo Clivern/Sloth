@@ -21,6 +21,7 @@ func NewId() (Id, error) {
 	if err != nil {
 		return "", fmt.Errorf("generate id: %w", err)
 	}
+
 	return Id(id.String()), nil
 }
 
@@ -30,6 +31,7 @@ func (id *Id) Scan(value interface{}) error {
 		*id = ""
 		return nil
 	}
+
 	switch v := value.(type) {
 	case []byte:
 		*id = Id(string(v))
@@ -47,6 +49,7 @@ func (id Id) Value() (driver.Value, error) {
 	if lo.IsEmpty(id) {
 		return nil, nil
 	}
+
 	return string(id), nil
 }
 

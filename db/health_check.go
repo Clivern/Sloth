@@ -103,6 +103,7 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	if err != nil {
 		return err
 	}
+
 	check.Id = id
 	if check.Status == "" {
 		check.Status = HealthCheckStatusCritical
@@ -158,6 +159,7 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return check, err
 }
 
@@ -189,6 +191,7 @@ func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(agentInstanceId 
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return check, err
 }
 
@@ -205,12 +208,14 @@ func (r *HealthCheckRepositoryPostgres) Update(check *HealthCheck) error {
 		time.Now().UTC(),
 		check.Id.String(),
 	)
+
 	return err
 }
 
 // Delete removes a health check row.
 func (r *HealthCheckRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM health_checks WHERE id = $1`, id.String())
+
 	return err
 }
 
@@ -226,6 +231,7 @@ func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*HealthCheck
@@ -250,8 +256,10 @@ func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, check)
 	}
+
 	return list, rows.Err()
 }
 
@@ -268,6 +276,7 @@ func (r *HealthCheckRepositoryPostgres) DeleteByAgentAndCheckId(agentId Id, chec
 		checkId,
 		HealthCheckSourceAgent,
 	)
+
 	return err
 }
 
@@ -290,6 +299,7 @@ func (r *HealthCheckRepositoryPostgres) Pass(id Id, output string, ttlExpiresAt 
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -310,6 +320,7 @@ func (r *HealthCheckRepositoryPostgres) Warn(id Id, output string) error {
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -330,6 +341,7 @@ func (r *HealthCheckRepositoryPostgres) Fail(id Id, output string) error {
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -352,6 +364,7 @@ func (r *HealthCheckRepositoryPostgres) Report(id Id, status, output string, ttl
 		now,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -361,6 +374,7 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 	if err != nil {
 		return nil, err
 	}
+
 	defer tx.Rollback()
 
 	rows, err := tx.Query(
@@ -402,8 +416,10 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 			rows.Close()
 			return nil, err
 		}
+
 		list = append(list, check)
 	}
+
 	rows.Close()
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -438,6 +454,7 @@ func (r *HealthCheckRepositoryPostgres) Record(id Id, status, output string, nex
 		nextRunAt,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -452,6 +469,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Create(id Id, key, value string) err
 	if err != nil {
 		return err
 	}
+
 	_, err = r.db.Exec(
 		`INSERT INTO health_checks_meta (id, health_check_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
@@ -460,6 +478,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Create(id Id, key, value string) err
 		key,
 		value,
 	)
+
 	return err
 }
 
@@ -483,6 +502,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheck
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return meta, err
 }
 
@@ -497,6 +517,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Update(id Id, key, value string) err
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -507,6 +528,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Delete(id Id, key string) error {
 		id.String(),
 		key,
 	)
+
 	return err
 }
 
@@ -522,6 +544,7 @@ func (r *HealthCheckMetaRepositoryPostgres) ListByHealthCheckId(id Id) ([]*Healt
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*HealthCheckMeta
@@ -538,8 +561,10 @@ func (r *HealthCheckMetaRepositoryPostgres) ListByHealthCheckId(id Id) ([]*Healt
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, meta)
 	}
+
 	return list, rows.Err()
 }
 
@@ -552,5 +577,6 @@ func (r *HealthCheckMetaRepositoryPostgres) Upsert(id Id, key, value string) err
 	if existing == nil {
 		return r.Create(id, key, value)
 	}
+
 	return r.Update(id, key, value)
 }

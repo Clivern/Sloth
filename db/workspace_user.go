@@ -49,6 +49,7 @@ func (r *WorkspaceUserRepositoryPostgres) Create(m *WorkspaceUser) error {
 	if err != nil {
 		return err
 	}
+
 	m.Id = id
 
 	err = r.db.QueryRow(
@@ -60,6 +61,7 @@ func (r *WorkspaceUserRepositoryPostgres) Create(m *WorkspaceUser) error {
 		m.UserId.String(),
 		m.Role,
 	).Scan(&m.CreatedAt, &m.UpdatedAt)
+
 	return err
 }
 
@@ -81,6 +83,7 @@ func (r *WorkspaceUserRepositoryPostgres) GetById(id Id) (*WorkspaceUser, error)
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return m, err
 }
 
@@ -103,6 +106,7 @@ func (r *WorkspaceUserRepositoryPostgres) GetByWorkspaceAndUser(workspaceId, use
 	if isNotFound(err) {
 		return nil, nil
 	}
+
 	return m, err
 }
 
@@ -117,6 +121,7 @@ func (r *WorkspaceUserRepositoryPostgres) Update(m *WorkspaceUser) error {
 		time.Now().UTC(),
 		m.Id.String(),
 	)
+
 	return err
 }
 
@@ -126,6 +131,7 @@ func (r *WorkspaceUserRepositoryPostgres) Delete(id Id) error {
 		`DELETE FROM workspace_users WHERE id = $1`,
 		id.String(),
 	)
+
 	return err
 }
 
@@ -142,6 +148,7 @@ func (r *WorkspaceUserRepositoryPostgres) List(limit, offset int) ([]*WorkspaceU
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 	var list []*WorkspaceUser
 	for rows.Next() {
@@ -157,8 +164,10 @@ func (r *WorkspaceUserRepositoryPostgres) List(limit, offset int) ([]*WorkspaceU
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, m)
 	}
+
 	return list, rows.Err()
 }
 
@@ -169,6 +178,7 @@ func (r *WorkspaceUserRepositoryPostgres) Count() (int64, error) {
 		`SELECT COUNT(*)
 		FROM workspace_users`,
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -187,6 +197,7 @@ func (r *WorkspaceUserRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limi
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 	var list []*WorkspaceUser
 	for rows.Next() {
@@ -202,8 +213,10 @@ func (r *WorkspaceUserRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limi
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, m)
 	}
+
 	return list, rows.Err()
 }
 
@@ -216,5 +229,6 @@ func (r *WorkspaceUserRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (in
 		WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
+
 	return count, err
 }

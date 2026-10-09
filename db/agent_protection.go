@@ -78,6 +78,7 @@ func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) 
 	if err != nil {
 		return err
 	}
+
 	protection.Id = id
 
 	return r.db.QueryRow(
@@ -180,6 +181,7 @@ func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentP
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentProtection
@@ -198,6 +200,7 @@ func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentP
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, protection)
 	}
 
@@ -216,6 +219,7 @@ func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentProtection
@@ -234,6 +238,7 @@ func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, protection)
 	}
 
@@ -251,6 +256,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) Create(token *AgentProtectionTo
 	if err != nil {
 		return err
 	}
+
 	token.Id = id
 
 	return r.db.QueryRow(
@@ -332,6 +338,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var list []*AgentProtectionToken
@@ -350,6 +357,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, token)
 	}
 

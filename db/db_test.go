@@ -34,6 +34,7 @@ func openTestDB(t *testing.T) *sql.DB {
 				testDBErr = fmt.Errorf("invalid COGNIT_DATABASE_PORT: %w", err)
 				return
 			}
+
 			port = parsed
 		}
 
@@ -53,6 +54,7 @@ func openTestDB(t *testing.T) *sql.DB {
 			if err == nil {
 				break
 			}
+
 			time.Sleep(500 * time.Millisecond)
 		}
 		if err != nil {
@@ -76,6 +78,7 @@ func openTestDB(t *testing.T) *sql.DB {
 	if testDBErr != nil {
 		t.Fatalf("postgres unavailable: %v", testDBErr)
 	}
+
 	return testDBConn
 }
 
@@ -83,6 +86,7 @@ func envOr(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+
 	return fallback
 }
 
@@ -105,6 +109,7 @@ func createTestWorkspace(t *testing.T, database *sql.DB) *Workspace {
 	t.Cleanup(func() {
 		_ = NewWorkspaceRepository(database).Delete(workspace.Id)
 	})
+
 	return workspace
 }
 
@@ -119,6 +124,7 @@ func createTestAgent(t *testing.T, database *sql.DB, workspaceId Id, name string
 		Version:      "1.0.0",
 	}
 	require.NoError(t, NewAgentRepository(database).Create(agent))
+
 	return agent
 }
 
@@ -140,6 +146,7 @@ func createTestUser(t *testing.T, database *sql.DB) *User {
 	t.Cleanup(func() {
 		_ = NewUserRepository(database).Delete(user.Id)
 	})
+
 	return user
 }
 
@@ -153,5 +160,6 @@ func createTestInstance(t *testing.T, database *sql.DB, agentId Id, instanceId s
 		Port:       8080,
 	}
 	require.NoError(t, NewAgentInstanceRepository(database).Create(instance))
+
 	return instance
 }
