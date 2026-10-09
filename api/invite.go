@@ -71,6 +71,7 @@ func (a *API) CreateInviteAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_create_invite"),
 			})
 		}
+
 		return
 	}
 
@@ -116,6 +117,7 @@ func (a *API) ListInvitesAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_list_invites"),
 			})
 		}
+
 		return
 	}
 
@@ -153,7 +155,6 @@ func (a *API) GetInviteAction(w http.ResponseWriter, r *http.Request) {
 		Msg("Getting invite")
 
 	invite, err := a.Invite.GetInvite(db.Id(workspaceId), db.Id(inviteId))
-
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -174,6 +175,7 @@ func (a *API) GetInviteAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_invite"),
 			})
 		}
+
 		return
 	}
 
@@ -204,7 +206,6 @@ func (a *API) DeleteInviteAction(w http.ResponseWriter, r *http.Request) {
 		Msg("Deleting invite")
 
 	err := a.Invite.DeleteInvite(db.Id(workspaceId), db.Id(inviteId))
-
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -225,6 +226,7 @@ func (a *API) DeleteInviteAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_delete_invite"),
 			})
 		}
+
 		return
 	}
 

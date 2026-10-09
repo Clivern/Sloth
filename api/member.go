@@ -62,6 +62,7 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 				"errorMessage": locale.TR(r, "failed_list_workspace_members"),
 			})
 		}
+
 		return
 	}
 
@@ -141,6 +142,7 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 				"errorMessage": locale.TR(r, "failed_update_workspace_member"),
 			})
 		}
+
 		return
 	}
 
@@ -204,6 +206,7 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 				"errorMessage": locale.TR(r, "failed_delete_workspace_member"),
 			})
 		}
+
 		return
 	}
 

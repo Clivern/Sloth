@@ -30,7 +30,6 @@ func (a *API) GetProfileAction(w http.ResponseWriter, r *http.Request) {
 		Msg("Getting profile")
 
 	profile, err := a.Profile.GetProfile(user.Id)
-
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -83,7 +82,6 @@ func (a *API) UpdateProfileAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := a.Profile.UpdateProfile(user.Id, &req)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrFailedUpdateProfile), errors.Is(err, module.ErrUserNotFound):
@@ -103,6 +101,7 @@ func (a *API) UpdateProfileAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_update_profile"),
 			})
 		}
+
 		return
 	}
 

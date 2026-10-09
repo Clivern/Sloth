@@ -44,6 +44,7 @@ func (a *API) ListAgentsAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_agent_request"),
 			})
 		}
+
 		return
 	}
 
@@ -100,6 +101,7 @@ func (a *API) GetAgentAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_agent_request"),
 			})
 		}
+
 		return
 	}
 
@@ -165,6 +167,7 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_agent_request"),
 			})
 		}
+
 		return
 	}
 
@@ -172,6 +175,7 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 	if created {
 		status = http.StatusCreated
 	}
+
 	a.WriteJSON(w, status, agent)
 }
 
@@ -223,6 +227,7 @@ func (a *API) DeleteAgentAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_agent_request"),
 			})
 		}
+
 		return
 	}
 

@@ -74,7 +74,6 @@ func (a *API) GetSettingsAction(w http.ResponseWriter, r *http.Request) {
 		Msg("Getting settings")
 
 	settings, err := a.Settings.GetSettings()
-
 	if err != nil {
 		log.Error().
 			Err(err).

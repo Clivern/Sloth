@@ -43,6 +43,7 @@ func (a *API) SetupAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_complete_setup"),
 			})
 		}
+
 		return
 	}
 

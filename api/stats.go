@@ -42,6 +42,7 @@ func (a *API) GetWorkspaceStatsAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_workspace_stats"),
 			})
 		}
+
 		return
 	}
 

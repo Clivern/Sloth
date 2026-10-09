@@ -44,6 +44,7 @@ func (a *API) ListIntentionsAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 
@@ -96,6 +97,7 @@ func (a *API) GetIntentionAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 
@@ -146,6 +148,7 @@ func (a *API) CreateIntentionAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 
@@ -208,6 +211,7 @@ func (a *API) UpdateIntentionAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 
@@ -258,6 +262,7 @@ func (a *API) DeleteIntentionAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 
@@ -297,6 +302,7 @@ func (a *API) CheckIntentionAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_intention_request"),
 			})
 		}
+
 		return
 	}
 

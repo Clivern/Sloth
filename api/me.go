@@ -35,7 +35,6 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	// Check if the request is for an API key
 	if lo.IsNotEmpty(apiKey) {
 		me, err := a.Me.GetByAPIKey(apiKey)
-
 		if err != nil {
 			switch {
 			case errors.Is(err, module.ErrAPIKeyNotFound):
@@ -50,6 +49,7 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 					"errorMessage": locale.TR(r, "failed_get_me"),
 				})
 			}
+
 			return
 		}
 
@@ -73,6 +73,7 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_me"),
 			})
 		}
+
 		return
 	}
 

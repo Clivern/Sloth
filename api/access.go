@@ -60,6 +60,7 @@ func (a *API) CreateAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_create_access_key"),
 			})
 		}
+
 		return
 	}
 
@@ -98,6 +99,7 @@ func (a *API) ListAccessKeysAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_list_access_keys"),
 			})
 		}
+
 		return
 	}
 
@@ -149,6 +151,7 @@ func (a *API) GetAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_access_key"),
 			})
 		}
+
 		return
 	}
 
@@ -193,6 +196,7 @@ func (a *API) DeleteAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_delete_access_key"),
 			})
 		}
+
 		return
 	}
 

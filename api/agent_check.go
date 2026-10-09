@@ -40,6 +40,7 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	checkId := chi.URLParam(r, "checkId")
 
 	var req module.UpsertAgentCheckRequest
@@ -169,6 +170,7 @@ func (a *API) writeCheckError(w http.ResponseWriter, r *http.Request, err error,
 			return
 		}
 	}
+
 	for target, key := range badRequest {
 		if errors.Is(err, target) {
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{

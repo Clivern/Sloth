@@ -46,6 +46,7 @@ func (a *API) GetBillingStatusAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_billing_status"),
 			})
 		}
+
 		return
 	}
 
@@ -81,6 +82,7 @@ func (a *API) GetBillingUsageAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_get_billing_usage"),
 			})
 		}
+
 		return
 	}
 
@@ -119,7 +121,6 @@ func (a *API) CreateBillingCheckoutAction(w http.ResponseWriter, r *http.Request
 		fmt.Sprintf("%s/billing?checkout=success", viper.GetString("app.url")),
 		fmt.Sprintf("%s/billing?checkout=cancel", viper.GetString("app.url")),
 	)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -146,6 +147,7 @@ func (a *API) CreateBillingCheckoutAction(w http.ResponseWriter, r *http.Request
 				"errorMessage": locale.TR(r, "failed_create_billing_checkout_session"),
 			})
 		}
+
 		return
 	}
 
@@ -164,7 +166,6 @@ func (a *API) CreateBillingPortalAction(w http.ResponseWriter, r *http.Request) 
 		db.Id(workspaceId),
 		fmt.Sprintf("%s/billing", viper.GetString("app.url")),
 	)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -191,6 +192,7 @@ func (a *API) CreateBillingPortalAction(w http.ResponseWriter, r *http.Request) 
 				"errorMessage": locale.TR(r, "failed_create_billing_portal_session"),
 			})
 		}
+
 		return
 	}
 
@@ -234,6 +236,7 @@ func (a *API) StripeWebhookAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "invalid_stripe_webhook"),
 			})
 		}
+
 		return
 	}
 

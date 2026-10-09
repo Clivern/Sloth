@@ -44,6 +44,7 @@ func (a *API) ListTrafficAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_traffic_request"),
 			})
 		}
+
 		return
 	}
 
@@ -96,6 +97,7 @@ func (a *API) GetTrafficAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_traffic_request"),
 			})
 		}
+
 		return
 	}
 

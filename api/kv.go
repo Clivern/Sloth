@@ -47,6 +47,7 @@ func (a *API) ListKeyValueAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_kv_request"),
 			})
 		}
+
 		return
 	}
 
@@ -101,6 +102,7 @@ func (a *API) GetKeyValueAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_kv_request"),
 			})
 		}
+
 		return
 	}
 
@@ -162,6 +164,7 @@ func (a *API) PutKeyValueAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_kv_request"),
 			})
 		}
+
 		return
 	}
 
@@ -216,6 +219,7 @@ func (a *API) DeleteKeyValueAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_kv_request"),
 			})
 		}
+
 		return
 	}
 

@@ -61,6 +61,7 @@ func (a *API) ListInstancesAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_instance_request"),
 			})
 		}
+
 		return
 	}
 
@@ -129,6 +130,7 @@ func (a *API) GetInstanceAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_instance_request"),
 			})
 		}
+
 		return
 	}
 
@@ -204,6 +206,7 @@ func (a *API) RegisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_instance_request"),
 			})
 		}
+
 		return
 	}
 
@@ -270,6 +273,7 @@ func (a *API) RenewInstanceAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_instance_request"),
 			})
 		}
+
 		return
 	}
 
@@ -342,6 +346,7 @@ func (a *API) DeregisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 				"errorMessage": locale.TR(r, "failed_instance_request"),
 			})
 		}
+
 		return
 	}
 
