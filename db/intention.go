@@ -100,7 +100,16 @@ func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 		FROM intentions
 		WHERE id = $1`,
 		id.String(),
-	).Scan(scanIntention(intention)...)
+	).Scan(
+		&intention.Id,
+		&intention.WorkspaceId,
+		&intention.SourceAgent,
+		&intention.DestinationAgent,
+		&intention.Skill,
+		&intention.Action,
+		&intention.CreatedAt,
+		&intention.UpdatedAt,
+	)
 	if isNotFound(err) {
 		return nil, nil
 	}
@@ -149,7 +158,16 @@ func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, o
 	var list []*Intention
 	for rows.Next() {
 		intention := &Intention{}
-		err := rows.Scan(scanIntention(intention)...)
+		err := rows.Scan(
+			&intention.Id,
+			&intention.WorkspaceId,
+			&intention.SourceAgent,
+			&intention.DestinationAgent,
+			&intention.Skill,
+			&intention.Action,
+			&intention.CreatedAt,
+			&intention.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -185,15 +203,7 @@ func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination,
 		source,
 		destination,
 		skill,
-	).Scan(scanIntention(intention)...)
-	if isNotFound(err) {
-		return nil, nil
-	}
-	return intention, err
-}
-
-func scanIntention(intention *Intention) []any {
-	return []any{
+	).Scan(
 		&intention.Id,
 		&intention.WorkspaceId,
 		&intention.SourceAgent,
@@ -202,7 +212,11 @@ func scanIntention(intention *Intention) []any {
 		&intention.Action,
 		&intention.CreatedAt,
 		&intention.UpdatedAt,
+	)
+	if isNotFound(err) {
+		return nil, nil
 	}
+	return intention, err
 }
 
 // NewIntentionMetaRepository returns the repository for intention metadata.
