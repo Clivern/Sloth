@@ -81,7 +81,7 @@ func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (
 	return &ListWorkspaceMembersResult{Members: members, Total: total}, nil
 }
 
-// GetWorkspaceMember returns the membership for a user in a workspace, or nil if not a member.
+// GetWorkspaceMember returns the membership for a user in a workspace, or nil if not a member. TODO: remove if not used in future.
 func (w *Workspace) GetWorkspaceMember(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
 	return w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
 }

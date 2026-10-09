@@ -77,7 +77,7 @@ func (u *Usage) AICost(usage db.UsageRepository, workspaceId db.Id) (float64, er
 	return float64(cost) / ai.USDToNano, nil
 }
 
-// IncrementAIUsage adds AI token and cost usage for the current calendar month.
+// IncrementAIUsage adds AI token and cost usage for the current calendar month. TODO: remove if not used in future.
 func (u *Usage) IncrementAIUsage(usage db.UsageRepository, subscriptions db.SubscriptionRepository, workspaceId db.Id, tokens, cost int64) error {
 	if tokens == 0 && cost == 0 {
 		return nil

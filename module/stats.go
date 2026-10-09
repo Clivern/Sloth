@@ -24,7 +24,7 @@ func NewStats(workspaces db.WorkspaceRepository, stats db.WorkspaceStatsReposito
 // WorkspaceStatsResponse is workspace metrics shaped for API responses.
 type WorkspaceStatsResponse struct{}
 
-// GetWorkspaceStats returns dashboard metrics for a workspace.
+// GetWorkspaceStats returns dashboard metrics for a workspace. TODO: remove if not used in future.
 func (s *Stats) GetWorkspaceStats(workspaceId db.Id) (*WorkspaceStatsResponse, error) {
 	workspace, err := s.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {

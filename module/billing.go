@@ -312,7 +312,7 @@ func (b *Billing) CreditTokenPurchase(client *stripe.Client, session *stripesdk.
 	return nil
 }
 
-// GetWorkspaceSubscription gets a workspace subscription from the database.
+// GetWorkspaceSubscription gets a workspace subscription from the database. TODO: remove if not used in future.
 func (b *Billing) GetWorkspaceSubscription(workspaceId db.Id) (*db.Subscription, error) {
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {

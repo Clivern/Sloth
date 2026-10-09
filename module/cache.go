@@ -19,7 +19,7 @@ func NewCache(store db.KeyValueRepository) *Cache {
 	return &Cache{store: store}
 }
 
-// Get returns a value for key, or empty if missing/expired.
+// Get returns a value for key, or empty if missing/expired. TODO: remove if not used in future.
 func (c *Cache) Get(key string) (string, *time.Time, error) {
 	item, err := c.store.Get(key)
 	if err != nil {
@@ -32,7 +32,7 @@ func (c *Cache) Get(key string) (string, *time.Time, error) {
 	return item.Value, item.ExpiresAt, nil
 }
 
-// Set stores a value for key.
+// Set stores a value for key. TODO: remove if not used in future.
 func (c *Cache) Set(key, value string, expiresAt *time.Time) error {
 	return c.store.Upsert(&db.KeyValue{
 		Key:       key,
@@ -41,7 +41,7 @@ func (c *Cache) Set(key, value string, expiresAt *time.Time) error {
 	})
 }
 
-// DeleteExpired removes expired cache entries.
+// DeleteExpired removes expired cache entries. TODO: remove if not used in future.
 func (c *Cache) DeleteExpired() (int64, error) {
 	return c.store.DeleteExpired()
 }

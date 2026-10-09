@@ -31,7 +31,7 @@ func NewAppCtx(requestID, userAgent, ipAddress string, features map[string]bool)
 	}
 }
 
-// HasFeature reports whether the named feature flag is enabled for this request.
+// HasFeature reports whether the named feature flag is enabled for this request. TODO: remove if not used in future.
 func (c *AppCtx) HasFeature(name string) bool {
 	if c == nil {
 		return false
@@ -60,12 +60,12 @@ type Principal struct {
 	AccessKey *db.AccessKey
 }
 
-// IsUser reports whether the principal is an authenticated user.
+// IsUser reports whether the principal is an authenticated user. TODO: remove if not used in future.
 func (p *Principal) IsUser() bool {
 	return p != nil && p.User != nil
 }
 
-// IsAccessKey reports whether the principal is a workspace access key.
+// IsAccessKey reports whether the principal is a workspace access key. TODO: remove if not used in future.
 func (p *Principal) IsAccessKey() bool {
 	return p != nil && p.AccessKey != nil
 }
