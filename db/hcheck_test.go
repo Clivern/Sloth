@@ -20,12 +20,12 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 
 	t.Run("create starts critical", func(t *testing.T) {
 		check := &HealthCheck{
-			AgentInstanceId: instance.Id,
-			CheckId:         HealthCheckIDTTL,
-			Name:            "lease",
-			Type:            HealthCheckTypeTTL,
-			Source:          HealthCheckSourceLease,
-			Definition:      stringPtr(`{"ttl":"30s"}`),
+			InstanceId: instance.Id,
+			CheckId:    HealthCheckIDTTL,
+			Name:       "lease",
+			Type:       HealthCheckTypeTTL,
+			Source:     HealthCheckSourceLease,
+			Definition: stringPtr(`{"ttl":"30s"}`),
 		}
 		require.NoError(t, repo.Create(check))
 		assert.Equal(t, HealthCheckStatusCritical, check.Status)
@@ -54,12 +54,12 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 		assert.Equal(t, "renewed", *got.Output)
 
 		httpCheck := &HealthCheck{
-			AgentInstanceId: instance.Id,
-			CheckId:         "http",
-			Name:            "/health",
-			Type:            HealthCheckTypeHTTP,
-			Definition:      stringPtr(`{"http":"http://10.0.12.41:8080/health","interval":"10s"}`),
-			Status:          HealthCheckStatusPassing,
+			InstanceId: instance.Id,
+			CheckId:    "http",
+			Name:       "/health",
+			Type:       HealthCheckTypeHTTP,
+			Definition: stringPtr(`{"http":"http://10.0.12.41:8080/health","interval":"10s"}`),
+			Status:     HealthCheckStatusPassing,
 		}
 		require.NoError(t, repo.Create(httpCheck))
 
@@ -73,7 +73,7 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, HealthCheckStatusCritical, got.Status)
 
-		list, err := repo.ListByAgentInstanceId(instance.Id)
+		list, err := repo.ListByInstanceId(instance.Id)
 		require.NoError(t, err)
 		assert.Len(t, list, 2)
 
@@ -100,81 +100,81 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 	createTestInstance(t, database, agent.Id, "no-ttl-1")
 
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: live.Id,
-		CheckId:         HealthCheckIDTTL,
-		Name:            "lease",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceLease,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":"30s"}`),
-		TTLExpiresAt:    timePtr(now.Add(time.Minute)),
+		InstanceId:   live.Id,
+		CheckId:      HealthCheckIDTTL,
+		Name:         "lease",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceLease,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":"30s"}`),
+		TTLExpiresAt: timePtr(now.Add(time.Minute)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: expired.Id,
-		CheckId:         HealthCheckIDTTL,
-		Name:            "lease",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceLease,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":"30s"}`),
-		TTLExpiresAt:    timePtr(now.Add(-time.Second)),
+		InstanceId:   expired.Id,
+		CheckId:      HealthCheckIDTTL,
+		Name:         "lease",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceLease,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":"30s"}`),
+		TTLExpiresAt: timePtr(now.Add(-time.Second)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: critical.Id,
-		CheckId:         HealthCheckIDTTL,
-		Name:            "lease",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceLease,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":"30s"}`),
-		TTLExpiresAt:    timePtr(now.Add(time.Minute)),
+		InstanceId:   critical.Id,
+		CheckId:      HealthCheckIDTTL,
+		Name:         "lease",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceLease,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":"30s"}`),
+		TTLExpiresAt: timePtr(now.Add(time.Minute)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: critical.Id,
-		CheckId:         "http",
-		Name:            "/health",
-		Type:            HealthCheckTypeHTTP,
-		Status:          HealthCheckStatusCritical,
-		Definition:      stringPtr(`{"http":"http://10.0.12.41:8080/health"}`),
+		InstanceId: critical.Id,
+		CheckId:    "http",
+		Name:       "/health",
+		Type:       HealthCheckTypeHTTP,
+		Status:     HealthCheckStatusCritical,
+		Definition: stringPtr(`{"http":"http://10.0.12.41:8080/health"}`),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: warning.Id,
-		CheckId:         HealthCheckIDTTL,
-		Name:            "lease",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceLease,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":"30s"}`),
-		TTLExpiresAt:    timePtr(now.Add(time.Minute)),
+		InstanceId:   warning.Id,
+		CheckId:      HealthCheckIDTTL,
+		Name:         "lease",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceLease,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":"30s"}`),
+		TTLExpiresAt: timePtr(now.Add(time.Minute)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: warning.Id,
-		CheckId:         "card",
-		Name:            "card freshness",
-		Type:            HealthCheckTypeCard,
-		Status:          HealthCheckStatusWarning,
-		Definition:      stringPtr(`{"path":"/.well-known/agent-card.json"}`),
+		InstanceId: warning.Id,
+		CheckId:    "card",
+		Name:       "card freshness",
+		Type:       HealthCheckTypeCard,
+		Status:     HealthCheckStatusWarning,
+		Definition: stringPtr(`{"path":"/.well-known/agent-card.json"}`),
 	}))
 
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: staleTTL.Id,
-		CheckId:         HealthCheckIDTTL,
-		Name:            "lease",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceLease,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":"30s"}`),
-		TTLExpiresAt:    timePtr(now.Add(time.Minute)),
+		InstanceId:   staleTTL.Id,
+		CheckId:      HealthCheckIDTTL,
+		Name:         "lease",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceLease,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":"30s"}`),
+		TTLExpiresAt: timePtr(now.Add(time.Minute)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
-		AgentInstanceId: staleTTL.Id,
-		CheckId:         "heartbeat",
-		Name:            "heartbeat",
-		Type:            HealthCheckTypeTTL,
-		Source:          HealthCheckSourceAgent,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"ttl":10}`),
-		TTLExpiresAt:    timePtr(now.Add(-time.Second)),
+		InstanceId:   staleTTL.Id,
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
+		Type:         HealthCheckTypeTTL,
+		Source:       HealthCheckSourceAgent,
+		Status:       HealthCheckStatusPassing,
+		Definition:   stringPtr(`{"ttl":10}`),
+		TTLExpiresAt: timePtr(now.Add(-time.Second)),
 	}))
 
 	list, err := instances.ListLiveByAgentId(agent.Id, now)
@@ -215,20 +215,20 @@ func TestIntegrationHealthCheckScheduling(t *testing.T) {
 	now := time.Now().UTC()
 
 	due := &HealthCheck{
-		AgentInstanceId: first.Id,
-		CheckId:         "http",
-		Name:            "http",
-		Type:            HealthCheckTypeHTTP,
-		Definition:      stringPtr(`{"path":"/healthz"}`),
-		NextRunAt:       timePtr(now.Add(-time.Second)),
+		InstanceId: first.Id,
+		CheckId:    "http",
+		Name:       "http",
+		Type:       HealthCheckTypeHTTP,
+		Definition: stringPtr(`{"path":"/healthz"}`),
+		NextRunAt:  timePtr(now.Add(-time.Second)),
 	}
 	later := &HealthCheck{
-		AgentInstanceId: second.Id,
-		CheckId:         "http",
-		Name:            "http",
-		Type:            HealthCheckTypeHTTP,
-		Definition:      stringPtr(`{"path":"/healthz"}`),
-		NextRunAt:       timePtr(now.Add(time.Hour)),
+		InstanceId: second.Id,
+		CheckId:    "http",
+		Name:       "http",
+		Type:       HealthCheckTypeHTTP,
+		Definition: stringPtr(`{"path":"/healthz"}`),
+		NextRunAt:  timePtr(now.Add(time.Hour)),
 	}
 	require.NoError(t, repo.Create(due))
 	require.NoError(t, repo.Create(later))
@@ -267,22 +267,22 @@ func TestIntegrationHealthCheckScheduling(t *testing.T) {
 
 	t.Run("delete by agent and check id", func(t *testing.T) {
 		lease := &HealthCheck{
-			AgentInstanceId: first.Id,
-			CheckId:         HealthCheckIDTTL,
-			Name:            "lease",
-			Type:            HealthCheckTypeTTL,
-			Source:          HealthCheckSourceLease,
+			InstanceId: first.Id,
+			CheckId:    HealthCheckIDTTL,
+			Name:       "lease",
+			Type:       HealthCheckTypeTTL,
+			Source:     HealthCheckSourceLease,
 		}
 		require.NoError(t, repo.Create(lease))
 
 		require.NoError(t, repo.DeleteByAgentAndCheckId(agent.Id, "http"))
 
-		firstChecks, err := repo.ListByAgentInstanceId(first.Id)
+		firstChecks, err := repo.ListByInstanceId(first.Id)
 		require.NoError(t, err)
 		require.Len(t, firstChecks, 1)
 		assert.Equal(t, HealthCheckIDTTL, firstChecks[0].CheckId)
 
-		secondChecks, err := repo.ListByAgentInstanceId(second.Id)
+		secondChecks, err := repo.ListByInstanceId(second.Id)
 		require.NoError(t, err)
 		assert.Empty(t, secondChecks)
 	})
@@ -294,12 +294,12 @@ func TestIntegrationHealthCheckMetaRepository(t *testing.T) {
 	agent := createTestAgent(t, database, workspace.Id, "health-meta-agent")
 	instance := createTestInstance(t, database, agent.Id, "health-meta-instance")
 	check := &HealthCheck{
-		AgentInstanceId: instance.Id,
-		CheckId:         "http",
-		Name:            "/health",
-		Type:            HealthCheckTypeHTTP,
-		Status:          HealthCheckStatusPassing,
-		Definition:      stringPtr(`{"http":"http://127.0.0.1/health"}`),
+		InstanceId: instance.Id,
+		CheckId:    "http",
+		Name:       "/health",
+		Type:       HealthCheckTypeHTTP,
+		Status:     HealthCheckStatusPassing,
+		Definition: stringPtr(`{"http":"http://127.0.0.1/health"}`),
 	}
 	require.NoError(t, NewHealthCheckRepository(database).Create(check))
 	repo := NewHealthCheckMetaRepository(database)

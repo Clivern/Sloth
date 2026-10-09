@@ -229,13 +229,13 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time
 		WHERE agent_id = $1
 			AND EXISTS (
 				SELECT 1 FROM health_checks lease
-				WHERE lease.agent_instance_id = agent_instances.id
+				WHERE lease.instance_id = agent_instances.id
 					AND lease.source = $5
 					AND lease.ttl_expires_at > $2
 			)
 			AND NOT EXISTS (
 				SELECT 1 FROM health_checks hc
-				WHERE hc.agent_instance_id = agent_instances.id
+				WHERE hc.instance_id = agent_instances.id
 					AND (
 						hc.status = $4
 						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
