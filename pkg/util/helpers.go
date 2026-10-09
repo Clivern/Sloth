@@ -76,8 +76,7 @@ func RandInt(min, max int) (int, error) {
 	return min + int(n.Int64()), nil
 }
 
-// ParseQueryLabels extracts label key-value pairs from query parameters.
-// Reserved keys such as id, limit, and offset are skipped.
+// ParseQueryLabels extracts label pairs from query parameters, skipping reserved keys.
 func ParseQueryLabels(r *http.Request) map[string]string {
 	labels := map[string]string{}
 

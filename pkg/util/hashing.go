@@ -14,8 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// HashPassword generates a bcrypt hash from a plain text password.
-// It uses the default cost factor (bcrypt.DefaultCost = 10).
+// HashPassword generates a bcrypt hash from a plain text password at the default cost.
 func HashPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword(
 		[]byte(password), bcrypt.DefaultCost,

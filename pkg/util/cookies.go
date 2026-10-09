@@ -10,9 +10,7 @@ import (
 
 // CookieOptions holds configuration for cookie creation.
 type CookieOptions struct {
-	// MaxAge is the maximum age of the cookie in seconds.
-	// If zero, the cookie is deleted when the browser closes (session cookie).
-	// If negative, the cookie is deleted immediately.
+	// MaxAge is the cookie age in seconds; zero is a session cookie and negative deletes it now.
 	MaxAge int
 
 	// Path specifies the cookie path. Defaults to "/".
@@ -27,8 +25,7 @@ type CookieOptions struct {
 	// HTTPOnly makes the cookie inaccessible to JavaScript.
 	HTTPOnly bool
 
-	// SameSite controls the cookie's SameSite attribute.
-	// Options: SameSiteDefaultMode, SameSiteLaxMode, SameSiteStrictMode, SameSiteNoneMode.
+	// SameSite is the cookie's SameSite attribute, such as SameSiteLaxMode.
 	SameSite http.SameSite
 }
 
