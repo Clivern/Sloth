@@ -23,6 +23,7 @@ func HashPassword(password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(hashedBytes), nil
 }
 
@@ -31,6 +32,7 @@ func ComparePassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword(
 		[]byte(hashedPassword), []byte(password),
 	)
+
 	return err == nil
 }
 
@@ -40,6 +42,7 @@ func RandomHash() (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
+
 	return hex.EncodeToString(b), nil
 }
 
@@ -49,6 +52,7 @@ func MapChecksum(m map[string]any) (string, error) {
 	for k := range m {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 
 	hasher := sha256.New()
@@ -57,6 +61,7 @@ func MapChecksum(m map[string]any) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal value for key %s: %w", k, err)
 		}
+
 		hasher.Write([]byte(k))
 		hasher.Write(valBytes)
 	}

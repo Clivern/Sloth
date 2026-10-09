@@ -14,6 +14,7 @@ func FileExists(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -24,6 +25,7 @@ func DirExists(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -33,6 +35,7 @@ func EnsureDir(dirName string, mode int) error {
 	if err == nil || os.IsExist(err) {
 		return nil
 	}
+
 	return err
 }
 
@@ -42,5 +45,6 @@ func DeleteDir(dir string) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

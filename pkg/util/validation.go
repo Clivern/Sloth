@@ -28,10 +28,12 @@ func init() {
 		if lo.IsNotEmpty(label) {
 			return label
 		}
+
 		name := fld.Tag.Get("json")
 		if lo.IsNotEmpty(name) {
 			return name
 		}
+
 		return fld.Name
 	})
 
@@ -140,6 +142,7 @@ func validateJSONString(fl validator.FieldLevel) bool {
 	}
 
 	var tmp interface{}
+
 	return json.Unmarshal([]byte(s), &tmp) == nil
 }
 
@@ -156,6 +159,7 @@ func validateJSONObjectString(fl validator.FieldLevel) bool {
 	}
 
 	var tmp map[string]interface{}
+
 	return json.Unmarshal([]byte(s), &tmp) == nil
 }
 
@@ -166,6 +170,7 @@ func validateStrongPassword(fl validator.FieldLevel) bool {
 	if len(password) < 8 {
 		return false
 	}
+
 	// Has uppercase letter
 	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
 	// Has lowercase letter

@@ -89,6 +89,7 @@ func TestUnitPasswordHashing(t *testing.T) {
 					hash, err = HashPassword(tc.password)
 					assert.NoError(t, err)
 				}
+
 				assert.Equal(t, tc.expected, ComparePassword(hash, tc.compare))
 			})
 		}

@@ -85,6 +85,7 @@ func (p *Picker) Pick(instances []AgentInstance, opts Options) (*AgentInstance, 
 	default:
 		return nil, ErrStrategy
 	}
+
 	return &picked, nil
 }
 
@@ -95,6 +96,7 @@ func (p *Picker) Shuffle(instances []AgentInstance) []AgentInstance {
 		j := p.intn(i + 1)
 		out[i], out[j] = out[j], out[i]
 	}
+
 	return out
 }
 
@@ -123,6 +125,7 @@ func (p *Picker) leastOutstanding(instances []AgentInstance) AgentInstance {
 			tied = append(tied, inst)
 		}
 	}
+
 	return tied[p.intn(len(tied))]
 }
 
@@ -131,6 +134,7 @@ func ordered(instances []AgentInstance) []AgentInstance {
 	slices.SortFunc(out, func(a, b AgentInstance) int {
 		return cmp.Compare(a.InstanceId, b.InstanceId)
 	})
+
 	return out
 }
 
@@ -138,5 +142,6 @@ func sticky(instances []AgentInstance, key string) AgentInstance {
 	pool := ordered(instances)
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(key))
+
 	return pool[int(h.Sum32())%len(pool)]
 }

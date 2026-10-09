@@ -71,6 +71,7 @@ func (c *ChatClient) Complete(ctx context.Context, messages []Message) (string, 
 		default:
 			return "", Usage{}, fmt.Errorf("ai chat: unsupported role %q", message.Role)
 		}
+
 		items = append(items, item)
 	}
 
@@ -78,7 +79,6 @@ func (c *ChatClient) Complete(ctx context.Context, messages []Message) (string, 
 		Model:    orsdk.Pointer(c.model),
 		Messages: items,
 	}, nil)
-
 	if err != nil {
 		return "", Usage{}, fmt.Errorf("ai chat: %w", err)
 	}

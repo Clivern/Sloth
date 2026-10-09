@@ -37,6 +37,7 @@ func TestUnitPicker(t *testing.T) {
 		p := New()
 		p.intn = func(n int) int {
 			assert.Equal(t, 3, n)
+
 			return 1
 		}
 		got, err := p.Pick([]AgentInstance{a, b, c}, Options{Strategy: Random})
@@ -53,6 +54,7 @@ func TestUnitPicker(t *testing.T) {
 			require.NoError(t, err)
 			ids = append(ids, got.InstanceId)
 		}
+
 		assert.Equal(t, []string{
 			"invoice-extractor-1",
 			"invoice-extractor-2",
@@ -73,6 +75,7 @@ func TestUnitPicker(t *testing.T) {
 		p := New()
 		p.intn = func(n int) int {
 			assert.Equal(t, 2, n)
+
 			return 1
 		}
 		got, err := p.Pick([]AgentInstance{a, b, c}, Options{Strategy: LeastOutstandingTasks})
@@ -101,6 +104,7 @@ func TestUnitPicker(t *testing.T) {
 				remaining = append(remaining, inst)
 			}
 		}
+
 		got, err := p.Pick(remaining, Options{StickyKey: "task-9"})
 		require.NoError(t, err)
 		assert.NotEqual(t, full.InstanceId, got.InstanceId)

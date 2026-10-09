@@ -50,6 +50,7 @@ func TestUnitCookies(t *testing.T) {
 		if timeDiff < 0 {
 			timeDiff = -timeDiff
 		}
+
 		assert.LessOrEqual(t, timeDiff, 5*time.Second)
 
 		wNil := httptest.NewRecorder()

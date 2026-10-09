@@ -125,6 +125,7 @@ func (o *OAuth) Exchange(ctx context.Context, code, state, expectedState string)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth build request: %w", err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -132,6 +133,7 @@ func (o *OAuth) Exchange(ctx context.Context, code, state, expectedState string)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth request: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -156,6 +158,7 @@ func (o *OAuth) User(ctx context.Context, accessToken string) (*UserInfo, error)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth user request: %w", err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
@@ -163,6 +166,7 @@ func (o *OAuth) User(ctx context.Context, accessToken string) (*UserInfo, error)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth user: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -187,6 +191,7 @@ func (o *OAuth) Emails(ctx context.Context, accessToken string) ([]Email, error)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth emails request: %w", err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
@@ -194,6 +199,7 @@ func (o *OAuth) Emails(ctx context.Context, accessToken string) ([]Email, error)
 	if err != nil {
 		return nil, fmt.Errorf("github oauth emails: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

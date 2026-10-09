@@ -29,6 +29,7 @@ func AppURL(path string) string {
 func CurrentMonthPeriod() (time.Time, time.Time) {
 	now := time.Now().UTC()
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
 	return start, start.AddDate(0, 1, 0)
 }
 
@@ -37,7 +38,6 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	err := json.NewEncoder(w).Encode(data)
-
 	if err != nil {
 		return fmt.Errorf("failed to write JSON response: %w", err)
 	}
@@ -51,6 +51,7 @@ func GenerateUUID() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("generate uuid: %w", err)
 	}
+
 	return id.String(), nil
 }
 
@@ -58,7 +59,6 @@ func GenerateUUID() (string, error) {
 func GenerateSecureToken(length int) (string, error) {
 	bytes := make([]byte, length)
 	_, err := rand.Read(bytes)
-
 	if err != nil {
 		return "", fmt.Errorf("generate secure token: %w", err)
 	}
@@ -88,6 +88,7 @@ func ParseQueryLabels(r *http.Request) map[string]string {
 		if len(values) == 0 {
 			continue
 		}
+
 		labels[key] = values[0]
 	}
 
@@ -122,6 +123,7 @@ func RandomHandle(min, max int) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	digitLen, err := RandInt(min, max)
 	if err != nil {
 		return "", err
@@ -133,16 +135,20 @@ func RandomHandle(min, max int) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		handle[i] = letters[idx]
 	}
+
 	handle[letterLen] = '-'
 	for i := 0; i < digitLen; i++ {
 		idx, err := RandInt(0, len(digits)-1)
 		if err != nil {
 			return "", err
 		}
+
 		handle[letterLen+1+i] = digits[idx]
 	}
+
 	return string(handle), nil
 }
 
@@ -162,10 +168,12 @@ func HandleFromName(name string, maxLength int) string {
 			lastDash = true
 		}
 	}
+
 	handle := strings.Trim(b.String(), "-")
 	if maxLength > 0 && len(handle) > maxLength {
 		handle = strings.TrimRight(handle[:maxLength], "-")
 	}
+
 	return handle
 }
 
@@ -174,6 +182,7 @@ func RemoveLabelFromJSON(labels *string, label string) (*string, bool) {
 	if labels == nil || lo.IsEmpty(*labels) {
 		return labels, false
 	}
+
 	var items []string
 	if err := json.Unmarshal([]byte(*labels), &items); err != nil {
 		return labels, false
@@ -181,15 +190,19 @@ func RemoveLabelFromJSON(labels *string, label string) (*string, bool) {
 	if !lo.Contains(items, label) {
 		return labels, false
 	}
+
 	next := lo.Without(items, label)
 	if len(next) == 0 {
 		return nil, true
 	}
+
 	raw, err := json.Marshal(next)
 	if err != nil {
 		return labels, false
 	}
+
 	s := string(raw)
+
 	return &s, true
 }
 
@@ -198,6 +211,7 @@ func JSONRawFromString(raw *string) json.RawMessage {
 	if raw == nil || lo.IsEmpty(*raw) {
 		return nil
 	}
+
 	return json.RawMessage(*raw)
 }
 
@@ -206,9 +220,11 @@ func JSONSliceFromString[T any](raw *string) []T {
 	if raw == nil || lo.IsEmpty(*raw) {
 		return nil
 	}
+
 	var items []T
 	if err := json.Unmarshal([]byte(*raw), &items); err != nil {
 		return nil
 	}
+
 	return items
 }

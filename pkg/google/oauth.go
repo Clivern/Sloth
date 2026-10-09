@@ -88,6 +88,7 @@ func (o *OAuth) Exchange(ctx context.Context, code, state, expectedState string)
 	if err != nil {
 		return nil, fmt.Errorf("google oauth build request: %w", err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -95,6 +96,7 @@ func (o *OAuth) Exchange(ctx context.Context, code, state, expectedState string)
 	if err != nil {
 		return nil, fmt.Errorf("google oauth request: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -119,6 +121,7 @@ func (o *OAuth) User(ctx context.Context, accessToken string) (*UserInfo, error)
 	if err != nil {
 		return nil, fmt.Errorf("google oauth user request: %w", err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
@@ -126,6 +129,7 @@ func (o *OAuth) User(ctx context.Context, accessToken string) (*UserInfo, error)
 	if err != nil {
 		return nil, fmt.Errorf("google oauth user: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

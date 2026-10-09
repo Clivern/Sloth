@@ -41,9 +41,12 @@ func (a *Auth) Encrypt() error {
 		if err != nil {
 			return fmt.Errorf("auth encrypt config: %w", err)
 		}
+
 		sealed[key] = cipher
 	}
+
 	a.Config = sealed
+
 	return nil
 }
 
@@ -55,8 +58,10 @@ func (a *Auth) Validate() error {
 		if err != nil {
 			return fmt.Errorf("auth decrypt config: %w", err)
 		}
+
 		plain[key] = decoded
 	}
+
 	a.Config = plain
 
 	switch a.Type {

@@ -14,6 +14,7 @@ import (
 func testBaseDir(t *testing.T) string {
 	dir := t.TempDir()
 	_ = os.WriteFile(fmt.Sprintf("%s/.gitignore", dir), nil, 0644)
+
 	return dir
 }
 

@@ -63,6 +63,7 @@ func (c *EmbedClient) Generate(ctx context.Context, texts []string, opts ...Embe
 		if item.Embedding.Type != operations.EmbeddingTypeArrayOfNumber {
 			return nil, Usage{}, fmt.Errorf("ai embed: unexpected embedding type %q", item.Embedding.Type)
 		}
+
 		embeddings = append(embeddings, item.Embedding.ArrayOfNumber)
 	}
 
@@ -92,6 +93,7 @@ func (c *EmbedClient) Generate(ctx context.Context, texts []string, opts ...Embe
 // EmbedDocuments generates embeddings optimized for indexing documents.
 func (c *EmbedClient) EmbedDocuments(ctx context.Context, texts []string, opts EmbedOptions) ([][]float64, Usage, error) {
 	opts.InputType = InputTypeSearchDocument
+
 	return c.Generate(ctx, texts, opts)
 }
 
@@ -99,7 +101,6 @@ func (c *EmbedClient) EmbedDocuments(ctx context.Context, texts []string, opts E
 func (c *EmbedClient) EmbedQuery(ctx context.Context, text string, opts EmbedOptions) ([]float64, Usage, error) {
 	opts.InputType = InputTypeSearchQuery
 	res, u, err := c.Generate(ctx, []string{text}, opts)
-
 	if err != nil {
 		return nil, Usage{}, err
 	}

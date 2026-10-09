@@ -22,7 +22,6 @@ func (c *Client) CreatePortalSession(ctx context.Context, opts PortalOptions) (*
 		Customer:  stripesdk.String(opts.CustomerId),
 		ReturnURL: stripesdk.String(opts.ReturnURL),
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("create portal session: %w", err)
 	}
