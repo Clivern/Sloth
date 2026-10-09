@@ -90,51 +90,51 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 	r.Route("/api/v1/workspaces/{workspaceId}", func(r chi.Router) { // workspace-scoped resources
 		r.Use(middleware.Protect(middleware.Config{Workspace: true}))
 
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetWorkspace})).Get("/", a.GetWorkspaceAction)          // get workspace
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpdateWorkspace})).Put("/", a.UpdateWorkspaceAction)    // update workspace
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanDeleteWorkspace})).Delete("/", a.DeleteWorkspaceAction) // delete workspace
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspace})).Get("/", a.GetWorkspaceAction)          // get workspace
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateWorkspace})).Put("/", a.UpdateWorkspaceAction)    // update workspace
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteWorkspace})).Delete("/", a.DeleteWorkspaceAction) // delete workspace
 
 		r.Route("/invites", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanInviteMember})).Post("/", a.CreateInviteAction)             // create member invite
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListWorkspaceInvites})).Get("/", a.ListInvitesAction)       // list member invites
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetWorkspaceInvite})).Get("/{inviteId}", a.GetInviteAction) // get member invite
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanRemoveInvite})).Delete("/{inviteId}", a.DeleteInviteAction) // revoke member invite
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanInviteMember})).Post("/", a.CreateInviteAction)             // create member invite
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListWorkspaceInvites})).Get("/", a.ListInvitesAction)       // list member invites
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceInvite})).Get("/{inviteId}", a.GetInviteAction) // get member invite
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanRemoveInvite})).Delete("/{inviteId}", a.DeleteInviteAction) // revoke member invite
 		})
 
 		r.Route("/members", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListWorkspaceMembers})).Get("/", a.ListWorkspaceMembersAction)                // list workspace members
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpdateMemberRole})).Put("/{memberUserId}", a.UpdateWorkspaceMemberRoleAction) // update member role
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanRemoveMember})).Delete("/{memberUserId}", a.DeleteWorkspaceMemberAction)      // remove member
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListWorkspaceMembers})).Get("/", a.ListWorkspaceMembersAction)                // list workspace members
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateMemberRole})).Put("/{memberUserId}", a.UpdateWorkspaceMemberRoleAction) // update member role
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanRemoveMember})).Delete("/{memberUserId}", a.DeleteWorkspaceMemberAction)      // remove member
 		})
 
 		r.Route("/keys", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanCreateAccessKey})).Post("/", a.CreateAccessKeyAction)          // create workspace access key
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAccessKeys})).Get("/", a.ListAccessKeysAction)             // list workspace access keys
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAccessKey})).Get("/{keyId}", a.GetAccessKeyAction)          // get workspace access key
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanDeleteAccessKey})).Delete("/{keyId}", a.DeleteAccessKeyAction) // delete workspace access key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanCreateAccessKey})).Post("/", a.CreateAccessKeyAction)          // create workspace access key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListAccessKeys})).Get("/", a.ListAccessKeysAction)             // list workspace access keys
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAccessKey})).Get("/{keyId}", a.GetAccessKeyAction)          // get workspace access key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteAccessKey})).Delete("/{keyId}", a.DeleteAccessKeyAction) // delete workspace access key
 		})
 
 		if conf.IsSaaS() {
-			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceBilling})).Get("/billing", a.GetBillingStatusAction)                               // get billing status
-			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceBilling})).Get("/billing/usage", a.GetBillingUsageAction)                          // get billing usage
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpdateWorkspaceBilling})).Post("/billing/checkout", a.CreateBillingCheckoutAction) // start Stripe checkout
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpdateWorkspaceBilling})).Post("/billing/portal", a.CreateBillingPortalAction)     // open Stripe customer portal
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceBilling})).Get("/billing", a.GetBillingStatusAction)                   // get billing status
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceBilling})).Get("/billing/usage", a.GetBillingUsageAction)              // get billing usage
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateWorkspaceBilling})).Post("/billing/checkout", a.CreateBillingCheckoutAction) // start Stripe checkout
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateWorkspaceBilling})).Post("/billing/portal", a.CreateBillingPortalAction)     // open Stripe customer portal
 		}
 
 		r.Route("/audits", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListWorkspaceAudits})).Get("/", a.ListWorkspaceAuditsAction)      // list audit events
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetWorkspaceAudit})).Get("/{auditId}", a.GetWorkspaceAuditAction) // get audit event
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListWorkspaceAudits})).Get("/", a.ListWorkspaceAuditsAction)      // list audit events
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceAudit})).Get("/{auditId}", a.GetWorkspaceAuditAction) // get audit event
 		})
 
 		r.Route("/agents", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/", a.ListAgentsAction)                 // list agents
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpsertAgent})).Put("/{agentName}", a.UpsertAgentAction)    // register or replace an agent card
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/{agentName}", a.GetAgentAction)          // get an agent
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanDeleteAgent})).Delete("/{agentName}", a.DeleteAgentAction) // delete an agent
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/", a.ListAgentsAction)                 // list agents
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/{agentName}", a.UpsertAgentAction)    // register or replace an agent card
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/{agentName}", a.GetAgentAction)          // get an agent
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteAgent})).Delete("/{agentName}", a.DeleteAgentAction) // delete an agent
 
 			r.Route("/{agentName}/instances", func(r chi.Router) {
-				r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListInstances})).Get("/", a.ListInstancesAction)                       // list agent instances
-				r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetInstance})).Get("/{instanceId}", a.GetInstanceAction)               // get an agent instance
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanListInstances})).Get("/", a.ListInstancesAction)                                   // list agent instances
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanGetInstance})).Get("/{instanceId}", a.GetInstanceAction)                           // get an agent instance
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Put("/{instanceId}", a.RegisterInstanceAction)                 // register or update an instance and start its lease
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Put("/{instanceId}/renew", a.RenewInstanceAction)              // renew an instance lease
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Delete("/{instanceId}", a.DeregisterInstanceAction)            // deregister an instance
@@ -144,42 +144,42 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			})
 
 			r.Route("/{agentName}/checks", func(r chi.Router) {
-				r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/", a.ListAgentChecksAction)                 // list health check templates
-				r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpsertAgent})).Put("/{checkId}", a.UpsertAgentCheckAction)    // create or replace a health check template
-				r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpsertAgent})).Delete("/{checkId}", a.DeleteAgentCheckAction) // delete a health check template
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/", a.ListAgentChecksAction)                 // list health check templates
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/{checkId}", a.UpsertAgentCheckAction)    // create or replace a health check template
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Delete("/{checkId}", a.DeleteAgentCheckAction) // delete a health check template
 			})
 		})
 
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/discover", a.DiscoverAgentsAction)                                   // TODO: perm for discovery
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Post("/discover/resolve", a.ResolveDiscoverAction)                         // TODO: perm for discovery
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/catalog/skills", a.ListCatalogSkillsAction)                          // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/catalog/skills/{skill}/agents", a.ListCatalogSkillAgentsAction)      // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/catalog/agents/{agentName}/card", a.GetCatalogAgentCardAction)         // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/agents/{agentName}/.well-known/agent-card.json", a.GetAgentCardAction) // TODO: perm for agent card
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Post("/a2a/agents/{agentName}/message:send", a.SendAgentMessageAction)       // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Post("/a2a/skills/{skill}/message:send", a.SendSkillMessageAction)           // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetAgent})).Get("/a2a/tasks/{taskId}", a.GetTaskAction)                                  // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListAgents})).Get("/watch/catalog", a.WatchCatalogAction)                                // TODO: perm for watch
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/discover", a.DiscoverAgentsAction)                                   // TODO: perm for discovery
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Post("/discover/resolve", a.ResolveDiscoverAction)                         // TODO: perm for discovery
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/catalog/skills", a.ListCatalogSkillsAction)                          // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/catalog/skills/{skill}/agents", a.ListCatalogSkillAgentsAction)      // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/catalog/agents/{agentName}/card", a.GetCatalogAgentCardAction)         // TODO: perm for catalog
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/agents/{agentName}/.well-known/agent-card.json", a.GetAgentCardAction) // TODO: perm for agent card
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Post("/a2a/agents/{agentName}/message:send", a.SendAgentMessageAction)       // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Post("/a2a/skills/{skill}/message:send", a.SendSkillMessageAction)           // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/a2a/tasks/{taskId}", a.GetTaskAction)                                  // TODO: perm for A2A
+		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/watch/catalog", a.WatchCatalogAction)                                // TODO: perm for watch
 
 		r.Route("/intentions", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListIntentions})).Get("/", a.ListIntentionsAction)                   // list intentions
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanCreateIntention})).Put("/", a.CreateIntentionAction)                 // create an intention
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanCheckIntention})).Post("/check", a.CheckIntentionAction)             // check whether a call is allowed
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetIntention})).Get("/{intentionId}", a.GetIntentionAction)          // get an intention
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanUpdateIntention})).Put("/{intentionId}", a.UpdateIntentionAction)    // update an intention
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanDeleteIntention})).Delete("/{intentionId}", a.DeleteIntentionAction) // delete an intention
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListIntentions})).Get("/", a.ListIntentionsAction)                   // list intentions
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanCreateIntention})).Put("/", a.CreateIntentionAction)                 // create an intention
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanCheckIntention})).Post("/check", a.CheckIntentionAction)             // check whether a call is allowed
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetIntention})).Get("/{intentionId}", a.GetIntentionAction)          // get an intention
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateIntention})).Put("/{intentionId}", a.UpdateIntentionAction)    // update an intention
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteIntention})).Delete("/{intentionId}", a.DeleteIntentionAction) // delete an intention
 		})
 
 		r.Route("/kv", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListKeyValue})).Get("/", a.ListKeyValueAction)         // list workspace keys
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetKeyValue})).Get("/*", a.GetKeyValueAction)          // get a workspace key
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanPutKeyValue})).Put("/*", a.PutKeyValueAction)          // write a workspace key
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanDeleteKeyValue})).Delete("/*", a.DeleteKeyValueAction) // delete a workspace key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListKeyValue})).Get("/", a.ListKeyValueAction)         // list workspace keys
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetKeyValue})).Get("/*", a.GetKeyValueAction)          // get a workspace key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanPutKeyValue})).Put("/*", a.PutKeyValueAction)          // write a workspace key
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteKeyValue})).Delete("/*", a.DeleteKeyValueAction) // delete a workspace key
 		})
 
 		r.Route("/traffic", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanListTraffic})).Get("/", a.ListTrafficAction)          // list gateway calls
-			r.With(middleware.Protect(middleware.Config{User: true, Perm: module.CanGetTraffic})).Get("/{trafficId}", a.GetTrafficAction) // get a gateway call
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListTraffic})).Get("/", a.ListTrafficAction)          // list gateway calls
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetTraffic})).Get("/{trafficId}", a.GetTrafficAction) // get a gateway call
 		})
 
 	})
