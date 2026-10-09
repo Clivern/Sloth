@@ -22,18 +22,24 @@ Handlers are placeholders. `api/gateway_stubs_test.go` pins each one to `501 not
 
 ## Agent instance health checks
 
-`http` and `tcp` checks are stored and scheduled, but nothing runs them yet. The status rules are in `docs/api.md`.
+`http` and `tcp` checks are stored, scheduled and run. The status rules are in `docs/api.md`.
 
 Agreed design: the scheduler claims due checks in Postgres and publishes one job per check over NATS. Runners probe and publish results. The result writer is the only code that writes outcomes. Postgres is the source of truth for what is due. NATS only delivers the work.
 
-- [ ] Add a scheduler loop to the worker process. Each tick calls `HealthCheckRepository.ClaimDue(now, batchSize, hold)`. `hold` must be longer than the probe timeout plus queue and result delay.
-- [ ] Put the instance address, port, type, path, scheme and timeout in each job, so runners never query Postgres.
-- [ ] Publish jobs to a NATS subject in a queue group (for example `health.check.run`), so each check runs on one replica.
-- [ ] Runners call `pkg/probe.HTTP` or `pkg/probe.TCP` and publish the result to `health.check.result`.
-- [ ] Result writer (queue group `health-recorders`) maps the result to passing, warning or critical, then calls `HealthCheckRepository.Record(id, status, output, now+interval)`. It ignores a result older than the row's `last_run_at`.
-- [ ] Stale probe results: when a probe check's `last_run_at` is older than two intervals, treat it as critical when computing instance and agent health. This covers a dead runner or scheduler.
-- [ ] SSRF guard: probes may only target the registered instance address and port. Allow only `http` and `https` schemes. Decide whether to block loopback and link-local ranges.
-- [ ] Tests for `ClaimDue` under two concurrent callers, to cover the `SKIP LOCKED` guarantee.
+Done:
+- [x] Scheduler loop (`module/scheduler.go`), started by the API server in `core/server.go`. It runs there, not in the worker process as first planned.
+- [x] `HealthCheckRepository.ClaimDue(now, 100, 2m)` claims due checks with `FOR UPDATE SKIP LOCKED`.
+- [x] Each job carries the check ID, type, instance address, port and definition, so workers never query Postgres for the instance.
+- [x] Jobs go to `health.check.run`. The worker consumes them through a queue subscription (`worker/worker.go`), so each job runs on one replica.
+- [x] Worker probes with `pkg/probe.HTTP` or `pkg/probe.TCP` and calls `HealthCheckRepository.Record` (`worker/check.go`).
+- [x] Scheme is limited to `http` or `https` when a check is registered (`module/check.go`).
+
+Still open:
+- [ ] The worker writes outcomes directly through `Record`. There is no `health.check.result` subject and no separate result writer, so the single-writer rule in the agreed design is not met. Decide whether to add the result subject and writer, or change the design to match the direct write.
+- [ ] Ignore a result older than the row's `last_run_at`. Only needed once results are published separately.
+- [ ] Stale probe results: when a probe check's `last_run_at` is older than two intervals, treat it as critical when computing instance and agent health. This covers a dead runner or scheduler. No code does this yet.
+- [ ] SSRF guard: probes may only target the registered instance address and port. Scheme is already limited; decide whether to also block loopback and link-local ranges.
+- [ ] Concurrency test for `ClaimDue` under two concurrent callers, to cover the `SKIP LOCKED` guarantee. The existing test in `db/hcheck_test.go` calls it twice in sequence.
 
 ## Planned checks (from `docs/api.md`, not started)
 
