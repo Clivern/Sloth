@@ -14,12 +14,18 @@ import (
 	"github.com/samber/lo"
 )
 
-// GetMeAction returns the authenticated API key or access key principal.
+// GetMeAction returns the authenticated session, API key or access key principal.
 func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	apiKey := r.Header.Get("X-API-Key")
 	accessKey := r.Header.Get("X-Access-Key")
 
+	// Fall back to the session user resolved by the auth middleware
 	if lo.IsEmpty(apiKey) && lo.IsEmpty(accessKey) {
+		if user, ok := a.GetUser(r); ok && user != nil {
+			a.WriteJSON(w, http.StatusOK, a.Me.GetBySession(user))
+			return
+		}
+
 		a.WriteJSON(w, http.StatusForbidden, map[string]any{
 			"errorMessage": locale.TR(r, "me_requires_key_header"),
 		})

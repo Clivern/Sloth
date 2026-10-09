@@ -12,7 +12,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// Me resolves API key and access key principals for /me.
+// Me resolves session, API key and access key principals for /me.
 type Me struct {
 	APIKeyRepository    db.APIKeyRepository
 	UserRepository      db.UserRepository
@@ -49,12 +49,31 @@ type MeAccessKeyResponse struct {
 	AccessKey     AccessKeyResponse `json:"accessKey"`
 }
 
+// MeSessionResponse is returned when /me is called with a session cookie.
+type MeSessionResponse struct {
+	PrincipalType string        `json:"principalType"`
+	User          MeAPIKeyOwner `json:"user"`
+}
+
 // NewMe creates a /me module with the given repositories.
 func NewMe(apiKeys db.APIKeyRepository, users db.UserRepository, accessKeys db.AccessKeyRepository) *Me {
 	return &Me{
 		APIKeyRepository:    apiKeys,
 		UserRepository:      users,
 		AccessKeyRepository: accessKeys,
+	}
+}
+
+// GetBySession returns the session user.
+func (m *Me) GetBySession(user *db.User) *MeSessionResponse {
+	return &MeSessionResponse{
+		PrincipalType: "session",
+		User: MeAPIKeyOwner{
+			Id:    user.Id,
+			Email: user.Email,
+			Name:  user.Name,
+			Role:  user.Role,
+		},
 	}
 }
 

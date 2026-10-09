@@ -196,29 +196,32 @@ paths:
   /api/v1/me:
     get:
       tags: [Session]
-      summary: Current API key or access key principal
-      description: Requires `X-API-Key` or `X-Access-Key`; session cookies are not accepted.
+      summary: Current principal
+      description: |
+        Returns the caller's principal. `X-API-Key` takes precedence over `X-Access-Key`,
+        which takes precedence over the session cookie.
       security:
+        - sessionCookie: []
         - userApiKey: []
         - workspaceAccessKey: []
       responses:
         "200":
-          description: Key metadata
+          description: Principal metadata
           content:
             application/json:
               schema:
                 oneOf:
+                  - $ref: "#/components/schemas/MeSession"
                   - $ref: "#/components/schemas/MeAPIKey"
                   - $ref: "#/components/schemas/MeAccessKey"
                 discriminator:
                   propertyName: principalType
                   mapping:
+                    session: "#/components/schemas/MeSession"
                     api_key: "#/components/schemas/MeAPIKey"
                     access_key: "#/components/schemas/MeAccessKey"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
 
   /api/v1/action/profile:
     get:
@@ -1821,6 +1824,28 @@ components:
           type: string
           format: date-time
 
+    MeUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+
+    MeSession:
+      type: object
+      properties:
+        principalType:
+          type: string
+          example: session
+        user:
+          $ref: "#/components/schemas/MeUser"
+
     MeAPIKey:
       type: object
       properties:
@@ -1828,17 +1853,7 @@ components:
           type: string
           example: api_key
         owner:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-            email:
-              type: string
-            name:
-              type: string
-            role:
-              type: string
+          $ref: "#/components/schemas/MeUser"
         apiKey:
           type: object
           properties:
