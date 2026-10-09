@@ -24,7 +24,10 @@ type CheckoutOptions struct {
 }
 
 // CreateCheckoutSession starts a Stripe Checkout payment for AI tokens.
-func (c *Client) CreateCheckoutSession(ctx context.Context, opts CheckoutOptions) (*stripesdk.CheckoutSession, error) {
+func (c *Client) CreateCheckoutSession(
+	ctx context.Context,
+	opts CheckoutOptions,
+) (*stripesdk.CheckoutSession, error) {
 	if opts.AmountCents < MinTokenPurchaseCents || opts.Tokens <= 0 {
 		return nil, ErrInvalidAmount
 	}

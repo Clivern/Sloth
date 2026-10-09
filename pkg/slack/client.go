@@ -109,7 +109,12 @@ func (c *Client) PostMessage(ctx context.Context, msg Message) error {
 }
 
 // Post sends a request to the Slack API.
-func (c *Client) Post(ctx context.Context, endpoint, token string, msg Message, dest any) (*req.Response, error) {
+func (c *Client) Post(
+	ctx context.Context,
+	endpoint, token string,
+	msg Message,
+	dest any,
+) (*req.Response, error) {
 	r := c.http.R().
 		SetContext(ctx).
 		SetBody(Payload{
