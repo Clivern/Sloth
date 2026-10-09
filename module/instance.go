@@ -127,7 +127,7 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 	list := make([]*InstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 		}
@@ -225,7 +225,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 	}
 
 	now := time.Now().UTC()
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
 	}
@@ -357,15 +357,15 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	}
 	if lease == nil {
 		lease = &db.HealthCheck{
-			AgentInstanceId: instance.Id,
-			CheckId:         db.HealthCheckIDTTL,
-			Name:            "Lease",
-			Type:            db.HealthCheckTypeTTL,
-			Source:          db.HealthCheckSourceLease,
-			Status:          db.HealthCheckStatusPassing,
-			Definition:      &definition,
-			TTLExpiresAt:    &expiresAt,
-			LastRunAt:       &now,
+			InstanceId:   instance.Id,
+			CheckId:      db.HealthCheckIDTTL,
+			Name:         "Lease",
+			Type:         db.HealthCheckTypeTTL,
+			Source:       db.HealthCheckSourceLease,
+			Status:       db.HealthCheckStatusPassing,
+			Definition:   &definition,
+			TTLExpiresAt: &expiresAt,
+			LastRunAt:    &now,
 		}
 		err = i.HealthCheckRepository.Create(lease)
 	} else {
@@ -421,13 +421,13 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			err = i.HealthCheckRepository.Update(existing)
 		} else {
 			check := &db.HealthCheck{
-				AgentInstanceId: instance.Id,
-				CheckId:         template.CheckId,
-				Name:            template.Name,
-				Type:            template.Type,
-				Source:          db.HealthCheckSourceAgent,
-				Status:          db.HealthCheckStatusCritical,
-				Definition:      &stored,
+				InstanceId: instance.Id,
+				CheckId:    template.CheckId,
+				Name:       template.Name,
+				Type:       template.Type,
+				Source:     db.HealthCheckSourceAgent,
+				Status:     db.HealthCheckStatusCritical,
+				Definition: &stored,
 			}
 			if isPull {
 				output := "Waiting for the first check"
@@ -451,7 +451,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	}
 
 	// Remove copies of templates the agent no longer has.
-	current, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	current, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
@@ -466,7 +466,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	}
 
 	instance.UpdatedAt = now
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
@@ -579,7 +579,7 @@ func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
 	}
 
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
 	}

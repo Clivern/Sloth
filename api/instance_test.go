@@ -31,14 +31,14 @@ func TestUnitInstanceActions(t *testing.T) {
 	definition := `{"ttl":30}`
 	expiresAt := time.Now().Add(time.Hour)
 	lease := &db.HealthCheck{
-		Id:              "lease-1",
-		AgentInstanceId: "instance-1",
-		CheckId:         db.HealthCheckIDTTL,
-		Type:            db.HealthCheckTypeTTL,
-		Source:          db.HealthCheckSourceLease,
-		Status:          db.HealthCheckStatusPassing,
-		Definition:      &definition,
-		TTLExpiresAt:    &expiresAt,
+		Id:           "lease-1",
+		InstanceId:   "instance-1",
+		CheckId:      db.HealthCheckIDTTL,
+		Type:         db.HealthCheckTypeTTL,
+		Source:       db.HealthCheckSourceLease,
+		Status:       db.HealthCheckStatusPassing,
+		Definition:   &definition,
+		TTLExpiresAt: &expiresAt,
 	}
 	registerBody := `{"address":"10.0.0.1","port":8080}`
 	base := "/api/v1/workspaces/ws-1/agents/user-directory/instances"

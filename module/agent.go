@@ -122,7 +122,7 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 
 		mapped := make([]*AgentInstanceResponse, 0, len(instances))
 		for _, instance := range instances {
-			checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+			checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
 			if err != nil {
 				return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 			}
@@ -226,7 +226,7 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 		}
@@ -375,7 +375,7 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
 		if err != nil {
 			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 		}

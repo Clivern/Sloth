@@ -275,7 +275,7 @@ type fakeHealthChecks struct {
 	reportErr error
 }
 
-func (f *fakeHealthChecks) GetByInstanceAndCheckId(agentInstanceId db.Id, checkId string) (*db.HealthCheck, error) {
+func (f *fakeHealthChecks) GetByInstanceAndCheckId(instanceId db.Id, checkId string) (*db.HealthCheck, error) {
 	return f.check, f.getErr
 }
 
@@ -356,11 +356,11 @@ type fakeLeaseChecks struct {
 	passErr   error
 }
 
-func (f *fakeLeaseChecks) GetByInstanceAndCheckId(agentInstanceId db.Id, checkId string) (*db.HealthCheck, error) {
+func (f *fakeLeaseChecks) GetByInstanceAndCheckId(instanceId db.Id, checkId string) (*db.HealthCheck, error) {
 	return f.lease, f.getErr
 }
 
-func (f *fakeLeaseChecks) ListByAgentInstanceId(agentInstanceId db.Id) ([]*db.HealthCheck, error) {
+func (f *fakeLeaseChecks) ListByInstanceId(instanceId db.Id) ([]*db.HealthCheck, error) {
 	return f.checks, f.listErr
 }
 

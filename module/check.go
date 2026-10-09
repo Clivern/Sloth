@@ -304,13 +304,13 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 			err = c.HealthCheckRepository.Update(existing)
 		} else {
 			check := &db.HealthCheck{
-				AgentInstanceId: instance.Id,
-				CheckId:         template.CheckId,
-				Name:            template.Name,
-				Type:            template.Type,
-				Source:          db.HealthCheckSourceAgent,
-				Status:          db.HealthCheckStatusCritical,
-				Definition:      &stored,
+				InstanceId: instance.Id,
+				CheckId:    template.CheckId,
+				Name:       template.Name,
+				Type:       template.Type,
+				Source:     db.HealthCheckSourceAgent,
+				Status:     db.HealthCheckStatusCritical,
+				Definition: &stored,
 			}
 			if isPull {
 				output := "Waiting for the first check"

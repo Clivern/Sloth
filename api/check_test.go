@@ -31,14 +31,14 @@ func TestUnitAgentCheckActions(t *testing.T) {
 	}
 	instance := &db.AgentInstance{Id: "instance-1", AgentId: "agent-1", InstanceId: "node-1"}
 	ttlCheck := &db.HealthCheck{
-		Id:              "health-1",
-		AgentInstanceId: "instance-1",
-		CheckId:         "heartbeat",
-		Name:            "heartbeat",
-		Type:            db.HealthCheckTypeTTL,
-		Source:          db.HealthCheckSourceAgent,
-		Status:          db.HealthCheckStatusPassing,
-		Definition:      new(`{"ttl":30}`),
+		Id:         "health-1",
+		InstanceId: "instance-1",
+		CheckId:    "heartbeat",
+		Name:       "heartbeat",
+		Type:       db.HealthCheckTypeTTL,
+		Source:     db.HealthCheckSourceAgent,
+		Status:     db.HealthCheckStatusPassing,
+		Definition: new(`{"ttl":30}`),
 	}
 	ttlBody := `{"type":"ttl","ttl":30}`
 
