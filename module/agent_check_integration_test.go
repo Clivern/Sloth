@@ -175,6 +175,59 @@ func TestIntegrationAgentChecks(t *testing.T) {
 		assert.Len(t, live, 1)
 	})
 
+	t.Run("an expired ttl check makes the instance critical", func(t *testing.T) {
+		instance, err := instances.GetByAgentAndInstanceId(first.AgentId, "support-1")
+		require.NoError(t, err)
+		heartbeat, err := healthChecks.GetByInstanceAndCheckId(instance.Id, "heartbeat")
+		require.NoError(t, err)
+
+		past := time.Now().UTC().Add(-time.Second)
+		require.NoError(t, healthChecks.Report(heartbeat.Id, db.HealthCheckStatusPassing, "", &past))
+
+		item, err := instanceModule.GetInstance(workspace.Id, "support", "support-1")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusCritical, item.Status)
+		for _, check := range item.Checks {
+			if check.CheckId == "heartbeat" {
+				assert.Equal(t, db.HealthCheckStatusCritical, check.Status)
+			}
+		}
+
+		live, err := instanceModule.ListInstances(workspace.Id, "support", true)
+		require.NoError(t, err)
+		assert.Empty(t, live)
+
+		// Reporting again restarts the TTL.
+		_, err = checkModule.ReportCheck(workspace.Id, "support", "support-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		require.NoError(t, err)
+		item, err = instanceModule.GetInstance(workspace.Id, "support", "support-1")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusPassing, item.Status)
+	})
+
+	t.Run("an expired lease makes the instance and agent critical", func(t *testing.T) {
+		instance, err := instances.GetByAgentAndInstanceId(first.AgentId, "support-2")
+		require.NoError(t, err)
+		lease, err := healthChecks.GetByInstanceAndCheckId(instance.Id, db.HealthCheckIDTTL)
+		require.NoError(t, err)
+
+		past := time.Now().UTC().Add(-time.Second)
+		require.NoError(t, healthChecks.Pass(lease.Id, "", &past))
+
+		item, err := instanceModule.GetInstance(workspace.Id, "support", "support-2")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusCritical, item.Status)
+
+		agent, err := agentModule.GetAgent(workspace.Id, "support")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusCritical, agent.Health)
+
+		list, err := agentModule.ListAgents(workspace.Id, 10, 0)
+		require.NoError(t, err)
+		require.Len(t, list.Agents, 1)
+		assert.Equal(t, db.AgentInstanceStatusCritical, list.Agents[0].Health)
+	})
+
 	t.Run("lease and pull checks cannot be reported", func(t *testing.T) {
 		_, err := checkModule.ReportCheck(workspace.Id, "support", "support-1", db.HealthCheckIDTTL, db.HealthCheckStatusPassing, &ReportCheckRequest{})
 		assert.ErrorIs(t, err, ErrCheckNotReportable)

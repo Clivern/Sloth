@@ -93,9 +93,24 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 
 // ListInstances returns an agent's instances, only live ones when passing is set.
 func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool) ([]*InstanceResponse, error) {
-	agent, err := i.getAgent(workspaceId, agentName, ErrFailedListInstances)
+	if !agentNamePattern.MatchString(agentName) {
+		return nil, ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
+	}
+	if workspace == nil {
+		return nil, ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+	}
+	if agent == nil {
+		return nil, ErrAgentNotFound
 	}
 
 	now := time.Now().UTC()
@@ -112,9 +127,61 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 	list := make([]*InstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		item, err := i.toInstanceResponse(instance, now)
+		checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+		}
+
+		item := &InstanceResponse{
+			Id:         instance.Id,
+			AgentId:    instance.AgentId,
+			InstanceId: instance.InstanceId,
+			Address:    instance.Address,
+			Port:       instance.Port,
+			Datacenter: instance.Datacenter,
+			Meta:       util.JSONRawFromString(instance.Meta),
+			Status:     db.AgentInstanceStatusPassing,
+			Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+		}
+
+		// The instance status is the worst check status. A TTL check past its TTL
+		// is critical, and so is an instance without a lease.
+		hasLease := false
+		for _, check := range checks {
+			status := check.Status
+			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+				status = db.HealthCheckStatusCritical
+			}
+			if check.Source == db.HealthCheckSourceLease {
+				hasLease = true
+				item.LeaseExpiresAt = check.TTLExpiresAt
+			}
+
+			switch status {
+			case db.HealthCheckStatusPassing:
+			case db.HealthCheckStatusWarning:
+				if item.Status == db.AgentInstanceStatusPassing {
+					item.Status = db.AgentInstanceStatusWarning
+				}
+			default:
+				item.Status = db.AgentInstanceStatusCritical
+			}
+
+			item.Checks = append(item.Checks, &HealthCheckResponse{
+				CheckId:      check.CheckId,
+				Name:         check.Name,
+				Type:         check.Type,
+				Source:       check.Source,
+				Status:       status,
+				Output:       check.Output,
+				TTLExpiresAt: check.TTLExpiresAt,
+				LastRunAt:    check.LastRunAt,
+			})
+		}
+		if !hasLease {
+			item.Status = db.AgentInstanceStatusCritical
 		}
 		list = append(list, item)
 	}
@@ -127,9 +194,24 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		return nil, ErrInvalidInstanceId
 	}
 
-	agent, err := i.getAgent(workspaceId, agentName, ErrFailedGetInstance)
+	if !agentNamePattern.MatchString(agentName) {
+		return nil, ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
+	}
+	if workspace == nil {
+		return nil, ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
+	}
+	if agent == nil {
+		return nil, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -140,9 +222,62 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		return nil, ErrInstanceNotFound
 	}
 
-	item, err := i.toInstanceResponse(instance, time.Now().UTC())
+	now := time.Now().UTC()
+	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
+	}
+
+	item := &InstanceResponse{
+		Id:         instance.Id,
+		AgentId:    instance.AgentId,
+		InstanceId: instance.InstanceId,
+		Address:    instance.Address,
+		Port:       instance.Port,
+		Datacenter: instance.Datacenter,
+		Meta:       util.JSONRawFromString(instance.Meta),
+		Status:     db.AgentInstanceStatusPassing,
+		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+
+	// The instance status is the worst check status. A TTL check past its TTL
+	// is critical, and so is an instance without a lease.
+	hasLease := false
+	for _, check := range checks {
+		status := check.Status
+		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+			status = db.HealthCheckStatusCritical
+		}
+		if check.Source == db.HealthCheckSourceLease {
+			hasLease = true
+			item.LeaseExpiresAt = check.TTLExpiresAt
+		}
+
+		switch status {
+		case db.HealthCheckStatusPassing:
+		case db.HealthCheckStatusWarning:
+			if item.Status == db.AgentInstanceStatusPassing {
+				item.Status = db.AgentInstanceStatusWarning
+			}
+		default:
+			item.Status = db.AgentInstanceStatusCritical
+		}
+
+		item.Checks = append(item.Checks, &HealthCheckResponse{
+			CheckId:      check.CheckId,
+			Name:         check.Name,
+			Type:         check.Type,
+			Source:       check.Source,
+			Status:       status,
+			Output:       check.Output,
+			TTLExpiresAt: check.TTLExpiresAt,
+			LastRunAt:    check.LastRunAt,
+		})
+	}
+	if !hasLease {
+		item.Status = db.AgentInstanceStatusCritical
 	}
 	return item, nil
 }
@@ -153,9 +288,24 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		return nil, false, ErrInvalidInstanceId
 	}
 
-	agent, err := i.getAgent(workspaceId, agentName, ErrFailedRegisterInstance)
+	if !agentNamePattern.MatchString(agentName) {
+		return nil, false, ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, false, err
+	}
+	if workspace == nil {
+		return nil, false, ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	}
+	if agent == nil {
+		return nil, false, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -227,15 +377,140 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
-	err = syncInstanceChecks(i.HealthCheckRepository, instance.Id, templates, now)
+
+	// Make the instance's checks match the agent's templates. Pull checks run
+	// right away and a TTL check gets one TTL window for its first report.
+	wanted := make(map[string]bool, len(templates))
+	for _, template := range templates {
+		wanted[template.CheckId] = true
+
+		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
+		if err != nil {
+			return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+		}
+		if existing != nil && existing.Source == db.HealthCheckSourceLease {
+			continue
+		}
+
+		// A type change resets the check, since its old status no longer means anything.
+		if existing != nil && existing.Type != template.Type {
+			err = i.HealthCheckRepository.Delete(existing.Id)
+			if err != nil {
+				return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+			}
+			existing = nil
+		}
+
+		isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
+		stored := template.Definition
+		if existing != nil {
+			existing.Name = template.Name
+			existing.Definition = &stored
+			existing.NextRunAt = nil
+			if isPull {
+				existing.NextRunAt = &now
+			}
+			err = i.HealthCheckRepository.Update(existing)
+		} else {
+			check := &db.HealthCheck{
+				AgentInstanceId: instance.Id,
+				CheckId:         template.CheckId,
+				Name:            template.Name,
+				Type:            template.Type,
+				Source:          db.HealthCheckSourceAgent,
+				Status:          db.HealthCheckStatusCritical,
+				Definition:      &stored,
+			}
+			if isPull {
+				output := "Waiting for the first check"
+				check.Output = &output
+				check.NextRunAt = &now
+			} else {
+				var templateDefinition CheckDefinition
+				_ = json.Unmarshal([]byte(template.Definition), &templateDefinition)
+				output := "Waiting for the first report"
+				expiresAt := now.Add(time.Duration(templateDefinition.TTL) * time.Second)
+				check.Status = db.HealthCheckStatusPassing
+				check.Output = &output
+				check.TTLExpiresAt = &expiresAt
+			}
+			err = i.HealthCheckRepository.Create(check)
+		}
+		if err != nil {
+			return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+		}
+	}
+
+	// Remove copies of templates the agent no longer has.
+	current, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
+	if err != nil {
+		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	}
+	for _, check := range current {
+		if check.Source == db.HealthCheckSourceAgent && !wanted[check.CheckId] {
+			err = i.HealthCheckRepository.Delete(check.Id)
+			if err != nil {
+				return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+			}
+		}
+	}
+
+	instance.UpdatedAt = now
+	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	instance.UpdatedAt = now
-	item, err := i.toInstanceResponse(instance, now)
-	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	item := &InstanceResponse{
+		Id:         instance.Id,
+		AgentId:    instance.AgentId,
+		InstanceId: instance.InstanceId,
+		Address:    instance.Address,
+		Port:       instance.Port,
+		Datacenter: instance.Datacenter,
+		Meta:       util.JSONRawFromString(instance.Meta),
+		Status:     db.AgentInstanceStatusPassing,
+		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+
+	// The instance status is the worst check status. A TTL check past its TTL
+	// is critical, and so is an instance without a lease.
+	hasLease := false
+	for _, check := range checks {
+		status := check.Status
+		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+			status = db.HealthCheckStatusCritical
+		}
+		if check.Source == db.HealthCheckSourceLease {
+			hasLease = true
+			item.LeaseExpiresAt = check.TTLExpiresAt
+		}
+
+		switch status {
+		case db.HealthCheckStatusPassing:
+		case db.HealthCheckStatusWarning:
+			if item.Status == db.AgentInstanceStatusPassing {
+				item.Status = db.AgentInstanceStatusWarning
+			}
+		default:
+			item.Status = db.AgentInstanceStatusCritical
+		}
+
+		item.Checks = append(item.Checks, &HealthCheckResponse{
+			CheckId:      check.CheckId,
+			Name:         check.Name,
+			Type:         check.Type,
+			Source:       check.Source,
+			Status:       status,
+			Output:       check.Output,
+			TTLExpiresAt: check.TTLExpiresAt,
+			LastRunAt:    check.LastRunAt,
+		})
+	}
+	if !hasLease {
+		item.Status = db.AgentInstanceStatusCritical
 	}
 	return item, created, nil
 }
@@ -246,9 +521,24 @@ func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string
 		return nil, ErrInvalidInstanceId
 	}
 
-	agent, err := i.getAgent(workspaceId, agentName, ErrFailedRenewInstance)
+	if !agentNamePattern.MatchString(agentName) {
+		return nil, ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
+	}
+	if workspace == nil {
+		return nil, ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
+	}
+	if agent == nil {
+		return nil, ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -278,9 +568,61 @@ func (i *Instance) RenewInstance(workspaceId db.Id, agentName, instanceId string
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
 	}
 
-	item, err := i.toInstanceResponse(instance, now)
+	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
+	}
+
+	item := &InstanceResponse{
+		Id:         instance.Id,
+		AgentId:    instance.AgentId,
+		InstanceId: instance.InstanceId,
+		Address:    instance.Address,
+		Port:       instance.Port,
+		Datacenter: instance.Datacenter,
+		Meta:       util.JSONRawFromString(instance.Meta),
+		Status:     db.AgentInstanceStatusPassing,
+		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+
+	// The instance status is the worst check status. A TTL check past its TTL
+	// is critical, and so is an instance without a lease.
+	hasLease := false
+	for _, check := range checks {
+		status := check.Status
+		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+			status = db.HealthCheckStatusCritical
+		}
+		if check.Source == db.HealthCheckSourceLease {
+			hasLease = true
+			item.LeaseExpiresAt = check.TTLExpiresAt
+		}
+
+		switch status {
+		case db.HealthCheckStatusPassing:
+		case db.HealthCheckStatusWarning:
+			if item.Status == db.AgentInstanceStatusPassing {
+				item.Status = db.AgentInstanceStatusWarning
+			}
+		default:
+			item.Status = db.AgentInstanceStatusCritical
+		}
+
+		item.Checks = append(item.Checks, &HealthCheckResponse{
+			CheckId:      check.CheckId,
+			Name:         check.Name,
+			Type:         check.Type,
+			Source:       check.Source,
+			Status:       status,
+			Output:       check.Output,
+			TTLExpiresAt: check.TTLExpiresAt,
+			LastRunAt:    check.LastRunAt,
+		})
+	}
+	if !hasLease {
+		item.Status = db.AgentInstanceStatusCritical
 	}
 	return item, nil
 }
@@ -291,9 +633,24 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		return ErrInvalidInstanceId
 	}
 
-	agent, err := i.getAgent(workspaceId, agentName, ErrFailedDeregisterInstance)
+	if !agentNamePattern.MatchString(agentName) {
+		return ErrInvalidAgentName
+	}
+
+	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return err
+	}
+	if workspace == nil {
+		return ErrWorkspaceNotFound
+	}
+
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
+	}
+	if agent == nil {
+		return ErrAgentNotFound
 	}
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
@@ -309,57 +666,4 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
 	return nil
-}
-
-// getAgent loads an agent by name, wrapping lookup failures with failErr.
-func (i *Instance) getAgent(workspaceId db.Id, agentName string, failErr error) (*db.Agent, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", failErr, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
-	}
-	return agent, nil
-}
-
-// toInstanceResponse loads an instance's checks and shapes it for the API.
-func (i *Instance) toInstanceResponse(instance *db.AgentInstance, now time.Time) (*InstanceResponse, error) {
-	checks, err := i.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     instanceStatus(checks, now),
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-	for _, check := range checks {
-		if check.Source == db.HealthCheckSourceLease {
-			item.LeaseExpiresAt = check.TTLExpiresAt
-		}
-		item.Checks = append(item.Checks, toHealthCheckResponse(check, now))
-	}
-	return item, nil
 }

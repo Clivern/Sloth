@@ -115,15 +115,49 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 		}
 
 		now := time.Now().UTC()
-		statuses := make([]string, 0, len(instances))
+		health := db.AgentInstanceStatusCritical
+		if len(instances) > 0 {
+			health = db.AgentInstanceStatusPassing
+		}
 		mapped := make([]*AgentInstanceResponse, 0, len(instances))
 		for _, instance := range instances {
 			checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 			if err != nil {
 				return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 			}
-			status := instanceStatus(checks, now)
-			statuses = append(statuses, status)
+			// The instance status is the worst check status. A TTL check past its TTL
+			// is critical, and so is an instance without a lease.
+			status := db.AgentInstanceStatusPassing
+			hasLease := false
+			for _, check := range checks {
+				current := check.Status
+				if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+					current = db.HealthCheckStatusCritical
+				}
+				if check.Source == db.HealthCheckSourceLease {
+					hasLease = true
+				}
+
+				switch current {
+				case db.HealthCheckStatusPassing:
+				case db.HealthCheckStatusWarning:
+					if status == db.AgentInstanceStatusPassing {
+						status = db.AgentInstanceStatusWarning
+					}
+				default:
+					status = db.AgentInstanceStatusCritical
+				}
+			}
+			if !hasLease {
+				status = db.AgentInstanceStatusCritical
+			}
+
+			// The agent is as healthy as its worst instance.
+			if status == db.AgentInstanceStatusCritical {
+				health = db.AgentInstanceStatusCritical
+			} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
+				health = db.AgentInstanceStatusWarning
+			}
 
 			mapped = append(mapped, &AgentInstanceResponse{
 				Id:         instance.Id,
@@ -137,7 +171,6 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 				UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 			})
 		}
-		health := worstStatus(statuses)
 
 		list = append(list, &AgentResponse{
 			Id:           item.Id,
@@ -184,15 +217,49 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 	}
 
 	now := time.Now().UTC()
-	statuses := make([]string, 0, len(instances))
+	health := db.AgentInstanceStatusCritical
+	if len(instances) > 0 {
+		health = db.AgentInstanceStatusPassing
+	}
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
 		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 		}
-		status := instanceStatus(checks, now)
-		statuses = append(statuses, status)
+		// The instance status is the worst check status. A TTL check past its TTL
+		// is critical, and so is an instance without a lease.
+		status := db.AgentInstanceStatusPassing
+		hasLease := false
+		for _, check := range checks {
+			current := check.Status
+			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+				current = db.HealthCheckStatusCritical
+			}
+			if check.Source == db.HealthCheckSourceLease {
+				hasLease = true
+			}
+
+			switch current {
+			case db.HealthCheckStatusPassing:
+			case db.HealthCheckStatusWarning:
+				if status == db.AgentInstanceStatusPassing {
+					status = db.AgentInstanceStatusWarning
+				}
+			default:
+				status = db.AgentInstanceStatusCritical
+			}
+		}
+		if !hasLease {
+			status = db.AgentInstanceStatusCritical
+		}
+
+		// The agent is as healthy as its worst instance.
+		if status == db.AgentInstanceStatusCritical {
+			health = db.AgentInstanceStatusCritical
+		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
+			health = db.AgentInstanceStatusWarning
+		}
 
 		mapped = append(mapped, &AgentInstanceResponse{
 			Id:         instance.Id,
@@ -206,7 +273,6 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
-	health := worstStatus(statuses)
 
 	return &AgentResponse{
 		Id:           agent.Id,
@@ -296,15 +362,49 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 	}
 
 	now := time.Now().UTC()
-	statuses := make([]string, 0, len(instances))
+	health := db.AgentInstanceStatusCritical
+	if len(instances) > 0 {
+		health = db.AgentInstanceStatusPassing
+	}
 	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
 		checks, err := a.HealthCheckRepository.ListByAgentInstanceId(instance.Id)
 		if err != nil {
 			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 		}
-		status := instanceStatus(checks, now)
-		statuses = append(statuses, status)
+		// The instance status is the worst check status. A TTL check past its TTL
+		// is critical, and so is an instance without a lease.
+		status := db.AgentInstanceStatusPassing
+		hasLease := false
+		for _, check := range checks {
+			current := check.Status
+			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+				current = db.HealthCheckStatusCritical
+			}
+			if check.Source == db.HealthCheckSourceLease {
+				hasLease = true
+			}
+
+			switch current {
+			case db.HealthCheckStatusPassing:
+			case db.HealthCheckStatusWarning:
+				if status == db.AgentInstanceStatusPassing {
+					status = db.AgentInstanceStatusWarning
+				}
+			default:
+				status = db.AgentInstanceStatusCritical
+			}
+		}
+		if !hasLease {
+			status = db.AgentInstanceStatusCritical
+		}
+
+		// The agent is as healthy as its worst instance.
+		if status == db.AgentInstanceStatusCritical {
+			health = db.AgentInstanceStatusCritical
+		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
+			health = db.AgentInstanceStatusWarning
+		}
 
 		mapped = append(mapped, &AgentInstanceResponse{
 			Id:         instance.Id,
@@ -318,7 +418,6 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
-	health := worstStatus(statuses)
 
 	return &AgentResponse{
 		Id:           existing.Id,
