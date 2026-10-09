@@ -417,6 +417,33 @@ msgstr "Invalid instance id."
 msgid "failed_instance_request"
 msgstr "Failed to complete the instance request."
 
+msgid "check_not_found"
+msgstr "Health check not found."
+
+msgid "invalid_check_id"
+msgstr "Invalid health check id."
+
+msgid "reserved_check_id"
+msgstr "The check id \"ttl\" is reserved for the instance lease."
+
+msgid "unsupported_check_type"
+msgstr "Unsupported health check type. Use ttl, http or tcp."
+
+msgid "invalid_check_path"
+msgstr "The HTTP check path must start with / and contain no spaces."
+
+msgid "invalid_check_scheme"
+msgstr "The HTTP check scheme must be http or https."
+
+msgid "invalid_check_timing"
+msgstr "Invalid check timing. TTL checks need a ttl, and the timeout must be shorter than the interval."
+
+msgid "check_not_reportable"
+msgstr "Only TTL checks can be reported. Renew the instance to extend its lease."
+
+msgid "failed_check_request"
+msgstr "Failed to complete the health check request."
+
 msgid "intention_not_found"
 msgstr "Intention not found."
 

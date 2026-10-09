@@ -405,6 +405,33 @@ msgstr "Identifiant d'instance invalide."
 msgid "failed_instance_request"
 msgstr "Impossible de traiter la requête d'instance."
 
+msgid "check_not_found"
+msgstr "Vérification de santé introuvable."
+
+msgid "invalid_check_id"
+msgstr "Identifiant de vérification de santé invalide."
+
+msgid "reserved_check_id"
+msgstr "L'identifiant « ttl » est réservé au bail de l'instance."
+
+msgid "unsupported_check_type"
+msgstr "Type de vérification non pris en charge. Utilisez ttl, http ou tcp."
+
+msgid "invalid_check_path"
+msgstr "Le chemin de la vérification HTTP doit commencer par / et ne pas contenir d'espaces."
+
+msgid "invalid_check_scheme"
+msgstr "Le schéma de la vérification HTTP doit être http ou https."
+
+msgid "invalid_check_timing"
+msgstr "Délais de vérification invalides. Les vérifications TTL exigent un ttl, et le délai d'attente doit être inférieur à l'intervalle."
+
+msgid "check_not_reportable"
+msgstr "Seules les vérifications TTL peuvent être signalées. Renouvelez l'instance pour prolonger son bail."
+
+msgid "failed_check_request"
+msgstr "Impossible de traiter la requête de vérification de santé."
+
 msgid "intention_not_found"
 msgstr "Intention introuvable."
 
