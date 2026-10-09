@@ -113,8 +113,10 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	}
 
 	return r.db.QueryRow(
-		`INSERT INTO health_checks
-		(id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at)
+		`INSERT INTO health_checks (
+			id, agent_instance_id, check_id, name, type, source, status, definition,
+			output, ttl_expires_at, last_run_at, next_run_at
+		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11, $12)
 		RETURNING created_at, updated_at`,
 		check.Id.String(),
@@ -136,7 +138,9 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
+		`SELECT
+			id, agent_instance_id, check_id, name, type, source, status, definition,
+			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE id = $1`,
 		id.String(),
@@ -167,7 +171,9 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(agentInstanceId Id, checkId string) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
+		`SELECT
+			id, agent_instance_id, check_id, name, type, source, status, definition,
+			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE agent_instance_id = $1 AND check_id = $2`,
 		agentInstanceId.String(),
@@ -222,7 +228,9 @@ func (r *HealthCheckRepositoryPostgres) Delete(id Id) error {
 // ListByAgentInstanceId lists health checks for an instance.
 func (r *HealthCheckRepositoryPostgres) ListByAgentInstanceId(agentInstanceId Id) ([]*HealthCheck, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
+		`SELECT
+			id, agent_instance_id, check_id, name, type, source, status, definition,
+			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE agent_instance_id = $1
 		ORDER BY check_id`,
@@ -378,7 +386,9 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 	defer tx.Rollback()
 
 	rows, err := tx.Query(
-		`SELECT id, agent_instance_id, check_id, name, type, source, status, definition, output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
+		`SELECT
+			id, agent_instance_id, check_id, name, type, source, status, definition,
+			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
 		FROM health_checks
 		WHERE next_run_at <= $1 AND type IN ($2, $3)
 		ORDER BY next_run_at
