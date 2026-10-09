@@ -171,12 +171,7 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := http.StatusOK
-	if created {
-		status = http.StatusCreated
-	}
-
-	a.WriteJSON(w, status, agent)
+	a.WriteJSON(w, lo.Ternary(created, http.StatusCreated, http.StatusOK), agent)
 }
 
 // DeleteAgentAction removes an agent by name.
