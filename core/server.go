@@ -246,7 +246,7 @@ func RunServer(Static embed.FS) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 
-	scheduler := module.NewScheduler(
+	sched := module.NewScheduler(
 		db.NewHealthCheckRepository(db.GetDB()),
 		db.NewAgentInstanceRepository(db.GetDB()),
 		module.GetBus(),
@@ -254,7 +254,7 @@ func RunServer(Static embed.FS) error {
 
 	go func() {
 		defer close(done)
-		scheduler.Run(ctx)
+		sched.Run(ctx)
 	}()
 
 	defer func() {
