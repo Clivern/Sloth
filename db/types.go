@@ -11,8 +11,7 @@ import (
 	"github.com/samber/lo"
 )
 
-// Id is a PostgreSQL UUID primary or foreign key.
-// It implements sql.Scanner and driver.Valuer so UUIDs can be scanned into DB structs.
+// Id is a PostgreSQL UUID key that implements sql.Scanner and driver.Valuer.
 type Id string
 
 // NewId returns a new UUID-backed database Id.

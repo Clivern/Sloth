@@ -62,9 +62,7 @@ func InitDB(rwConfig DatabaseConfig, roConfigs ...DatabaseConfig) error {
 	return nil
 }
 
-// GetDB returns a database connection.
-// By default it load-balances reads across read-write and read-only connections.
-// Pass true to enforce consistency and use the read-write connection.
+// GetDB returns a database connection, load-balancing reads unless enforceConsistency is true.
 func GetDB(enforceConsistency ...bool) *sql.DB {
 	if len(enforceConsistency) > 0 && enforceConsistency[0] {
 		return GetWriteDB()

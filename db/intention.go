@@ -196,8 +196,7 @@ func (r *IntentionRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64,
 	return count, err
 }
 
-// Match returns the intention the gateway should apply.
-// A row for the named skill wins over a row with no skill.
+// Match returns the intention the gateway should apply, preferring a row for the named skill.
 func (r *IntentionRepositoryPostgres) Match(
 	workspaceId Id,
 	source, destination, skill string,
