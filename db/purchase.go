@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -51,7 +52,7 @@ func (r *TokenPurchaseRepositoryPostgres) Create(purchase *TokenPurchase) (bool,
 		purchase.AmountCents,
 		purchase.Tokens,
 	).Scan(&purchase.Id, &purchase.CreatedAt)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
 

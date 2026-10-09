@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -62,7 +63,7 @@ func (r *ConfigRepositoryPostgres) Get(key string) (*Config, error) {
 		key,
 	).Scan(&o.Id, &o.Key, &o.Value, &o.CreatedAt, &o.UpdatedAt)
 
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

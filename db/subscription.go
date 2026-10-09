@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -103,7 +104,7 @@ func (r *SubscriptionRepositoryPostgres) GetById(id Id) (*Subscription, error) {
 		&item.UpdatedAt,
 	)
 
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -128,7 +129,7 @@ func (r *SubscriptionRepositoryPostgres) GetByWorkspaceId(workspaceId Id) (*Subs
 		&item.UpdatedAt,
 	)
 
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -219,7 +220,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Get(id Id, key string) (*Subscripti
 		&meta.UpdatedAt,
 	)
 
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

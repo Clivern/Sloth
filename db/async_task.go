@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -249,7 +250,7 @@ func (r *AsyncTaskMetaRepositoryPostgres) Get(id Id, key string) (*AsyncTaskMeta
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -91,7 +92,7 @@ func (r *UsageRepositoryPostgres) GetById(id Id) (*Usage, error) {
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -168,7 +169,7 @@ func (r *UsageRepositoryPostgres) GetQuantityByPeriod(workspaceId Id, utype stri
 		utype,
 		pstart,
 	).Scan(&quantity)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
 

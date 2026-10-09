@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/samber/lo"
@@ -94,7 +95,7 @@ func (r *AuditEventRepositoryPostgres) GetById(id Id) (*AuditEvent, error) {
 		&event.CreatedAt,
 	)
 
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
