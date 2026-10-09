@@ -30,6 +30,7 @@ tags:
   - name: Audits
   - name: Agents
   - name: Instances
+  - name: Health checks
   - name: Intentions
   - name: Key-value
   - name: Traffic
@@ -1206,6 +1207,216 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/pass:
+    post:
+      tags: [Health checks]
+      summary: Report a TTL check passing
+      description: |
+        Sets the check to `passing` and restarts its TTL. Only TTL checks copied from an
+        agent check template can be reported; the lease is extended with renew instead.
+      security:
+        - sessionCookie: []
+        - userApiKey: []
+        - workspaceAccessKey: []
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - $ref: "#/components/parameters/instanceId"
+        - $ref: "#/components/parameters/checkId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCheckRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheck"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/warn:
+    post:
+      tags: [Health checks]
+      summary: Report a TTL check warning
+      description: |
+        Sets the check to `warning` and restarts its TTL. Only TTL checks copied from an
+        agent check template can be reported; the lease is extended with renew instead.
+      security:
+        - sessionCookie: []
+        - userApiKey: []
+        - workspaceAccessKey: []
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - $ref: "#/components/parameters/instanceId"
+        - $ref: "#/components/parameters/checkId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCheckRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheck"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/fail:
+    post:
+      tags: [Health checks]
+      summary: Report a TTL check critical
+      description: |
+        Sets the check to `critical` and restarts its TTL. Only TTL checks copied from an
+        agent check template can be reported; the lease is extended with renew instead.
+      security:
+        - sessionCookie: []
+        - userApiKey: []
+        - workspaceAccessKey: []
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - $ref: "#/components/parameters/instanceId"
+        - $ref: "#/components/parameters/checkId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCheckRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthCheck"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/checks:
+    get:
+      tags: [Health checks]
+      summary: List agent health check templates
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentCheck"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/checks/{checkId}:
+    put:
+      tags: [Health checks]
+      summary: Create or replace an agent health check template
+      description: |
+        The template is copied onto every registered instance of the agent, and onto each
+        instance that registers later. `http` and `tcp` checks are probed by Cognit on their
+        interval; `ttl` checks must be reported by the instance before the TTL runs out.
+        An instance's status is the worst status across its checks.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - $ref: "#/components/parameters/checkId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertAgentCheckRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCheck"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentCheck"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Health checks]
+      summary: Delete an agent health check template
+      description: Also removes the check from every instance of the agent.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - $ref: "#/components/parameters/checkId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/workspaces/{workspaceId}/intentions:
     get:
       tags: [Intentions]
@@ -1561,6 +1772,14 @@ components:
       schema:
         type: string
         pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
+    checkId:
+      name: checkId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
+      description: The check id `ttl` is reserved for the instance lease.
     apiKeyId:
       name: apiKeyId
       in: path
@@ -2245,8 +2464,15 @@ components:
           type: string
         type:
           type: string
+          enum: [ttl, http, tcp]
+        source:
+          type: string
+          enum: [lease, agent]
+          description: "`lease` is the instance lease; `agent` is copied from an agent check template."
         status:
           type: string
+          enum: [passing, warning, critical]
+          description: A TTL check whose TTL has run out is reported as critical.
         output:
           type: string
           nullable: true
@@ -2258,6 +2484,86 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    UpsertAgentCheckRequest:
+      type: object
+      required: [type]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          description: Defaults to the check id.
+        type:
+          type: string
+          enum: [ttl, http, tcp]
+        path:
+          type: string
+          maxLength: 255
+          description: Required for `http`. Must start with `/`.
+          example: /healthz
+        scheme:
+          type: string
+          enum: [http, https]
+          default: http
+          description: "`http` only."
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          description: "`http` and `tcp`. Defaults to the instance port."
+        interval:
+          type: integer
+          minimum: 5
+          maximum: 3600
+          default: 10
+          description: Seconds between probes, for `http` and `tcp`.
+        timeout:
+          type: integer
+          minimum: 1
+          maximum: 60
+          default: 2
+          description: Seconds a probe may take. Must be shorter than the interval.
+        ttl:
+          type: integer
+          minimum: 5
+          maximum: 86400
+          description: Required for `ttl`. Seconds the instance has to report between updates.
+
+    AgentCheck:
+      type: object
+      properties:
+        checkId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ttl, http, tcp]
+        path:
+          type: string
+        scheme:
+          type: string
+        port:
+          type: integer
+        interval:
+          type: integer
+        timeout:
+          type: integer
+        ttl:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ReportCheckRequest:
+      type: object
+      properties:
+        output:
+          type: string
+          maxLength: 4096
 
     Instance:
       type: object

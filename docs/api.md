@@ -134,28 +134,38 @@ Registration is lease-based. Miss the TTL and the instance is marked critical, t
 
 ## 4. Control plane — health
 
+Checks are defined once per agent as templates, and copied onto every instance of that agent, including instances that register later. Results stay per instance, so one failing instance is dropped from discovery without affecting the others.
+
 ```
-GET    /v1/workspaces/{workspace}/health/agents
-GET    /v1/workspaces/{workspace}/health/agents/{agent}
-GET    /v1/workspaces/{workspace}/health/agents/{agent}/instances/{instance}
+GET    /v1/workspaces/{workspace}/agents/{agent}/checks
+PUT    /v1/workspaces/{workspace}/agents/{agent}/checks/{check}
+DELETE /v1/workspaces/{workspace}/agents/{agent}/checks/{check}
 
-PUT    /v1/workspaces/{workspace}/health/checks/{check}
-DELETE /v1/workspaces/{workspace}/health/checks/{check}
-POST   /v1/workspaces/{workspace}/health/checks/{check}/pass
-POST   /v1/workspaces/{workspace}/health/checks/{check}/warn
-POST   /v1/workspaces/{workspace}/health/checks/{check}/fail
-
-GET    /v1/workspaces/{workspace}/health/state/passing
-GET    /v1/workspaces/{workspace}/health/state/warning
-GET    /v1/workspaces/{workspace}/health/state/critical
+POST   /v1/workspaces/{workspace}/agents/{agent}/instances/{instance}/checks/{check}/pass
+POST   /v1/workspaces/{workspace}/agents/{agent}/instances/{instance}/checks/{check}/warn
+POST   /v1/workspaces/{workspace}/agents/{agent}/instances/{instance}/checks/{check}/fail
 ```
 
-Checks that matter for agents:
+```json
+PUT /v1/workspaces/{workspace}/agents/support-assistant/checks/http
+{ "type": "http", "path": "/healthz", "interval": 10, "timeout": 2 }
+```
 
-- **TTL heartbeat** — process is alive
-- **A2A probe** — `GetTask` or a cheap `SendMessage` against a health skill
+An instance's status is the worst status across its checks: any critical check, or an expired lease or TTL check, makes it critical and drops it from discovery. Warning instances stay in discovery.
+
+Check types:
+
+- **Lease** — built in. Every instance has one; renew extends it.
+- **TTL heartbeat** (`ttl`) — the instance reports pass, warn or fail before the TTL runs out.
+- **HTTP** (`http`) — Cognit requests `path` on the instance; 2xx is passing, 429 is warning, anything else is critical.
+- **TCP** (`tcp`) — Cognit opens a connection to the instance address and port.
+
+Planned:
+
 - **Card freshness** — `/.well-known/agent-card.json` still matches the registered card
+- **A2A probe** — `GetTask` or a cheap `SendMessage` against a health skill
 - **Skill probe** — named skill still accepts the declared input modes
+- **State queries** — `GET /v1/workspaces/{workspace}/health/state/{passing|warning|critical}`
 
 ---
 
