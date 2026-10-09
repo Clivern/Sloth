@@ -25,7 +25,6 @@ var (
 	ErrCheckNotReportable   = errors.New("check not reportable")
 	ErrFailedListChecks     = errors.New("failed list checks")
 	ErrFailedUpsertCheck    = errors.New("failed upsert check")
-	ErrFailedDeleteCheck    = errors.New("failed delete check")
 	ErrFailedReportCheck    = errors.New("failed report check")
 )
 
@@ -362,25 +361,9 @@ func (c *Check) UpsertAgentCheck(
 
 // DeleteAgentCheck removes an agent check template and its copies on every instance.
 func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) error {
-	if !instanceIdPattern.MatchString(checkId) {
-		return ErrInvalidCheckId
-	}
-
-	if !agentNamePattern.MatchString(agentName) {
-		return ErrInvalidAgentName
-	}
-
-	workspace, err := c.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
+		return err
 	}
 	if agent == nil {
 		return ErrAgentNotFound
@@ -388,7 +371,7 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 
 	template, err := c.AgentCheckRepository.GetByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
+		return err
 	}
 	if template == nil {
 		return ErrCheckNotFound
@@ -396,15 +379,10 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 
 	err = c.HealthCheckRepository.DeleteByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
+		return err
 	}
 
-	err = c.AgentCheckRepository.Delete(template.Id)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedDeleteCheck, err)
-	}
-
-	return nil
+	return c.AgentCheckRepository.Delete(template.Id)
 }
 
 // ReportCheck records an instance's report for one of its TTL checks and restarts the TTL.
