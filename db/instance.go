@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -120,7 +121,7 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 		&instance.CreatedAt,
 		&instance.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -148,7 +149,7 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 		&instance.CreatedAt,
 		&instance.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -319,7 +320,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInst
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -109,7 +110,7 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 		&call.CreatedAt,
 		&call.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

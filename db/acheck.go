@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -81,7 +82,7 @@ func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId 
 		&check.CreatedAt,
 		&check.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

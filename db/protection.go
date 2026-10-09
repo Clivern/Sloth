@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -112,7 +113,7 @@ func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, er
 		&protection.CreatedAt,
 		&protection.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -138,7 +139,7 @@ func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name s
 		&protection.CreatedAt,
 		&protection.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -291,7 +292,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetById(id Id) (*AgentProtectio
 		&token.CreatedAt,
 		&token.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -319,7 +320,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string
 		&token.CreatedAt,
 		&token.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

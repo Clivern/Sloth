@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -106,7 +107,7 @@ func (r *IntegrationRepositoryPostgres) GetById(id Id) (*Integration, error) {
 		&inv.CreatedAt,
 		&inv.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -226,7 +227,7 @@ func (r *IntegrationMetaRepositoryPostgres) Get(id Id, key string) (*Integration
 		WHERE integration_id = $1 AND key = $2`,
 		id.String(), key,
 	).Scan(&meta.Id, &meta.IntegrationId, &meta.Key, &meta.Value, &meta.CreatedAt, &meta.UpdatedAt)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

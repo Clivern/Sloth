@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -109,7 +110,7 @@ func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 		&intention.CreatedAt,
 		&intention.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -219,7 +220,7 @@ func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination,
 		&intention.CreatedAt,
 		&intention.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -267,7 +268,7 @@ func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

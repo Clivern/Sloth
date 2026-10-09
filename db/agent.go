@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -104,7 +105,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 		&agent.CreatedAt,
 		&agent.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -130,7 +131,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 		&agent.CreatedAt,
 		&agent.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -254,7 +255,7 @@ func (r *AgentMetaRepositoryPostgres) Get(id Id, key string) (*AgentMeta, error)
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

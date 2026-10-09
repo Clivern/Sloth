@@ -5,6 +5,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -160,7 +161,7 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 		&check.CreatedAt,
 		&check.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -194,7 +195,7 @@ func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(agentInstanceId 
 		&check.CreatedAt,
 		&check.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -509,7 +510,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheck
 		&meta.CreatedAt,
 		&meta.UpdatedAt,
 	)
-	if isNotFound(err) {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
