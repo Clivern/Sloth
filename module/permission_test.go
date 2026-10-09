@@ -80,9 +80,9 @@ func TestUnitPermission(t *testing.T) {
 	})
 
 	t.Run("an access key never gets permissions outside the allowed set", func(t *testing.T) {
-		key := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`{"permissions":["` + CanGetAgent + `"]}`)}
+		key := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`{"permissions":["CAN_FLY"]}`)}
 
-		allowed, err := newPerm(nil).WithAccessKey(key).WithWorkspace(workspace).Can(CanGetAgent)
+		allowed, err := newPerm(nil).WithAccessKey(key).WithWorkspace(workspace).Can("CAN_FLY")
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
@@ -112,7 +112,7 @@ func TestUnitPermission(t *testing.T) {
 
 	t.Run("valid access key permissions accept the allowed set only", func(t *testing.T) {
 		assert.True(t, ValidAccessKeyPermissions([]string{CanRegisterInstance}))
-		assert.False(t, ValidAccessKeyPermissions([]string{CanGetAgent}))
+		assert.False(t, ValidAccessKeyPermissions([]string{"CAN_FLY"}))
 		assert.False(t, ValidAccessKeyPermissions(nil))
 	})
 }

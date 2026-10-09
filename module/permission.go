@@ -71,7 +71,53 @@ var (
 
 // AccessKeyPermissions lists permissions that may be assigned to workspace access keys.
 var AccessKeyPermissions = map[string]bool{
+	CanGetWorkspace:    true,
+	CanUpdateWorkspace: true,
+	CanDeleteWorkspace: true,
+
+	CanListWorkspaceMembers: true,
+	CanUpdateMemberRole:     true,
+	CanRemoveMember:         true,
+
+	CanListWorkspaceInvites: true,
+	CanGetWorkspaceInvite:   true,
+	CanInviteMember:         true,
+	CanRemoveInvite:         true,
+
+	CanGetWorkspaceBilling:    true,
+	CanUpdateWorkspaceBilling: true,
+
+	CanListAccessKeys:  true,
+	CanCreateAccessKey: true,
+	CanGetAccessKey:    true,
+	CanDeleteAccessKey: true,
+
+	CanListWorkspaceAudits: true,
+	CanGetWorkspaceAudit:   true,
+
+	CanListAgents:  true,
+	CanGetAgent:    true,
+	CanUpsertAgent: true,
+	CanDeleteAgent: true,
+
+	CanListInstances:    true,
+	CanGetInstance:      true,
 	CanRegisterInstance: true,
+
+	CanListIntentions:  true,
+	CanGetIntention:    true,
+	CanCreateIntention: true,
+	CanUpdateIntention: true,
+	CanDeleteIntention: true,
+	CanCheckIntention:  true,
+
+	CanListKeyValue:   true,
+	CanGetKeyValue:    true,
+	CanPutKeyValue:    true,
+	CanDeleteKeyValue: true,
+
+	CanListTraffic: true,
+	CanGetTraffic:  true,
 }
 
 // Perm checks workspace permissions for users and workspace access keys.
