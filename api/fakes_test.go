@@ -42,7 +42,10 @@ func (f *fakeAccessKeys) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.listErr
 }
 
-func (f *fakeAccessKeys) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AccessKey, error) {
+func (f *fakeAccessKeys) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.AccessKey, error) {
 	return f.keys, f.listErr
 }
 
@@ -77,7 +80,10 @@ type fakeAgentCatalog struct {
 	deleteErr error
 }
 
-func (f *fakeAgentCatalog) GetByWorkspaceAndName(workspaceId db.Id, name string) (*db.Agent, error) {
+func (f *fakeAgentCatalog) GetByWorkspaceAndName(
+	workspaceId db.Id,
+	name string,
+) (*db.Agent, error) {
 	if f.agent == nil || f.agent.Name != name {
 		return nil, f.getErr
 	}
@@ -100,7 +106,10 @@ func (f *fakeAgentCatalog) Delete(id db.Id) error {
 	return f.deleteErr
 }
 
-func (f *fakeAgentCatalog) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Agent, error) {
+func (f *fakeAgentCatalog) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.Agent, error) {
 	return f.list, f.listErr
 }
 
@@ -193,7 +202,10 @@ func (f *fakeAuditEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.listErr
 }
 
-func (f *fakeAuditEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AuditEvent, error) {
+func (f *fakeAuditEvents) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.AuditEvent, error) {
 	return f.events, f.listErr
 }
 
@@ -211,7 +223,11 @@ type fakeUsageRecords struct {
 	db.UsageRepository
 }
 
-func (f *fakeUsageRecords) GetQuantityByPeriod(workspaceId db.Id, utype string, pstart time.Time) (int64, error) {
+func (f *fakeUsageRecords) GetQuantityByPeriod(
+	workspaceId db.Id,
+	utype string,
+	pstart time.Time,
+) (int64, error) {
 	return 0, nil
 }
 
@@ -227,7 +243,10 @@ type fakeAgentChecks struct {
 	deleteErr error
 }
 
-func (f *fakeAgentChecks) GetByAgentAndCheckId(agentId db.Id, checkId string) (*db.AgentCheck, error) {
+func (f *fakeAgentChecks) GetByAgentAndCheckId(
+	agentId db.Id,
+	checkId string,
+) (*db.AgentCheck, error) {
 	return f.template, f.getErr
 }
 
@@ -247,7 +266,10 @@ func (f *fakeAgentChecks) CountByAgentId(agentId db.Id) (int64, error) {
 	return f.total, f.listErr
 }
 
-func (f *fakeAgentChecks) ListPageByAgentId(agentId db.Id, limit, offset int) ([]*db.AgentCheck, error) {
+func (f *fakeAgentChecks) ListPageByAgentId(
+	agentId db.Id,
+	limit, offset int,
+) ([]*db.AgentCheck, error) {
 	return f.list, f.listErr
 }
 
@@ -260,7 +282,10 @@ type fakeCheckInstances struct {
 	instance *db.AgentInstance
 }
 
-func (f *fakeCheckInstances) GetByAgentAndInstanceId(agentId db.Id, instanceId string) (*db.AgentInstance, error) {
+func (f *fakeCheckInstances) GetByAgentAndInstanceId(
+	agentId db.Id,
+	instanceId string,
+) (*db.AgentInstance, error) {
 	return f.instance, nil
 }
 
@@ -275,7 +300,10 @@ type fakeHealthChecks struct {
 	reportErr error
 }
 
-func (f *fakeHealthChecks) GetByInstanceAndCheckId(instanceId db.Id, checkId string) (*db.HealthCheck, error) {
+func (f *fakeHealthChecks) GetByInstanceAndCheckId(
+	instanceId db.Id,
+	checkId string,
+) (*db.HealthCheck, error) {
 	return f.check, f.getErr
 }
 
@@ -287,7 +315,13 @@ func (f *fakeHealthChecks) DeleteByAgentAndCheckId(agentId db.Id, checkId string
 	return nil
 }
 
-func newCheckAPI(workspace *db.Workspace, agent *fakeAgentCatalog, checks *fakeAgentChecks, instance *fakeCheckInstances, health *fakeHealthChecks) *API {
+func newCheckAPI(
+	workspace *db.Workspace,
+	agent *fakeAgentCatalog,
+	checks *fakeAgentChecks,
+	instance *fakeCheckInstances,
+	health *fakeHealthChecks,
+) *API {
 	return &API{
 		Check: module.NewCheck(
 			agent,
@@ -321,7 +355,10 @@ type fakeInstanceRecords struct {
 	deleteErr error
 }
 
-func (f *fakeInstanceRecords) GetByAgentAndInstanceId(agentId db.Id, instanceId string) (*db.AgentInstance, error) {
+func (f *fakeInstanceRecords) GetByAgentAndInstanceId(
+	agentId db.Id,
+	instanceId string,
+) (*db.AgentInstance, error) {
 	return f.instance, f.getErr
 }
 
@@ -341,7 +378,10 @@ func (f *fakeInstanceRecords) ListByAgentId(agentId db.Id) ([]*db.AgentInstance,
 	return f.list, f.listErr
 }
 
-func (f *fakeInstanceRecords) ListLiveByAgentId(agentId db.Id, now time.Time) ([]*db.AgentInstance, error) {
+func (f *fakeInstanceRecords) ListLiveByAgentId(
+	agentId db.Id,
+	now time.Time,
+) ([]*db.AgentInstance, error) {
 	return f.list, f.listErr
 }
 
@@ -356,7 +396,10 @@ type fakeLeaseChecks struct {
 	passErr   error
 }
 
-func (f *fakeLeaseChecks) GetByInstanceAndCheckId(instanceId db.Id, checkId string) (*db.HealthCheck, error) {
+func (f *fakeLeaseChecks) GetByInstanceAndCheckId(
+	instanceId db.Id,
+	checkId string,
+) (*db.HealthCheck, error) {
 	return f.lease, f.getErr
 }
 
@@ -380,7 +423,12 @@ func (f *fakeLeaseChecks) Delete(id db.Id) error {
 	return nil
 }
 
-func newInstanceAPI(workspace *db.Workspace, agent *fakeAgentCatalog, instances *fakeInstanceRecords, checks *fakeLeaseChecks) *API {
+func newInstanceAPI(
+	workspace *db.Workspace,
+	agent *fakeAgentCatalog,
+	instances *fakeInstanceRecords,
+	checks *fakeLeaseChecks,
+) *API {
 	return &API{
 		Instance: module.NewInstance(
 			agent,
@@ -437,11 +485,17 @@ func (f *fakeIntentions) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.listErr
 }
 
-func (f *fakeIntentions) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Intention, error) {
+func (f *fakeIntentions) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.Intention, error) {
 	return f.list, f.listErr
 }
 
-func (f *fakeIntentions) Match(workspaceId db.Id, source, destination, skill string) (*db.Intention, error) {
+func (f *fakeIntentions) Match(
+	workspaceId db.Id,
+	source, destination, skill string,
+) (*db.Intention, error) {
 	return f.match, f.matchErr
 }
 
@@ -485,11 +539,17 @@ func (f *fakeInvites) MarkExpiredAsExpired() (int64, error) {
 	return 0, nil
 }
 
-func (f *fakeInvites) CountPendingByEmailInWorkspace(workspaceId db.Id, email string) (int64, error) {
+func (f *fakeInvites) CountPendingByEmailInWorkspace(
+	workspaceId db.Id,
+	email string,
+) (int64, error) {
 	return f.pending, nil
 }
 
-func (f *fakeInvites) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.UserInvite, error) {
+func (f *fakeInvites) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.UserInvite, error) {
 	return f.list, f.listErr
 }
 
@@ -530,7 +590,10 @@ func (f *fakeKeyValues) Delete(workspaceId db.Id, key string) error {
 	return f.deleteErr
 }
 
-func (f *fakeKeyValues) ListByPrefix(workspaceId db.Id, prefix string) ([]*db.WorkspaceKeyValue, error) {
+func (f *fakeKeyValues) ListByPrefix(
+	workspaceId db.Id,
+	prefix string,
+) ([]*db.WorkspaceKeyValue, error) {
 	return f.items, nil
 }
 
@@ -653,7 +716,10 @@ func (f *fakeTrafficCalls) CountByWorkspaceId(workspaceId db.Id) (int64, error) 
 	return f.total, f.listErr
 }
 
-func (f *fakeTrafficCalls) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.TrafficCall, error) {
+func (f *fakeTrafficCalls) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.TrafficCall, error) {
 	return f.calls, f.listErr
 }
 
@@ -705,7 +771,9 @@ func (f *fakeWorkspaceRecords) Count(userId db.Id) (int64, error) {
 	return f.total, f.listErr
 }
 
-func (f *fakeWorkspaceRecords) GetWorkspaceMembership(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
+func (f *fakeWorkspaceRecords) GetWorkspaceMembership(
+	workspaceId, userId db.Id,
+) (*db.WorkspaceUser, error) {
 	return f.membership, nil
 }
 
@@ -723,7 +791,9 @@ func (f *fakeWorkspaceMembers) Create(member *db.WorkspaceUser) error {
 	return nil
 }
 
-func (f *fakeWorkspaceMembers) GetByWorkspaceAndUser(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
+func (f *fakeWorkspaceMembers) GetByWorkspaceAndUser(
+	workspaceId, userId db.Id,
+) (*db.WorkspaceUser, error) {
 	return f.member, f.err
 }
 
@@ -735,7 +805,10 @@ func (f *fakeWorkspaceMembers) Delete(id db.Id) error {
 	return f.deleteErr
 }
 
-func (f *fakeWorkspaceMembers) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.WorkspaceUser, error) {
+func (f *fakeWorkspaceMembers) ListByWorkspaceId(
+	workspaceId db.Id,
+	limit, offset int,
+) ([]*db.WorkspaceUser, error) {
 	return f.list, f.err
 }
 
