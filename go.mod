@@ -13,7 +13,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/nats-io/nats.go v1.54.0
 	github.com/prometheus/client_golang v1.25.0
-	github.com/resend/resend-go/v4 v4.8.1
+	github.com/resend/resend-go/v4 v4.8.2
 	github.com/rs/zerolog v1.35.1
 	github.com/samber/lo v1.53.0
 	github.com/spf13/cobra v1.10.2
