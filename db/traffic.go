@@ -118,7 +118,10 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 }
 
 // ListByWorkspaceId lists traffic calls for a workspace, newest first.
-func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*TrafficCall, error) {
+func (r *TrafficRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*TrafficCall, error) {
 	rows, err := r.db.Query(
 		`SELECT
 			id, workspace_id, source_instance, destination_instance, skill, verb,

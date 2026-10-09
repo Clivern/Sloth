@@ -89,7 +89,9 @@ func (r *WorkspaceUserRepositoryPostgres) GetById(id Id) (*WorkspaceUser, error)
 }
 
 // GetByWorkspaceAndUser returns a workspace user by workspace and user Id
-func (r *WorkspaceUserRepositoryPostgres) GetByWorkspaceAndUser(workspaceId, userId Id) (*WorkspaceUser, error) {
+func (r *WorkspaceUserRepositoryPostgres) GetByWorkspaceAndUser(
+	workspaceId, userId Id,
+) (*WorkspaceUser, error) {
 	m := &WorkspaceUser{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, user_id, role, created_at, updated_at
@@ -184,7 +186,10 @@ func (r *WorkspaceUserRepositoryPostgres) Count() (int64, error) {
 }
 
 // ListByWorkspaceId returns workspace users for the given workspace with pagination
-func (r *WorkspaceUserRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*WorkspaceUser, error) {
+func (r *WorkspaceUserRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*WorkspaceUser, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, user_id, role, created_at, updated_at
 		FROM workspace_users

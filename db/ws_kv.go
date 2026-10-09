@@ -66,7 +66,10 @@ func (r *WorkspaceKeyValueRepositoryPostgres) Upsert(item *WorkspaceKeyValue) er
 }
 
 // Get returns a non-expired value for a workspace key.
-func (r *WorkspaceKeyValueRepositoryPostgres) Get(workspaceId Id, key string) (*WorkspaceKeyValue, error) {
+func (r *WorkspaceKeyValueRepositoryPostgres) Get(
+	workspaceId Id,
+	key string,
+) (*WorkspaceKeyValue, error) {
 	item := &WorkspaceKeyValue{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, key, value, expires_at, created_at, updated_at
@@ -104,7 +107,10 @@ func (r *WorkspaceKeyValueRepositoryPostgres) Delete(workspaceId Id, key string)
 }
 
 // ListByPrefix lists non-expired keys in a workspace that start with prefix.
-func (r *WorkspaceKeyValueRepositoryPostgres) ListByPrefix(workspaceId Id, prefix string) ([]*WorkspaceKeyValue, error) {
+func (r *WorkspaceKeyValueRepositoryPostgres) ListByPrefix(
+	workspaceId Id,
+	prefix string,
+) ([]*WorkspaceKeyValue, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, key, value, expires_at, created_at, updated_at
 		FROM workspace_kv

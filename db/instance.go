@@ -129,7 +129,10 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 }
 
 // GetByAgentAndInstanceId returns an agent instance by agent and instance id.
-func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, instanceId string) (*AgentInstance, error) {
+func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(
+	agentId Id,
+	instanceId string,
+) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
@@ -222,7 +225,10 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 }
 
 // ListLiveByAgentId lists instances with a live lease and no critical or expired checks.
-func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
+func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
+	agentId Id,
+	now time.Time,
+) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
 		FROM agent_instances
@@ -354,7 +360,9 @@ func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 }
 
 // ListByAgentInstanceId lists agent instance metadata rows. TODO: remove if not used in future.
-func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*AgentInstanceMeta, error) {
+func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(
+	id Id,
+) ([]*AgentInstanceMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_instance_id, key, value #>> '{}', created_at, updated_at
 		FROM agent_instances_meta

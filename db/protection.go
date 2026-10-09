@@ -121,7 +121,10 @@ func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, er
 }
 
 // GetByAgentAndName returns an agent protection by agent and name. TODO: remove if not used in future.
-func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name string) (*AgentProtection, error) {
+func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(
+	agentId Id,
+	name string,
+) (*AgentProtection, error) {
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
@@ -209,7 +212,9 @@ func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentP
 }
 
 // ListActiveByAgentId lists the active protection rows of an agent. TODO: remove if not used in future.
-func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentProtection, error) {
+func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(
+	agentId Id,
+) ([]*AgentProtection, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
 		FROM agent_protection
@@ -300,7 +305,9 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetById(id Id) (*AgentProtectio
 }
 
 // GetByTokenHash returns a non-revoked, non-expired token by hash. TODO: remove if not used in future.
-func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string) (*AgentProtectionToken, error) {
+func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(
+	tokenHash string,
+) (*AgentProtectionToken, error) {
 	token := &AgentProtectionToken{}
 	err := r.db.QueryRow(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
@@ -328,7 +335,9 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string
 }
 
 // ListByProtectionId lists tokens for a protection row. TODO: remove if not used in future.
-func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId Id) ([]*AgentProtectionToken, error) {
+func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(
+	protectionId Id,
+) ([]*AgentProtectionToken, error) {
 	rows, err := r.db.Query(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
 		FROM agent_protection_tokens

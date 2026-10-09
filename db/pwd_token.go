@@ -60,7 +60,9 @@ func (r *PasswordResetTokenRepositoryPostgres) Create(t *PasswordResetToken) err
 }
 
 // GetByToken returns a token by its string value. TODO: remove if not used in future.
-func (r *PasswordResetTokenRepositoryPostgres) GetByToken(token string) (*PasswordResetToken, error) {
+func (r *PasswordResetTokenRepositoryPostgres) GetByToken(
+	token string,
+) (*PasswordResetToken, error) {
 	tok := &PasswordResetToken{}
 	err := r.db.QueryRow(
 		`SELECT

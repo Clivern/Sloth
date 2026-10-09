@@ -113,7 +113,10 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 }
 
 // GetByWorkspaceAndName returns an agent by workspace and name.
-func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name string) (*Agent, error) {
+func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(
+	workspaceId Id,
+	name string,
+) (*Agent, error) {
 	agent := &Agent{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, name, card, card_checksum, version, created_at, updated_at
@@ -163,7 +166,10 @@ func (r *AgentRepositoryPostgres) Delete(id Id) error {
 }
 
 // ListByWorkspaceId lists agents in a workspace.
-func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Agent, error) {
+func (r *AgentRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*Agent, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, name, card, card_checksum, version, created_at, updated_at
 		FROM agents

@@ -103,7 +103,10 @@ func (r *AuditEventRepositoryPostgres) GetById(id Id) (*AuditEvent, error) {
 }
 
 // ListByWorkspaceId lists audit event rows by workspace id.
-func (r *AuditEventRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*AuditEvent, error) {
+func (r *AuditEventRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*AuditEvent, error) {
 	rows, err := r.db.Query(
 		`SELECT
 			id, workspace_id, actor_id, action, resource_type, resource_id,

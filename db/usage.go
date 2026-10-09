@@ -100,7 +100,10 @@ func (r *UsageRepositoryPostgres) GetById(id Id) (*Usage, error) {
 }
 
 // ListByWorkspaceId lists usage rows by workspace id. TODO: remove if not used in future.
-func (r *UsageRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Usage, error) {
+func (r *UsageRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*Usage, error) {
 	rows, err := r.db.Query(
 		`SELECT
 			id, workspace_id, type, quantity, unit, period_start, period_end, meta,
@@ -157,7 +160,11 @@ func (r *UsageRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, err
 }
 
 // GetQuantityByPeriod returns usage quantity for a billing period.
-func (r *UsageRepositoryPostgres) GetQuantityByPeriod(workspaceId Id, utype string, pstart time.Time) (int64, error) {
+func (r *UsageRepositoryPostgres) GetQuantityByPeriod(
+	workspaceId Id,
+	utype string,
+	pstart time.Time,
+) (int64, error) {
 	var quantity int64
 	err := r.db.QueryRow(
 		`SELECT COALESCE(quantity, 0)
@@ -177,7 +184,13 @@ func (r *UsageRepositoryPostgres) GetQuantityByPeriod(workspaceId Id, utype stri
 }
 
 // IncrementByPeriod adds quantity to the usage row for a workspace, type, and period.
-func (r *UsageRepositoryPostgres) IncrementByPeriod(workspaceId Id, utype string, pstart, pend time.Time, quantity int64, unit string) error {
+func (r *UsageRepositoryPostgres) IncrementByPeriod(
+	workspaceId Id,
+	utype string,
+	pstart, pend time.Time,
+	quantity int64,
+	unit string,
+) error {
 	if quantity == 0 {
 		return nil
 	}

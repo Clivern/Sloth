@@ -150,7 +150,12 @@ func createTestUser(t *testing.T, database *sql.DB) *User {
 	return user
 }
 
-func createTestInstance(t *testing.T, database *sql.DB, agentId Id, instanceId string) *AgentInstance {
+func createTestInstance(
+	t *testing.T,
+	database *sql.DB,
+	agentId Id,
+	instanceId string,
+) *AgentInstance {
 	t.Helper()
 
 	instance := &AgentInstance{

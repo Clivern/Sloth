@@ -117,7 +117,10 @@ func (r *AccessKeyRepositoryPostgres) GetByKey(key string) (*AccessKey, error) {
 }
 
 // ListByWorkspaceId lists workspace access key rows by workspace id.
-func (r *AccessKeyRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*AccessKey, error) {
+func (r *AccessKeyRepositoryPostgres) ListByWorkspaceId(
+	workspaceId Id,
+	limit, offset int,
+) ([]*AccessKey, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, name, token, expires_at, meta, created_at, updated_at
 		FROM access_keys
