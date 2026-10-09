@@ -68,6 +68,15 @@ func TestIntegrationAgentCheckRepository(t *testing.T) {
 		assert.Equal(t, "http", list[0].CheckId)
 		assert.Equal(t, "tcp", list[1].CheckId)
 
+		total, err := repo.CountByAgentId(agent.Id)
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+
+		page, err := repo.ListPageByAgentId(agent.Id, 1, 1)
+		require.NoError(t, err)
+		require.Len(t, page, 1)
+		assert.Equal(t, "tcp", page[0].CheckId)
+
 		require.NoError(t, repo.Delete(check.Id))
 		got, err := repo.GetByAgentAndCheckId(agent.Id, "http")
 		require.NoError(t, err)

@@ -27,6 +27,8 @@ type AgentCheckRepository interface {
 	Update(check *AgentCheck) error
 	Delete(id Id) error
 	ListByAgentId(agentId Id) ([]*AgentCheck, error)
+	ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentCheck, error)
+	CountByAgentId(agentId Id) (int64, error)
 }
 
 type AgentCheckRepositoryPostgres struct {
@@ -146,4 +148,56 @@ func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck,
 	}
 
 	return list, rows.Err()
+}
+
+// ListPageByAgentId lists one page of the check templates of an agent.
+func (r *AgentCheckRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentCheck, error) {
+	rows, err := r.db.Query(
+		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
+		FROM agent_checks
+		WHERE agent_id = $1
+		ORDER BY check_id
+		LIMIT $2 OFFSET $3`,
+		agentId.String(),
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var list []*AgentCheck
+	for rows.Next() {
+		check := &AgentCheck{}
+		err := rows.Scan(
+			&check.Id,
+			&check.AgentId,
+			&check.CheckId,
+			&check.Name,
+			&check.Type,
+			&check.Definition,
+			&check.CreatedAt,
+			&check.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, check)
+	}
+
+	return list, rows.Err()
+}
+
+// CountByAgentId returns the number of check templates of an agent.
+func (r *AgentCheckRepositoryPostgres) CountByAgentId(agentId Id) (int64, error) {
+	var count int64
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM agent_checks WHERE agent_id = $1`,
+		agentId.String(),
+	).Scan(&count)
+
+	return count, err
 }
