@@ -1,0 +1,112 @@
+// Copyright 2026 Cognit. All rights reserved.
+// License can be found in the LICENSE file.
+
+package api
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/module"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+)
+
+type fakeWorkspaces struct {
+	db.WorkspaceRepository
+	workspace *db.Workspace
+}
+
+func (f *fakeWorkspaces) GetById(id db.Id) (*db.Workspace, error) {
+	return f.workspace, nil
+}
+
+type fakeAgents struct {
+	db.AgentRepository
+	agent *db.Agent
+}
+
+func (f *fakeAgents) GetByWorkspaceAndName(workspaceId db.Id, name string) (*db.Agent, error) {
+	if f.agent == nil || f.agent.Name != name {
+		return nil, nil
+	}
+	return f.agent, nil
+}
+
+type fakeInstances struct {
+	db.AgentInstanceRepository
+}
+
+func (f *fakeInstances) ListByAgentId(agentId db.Id) ([]*db.AgentInstance, error) {
+	return nil, nil
+}
+
+func TestUnitAgentCardEndpoint(t *testing.T) {
+	workspaceId := db.Id("")
+	card := `{"name":"User Directory","version":"1.0.0"}`
+	agent := &db.Agent{
+		Name:         "user-directory",
+		Card:         card,
+		CardChecksum: "9f2c",
+		Version:      "1.0.0",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	api := &API{
+		Agent: module.NewAgent(
+			&fakeAgents{agent: agent},
+			&fakeInstances{},
+			nil,
+			&fakeWorkspaces{workspace: &db.Workspace{Id: workspaceId}},
+		),
+	}
+
+	router := chi.NewRouter()
+	router.Get("/api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json", api.GetAgentCardAction)
+
+	path := "/api/v1/workspaces/ws-1/agents/user-directory/.well-known/agent-card.json"
+
+	t.Run("returns card with ETag", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `"9f2c"`, w.Header().Get("ETag"))
+		assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		assert.Equal(t, card, w.Body.String())
+	})
+
+	t.Run("returns 304 when If-None-Match matches", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("If-None-Match", `"9f2c"`)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotModified, w.Code)
+		assert.Empty(t, w.Body.String())
+		assert.Equal(t, `"9f2c"`, w.Header().Get("ETag"))
+	})
+
+	t.Run("returns 200 when If-None-Match is stale", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set("If-None-Match", `"old"`)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, card, w.Body.String())
+	})
+
+	t.Run("returns 404 for unknown agent", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/missing/.well-known/agent-card.json", nil))
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+}
