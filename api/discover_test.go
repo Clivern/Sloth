@@ -7,8 +7,7 @@ import (
 	"testing"
 )
 
-// discoverNotImplemented is the skip reason for the sample discover tests.
-// Remove the skip in each test when DiscoverAgentsAction or ResolveDiscoverAction is implemented.
+// discoverNotImplemented is the skip reason for sample discover tests until implemented.
 const discoverNotImplemented = "discover is not implemented yet (see api/discover.go)"
 
 // TestUnitDiscoverAgentsAction holds sample cases for GET /discover from docs/api.md.

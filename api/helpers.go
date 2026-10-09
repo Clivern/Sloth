@@ -11,8 +11,7 @@ import (
 	"github.com/clivern/cognit/pkg/util"
 )
 
-// WriteJSON writes a value as a JSON response. It shares util.WriteJSON with
-// middleware, which cannot import this package.
+// WriteJSON writes data as a JSON response using util.WriteJSON.
 func (a *API) WriteJSON(w http.ResponseWriter, statusCode int, data any) error {
 	return util.WriteJSON(w, statusCode, data)
 }

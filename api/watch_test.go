@@ -7,8 +7,7 @@ import (
 	"testing"
 )
 
-// watchNotImplemented is the skip reason for the sample watch tests.
-// Remove the skip in each test when WatchCatalogAction is implemented.
+// watchNotImplemented is the skip reason for sample watch tests until implemented.
 const watchNotImplemented = "watch is not implemented yet (see api/watch.go)"
 
 // TestUnitWatchCatalogAction holds sample cases for GET /watch/catalog from docs/api.md.

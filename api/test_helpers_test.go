@@ -10,8 +10,7 @@ import (
 	"github.com/clivern/cognit/middleware"
 )
 
-// requestWithUser attaches an authenticated user to the request context,
-// the same way the auth middleware does before a handler runs.
+// requestWithUser attaches an authenticated user to the request context like auth middleware.
 func requestWithUser(r *http.Request, user *db.User) *http.Request {
 	return r.WithContext(middleware.WithUserContext(r.Context(), user))
 }
