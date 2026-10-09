@@ -29,8 +29,10 @@ const (
 	UserThemeDark      = "dark"
 )
 
+// BotUserId is the ID of the platform bot user.
 const BotUserId Id = "00000000-0000-0000-0000-000000000000"
 
+// BotUserName is the name of the platform bot user.
 const BotUserName = "Cognit"
 
 // User is the DB row for a user.
