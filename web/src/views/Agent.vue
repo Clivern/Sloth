@@ -129,6 +129,63 @@
           <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
               <div>
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.checks_title') }}</h2>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.checks_desc') }}</p>
+              </div>
+              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="openCheckModal(null)">
+                {{ $t('agents_page.check_add') }}
+              </button>
+            </div>
+
+            <div v-if="loadingChecks && checks.length === 0" class="p-8 text-center text-sm text-theme-textLight">
+              {{ $t('agents_page.loading_checks') }}
+            </div>
+            <div v-else-if="checks.length === 0" class="p-8 text-center">
+              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_checks') }}</p>
+              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_checks_hint') }}</p>
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-theme-border">
+                <thead class="bg-theme-hover">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_type') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_settings') }}</th>
+                    <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-theme-border">
+                  <tr v-for="check in checks" :key="check.checkId" class="hover:bg-theme-hover">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
+                      <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }}</p>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ $t(`agents_page.check_type_${check.type}`) }}</td>
+                    <td class="px-6 py-4 text-sm text-theme-text font-mono">{{ describeCheck(check) }}</td>
+                    <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <span class="inline-flex items-center gap-3">
+                        <button type="button" class="text-primary-600 hover:text-primary-700 hover:underline" @click="openCheckModal(check)">
+                          {{ $t('common.edit') }}
+                        </button>
+                        <button
+                          type="button"
+                          class="text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                          :disabled="deletingCheckId === check.checkId"
+                          @click="deleteCheck(check)"
+                        >
+                          {{ deletingCheckId === check.checkId ? $t('agents_page.deleting') : $t('agents_page.delete') }}
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
+              <div>
                 <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.instances') }}</h2>
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.instances_desc') }}</p>
               </div>
@@ -158,11 +215,13 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.datacenter') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.health') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.lease_expires') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.checks_title') }}</th>
                     <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-theme-border">
-                  <tr v-for="instance in instances" :key="instance.id" class="hover:bg-theme-hover">
+                  <template v-for="instance in instances" :key="instance.id">
+                  <tr class="hover:bg-theme-hover">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ instance.instanceId }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ instance.address }}:{{ instance.port }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ instance.datacenter || '—' }}</td>
@@ -176,6 +235,19 @@
                       </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">{{ formatExpires(instance.leaseExpiresAt) }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
+                        :aria-expanded="!!expanded[instance.id]"
+                        @click="toggleInstance(instance.id)"
+                      >
+                        {{ $t('agents_page.checks_failing', { failing: failingCount(instance), total: (instance.checks || []).length }) }}
+                        <svg class="h-3.5 w-3.5 transition-transform" :class="expanded[instance.id] ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </td>
                     <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
                       <button
                         type="button"
@@ -187,6 +259,34 @@
                       </button>
                     </td>
                   </tr>
+                  <tr v-if="expanded[instance.id]">
+                    <td :colspan="canManage ? 7 : 6" class="bg-theme-hover px-6 py-4">
+                      <ul class="space-y-3">
+                        <li v-for="check in instance.checks" :key="check.checkId" class="grid gap-1 sm:grid-cols-[220px_110px_1fr]">
+                          <div>
+                            <p class="text-sm font-medium text-theme-text">{{ check.source === 'lease' ? $t('agents_page.check_lease') : check.name }}</p>
+                            <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }} · {{ $t(`agents_page.check_type_${check.type}`) }}</p>
+                          </div>
+                          <div>
+                            <span
+                              class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                              :class="healthClass(check.status)"
+                            >
+                              <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(check.status)" aria-hidden="true" />
+                              {{ $t(`agents_page.health_${check.status}`) }}
+                            </span>
+                          </div>
+                          <div class="min-w-0">
+                            <p class="text-sm text-theme-text break-words font-mono">{{ check.output || '—' }}</p>
+                            <p class="text-xs text-theme-textLight">
+                              {{ $t('agents_page.check_last_run', { when: formatRelative(check.lastRunAt, $t('agents_page.check_never')) }) }}
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </td>
+                  </tr>
+                  </template>
                 </tbody>
               </table>
             </div>
@@ -194,6 +294,17 @@
         </div>
       </template>
     </main>
+
+    <AgentCheckModal
+      v-if="agent"
+      :open="checkModalOpen"
+      :workspace-id="currentWorkspace.id"
+      :agent-name="agent.name"
+      :check="editingCheck"
+      :existing-ids="checks.map((check) => check.checkId)"
+      @close="checkModalOpen = false"
+      @saved="onCheckSaved"
+    />
 
     <AgentCardModal
       v-if="agent"
@@ -259,12 +370,13 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
 import AgentCardModal from '@/components/AgentCardModal.vue'
-import { agent_api, agent_instance_api } from '@/api'
+import AgentCheckModal from '@/components/AgentCheckModal.vue'
+import { agent_api, agent_check_api, agent_instance_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'
 import { healthClass, healthDotClass, parseCard } from '@/lib/agent'
@@ -283,6 +395,13 @@ const notFound = ref(false)
 const errorMessage = ref(null)
 const deregisteringId = ref(null)
 
+const checks = ref([])
+const loadingChecks = ref(false)
+const checkModalOpen = ref(false)
+const editingCheck = ref(null)
+const deletingCheckId = ref(null)
+const expanded = reactive({})
+
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const deleteConfirmName = ref('')
@@ -299,11 +418,12 @@ async function loadAgent() {
   errorMessage.value = null
   agent.value = null
   instances.value = []
+  checks.value = []
 
   try {
     const res = await agent_api.get(currentWorkspace.id, agentName.value)
     agent.value = res.data
-    await loadInstances()
+    await Promise.all([loadChecks(), loadInstances()])
   } catch (err) {
     if (err.response?.status === 404) {
       notFound.value = true
@@ -326,6 +446,74 @@ async function loadInstances() {
   } finally {
     loadingInstances.value = false
   }
+}
+
+async function loadChecks() {
+  loadingChecks.value = true
+
+  try {
+    const res = await agent_check_api.list(currentWorkspace.id, agentName.value)
+    checks.value = res.data.checks || []
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_checks')
+  } finally {
+    loadingChecks.value = false
+  }
+}
+
+// Template changes alter instance statuses, so refresh the agent and instances too
+async function refreshHealth() {
+  const res = await agent_api.get(currentWorkspace.id, agentName.value)
+  agent.value = res.data
+  await Promise.all([loadChecks(), loadInstances()])
+}
+
+function openCheckModal(check) {
+  editingCheck.value = check
+  checkModalOpen.value = true
+}
+
+async function onCheckSaved() {
+  checkModalOpen.value = false
+  showFlash(t('common.saved'))
+  try {
+    await refreshHealth()
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_agent')
+  }
+}
+
+async function deleteCheck(check) {
+  if (!window.confirm(t('agents_page.check_delete_confirm', { name: check.name }))) return
+  deletingCheckId.value = check.checkId
+  errorMessage.value = null
+
+  try {
+    await agent_check_api.delete(currentWorkspace.id, agentName.value, check.checkId)
+    showFlash(t('common.deleted'))
+    await refreshHealth()
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.check_failed_delete')
+  } finally {
+    deletingCheckId.value = null
+  }
+}
+
+function describeCheck(check) {
+  if (check.type === 'ttl') {
+    return t('agents_page.check_describe_ttl', { ttl: check.ttl })
+  }
+  const port = check.port ? `:${check.port}` : ''
+  const target = check.type === 'http' ? `${check.scheme}://…${port}${check.path}` : `tcp …${port}`
+  return t('agents_page.check_describe_probe', { target, interval: check.interval, timeout: check.timeout })
+}
+
+function toggleInstance(id) {
+  expanded[id] = !expanded[id]
+}
+
+function failingCount(instance) {
+  return (instance.checks || []).filter((check) => check.status !== 'passing').length
 }
 
 function onCardSaved(updated) {
