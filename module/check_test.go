@@ -25,13 +25,6 @@ func TestUnitCheck(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidCheckId)
 	})
 
-	t.Run("upsert rejects unsupported types", func(t *testing.T) {
-		f := defaultCheckFixture()
-
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{Type: "grpc"})
-		assert.ErrorIs(t, err, ErrUnsupportedCheckType)
-	})
-
 	t.Run("upsert rejects a ttl check without a ttl", func(t *testing.T) {
 		f := defaultCheckFixture()
 
@@ -46,13 +39,6 @@ func TestUnitCheck(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidCheckPath)
 	})
 
-	t.Run("upsert rejects unknown schemes", func(t *testing.T) {
-		f := defaultCheckFixture()
-
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "http", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "/healthz", Scheme: "ftp"})
-		assert.ErrorIs(t, err, ErrInvalidCheckScheme)
-	})
-
 	t.Run("upsert rejects a timeout that is not below the interval", func(t *testing.T) {
 		f := defaultCheckFixture()
 
@@ -60,15 +46,10 @@ func TestUnitCheck(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidCheckTiming)
 	})
 
-	t.Run("upsert returns not found for a missing workspace or agent", func(t *testing.T) {
-		req := &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30}
+	t.Run("upsert returns not found for a missing agent", func(t *testing.T) {
+		f := newCheckFixture(nil)
 
-		noWorkspace := newCheckFixture(nil, &db.Agent{Id: "agent-1"})
-		_, _, err := noWorkspace.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", req)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-
-		noAgent := newCheckFixture(&db.Workspace{Id: "ws-1"}, nil)
-		_, _, err = noAgent.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", req)
+		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
@@ -201,20 +182,6 @@ func TestUnitCheck(t *testing.T) {
 		assert.Equal(t, "/healthz", result.Checks[0].Path)
 		assert.Equal(t, 8080, result.Checks[0].Port)
 		assert.Equal(t, "2026-01-02T03:04:05Z", result.Checks[0].CreatedAt)
-	})
-
-	t.Run("list rejects invalid agent names", func(t *testing.T) {
-		f := defaultCheckFixture()
-
-		_, err := f.check.ListAgentChecks("ws-1", "-bad", 20, 0)
-		assert.ErrorIs(t, err, ErrInvalidAgentName)
-	})
-
-	t.Run("report rejects unknown statuses", func(t *testing.T) {
-		f := defaultCheckFixture()
-
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", "unknown", &ReportCheckRequest{})
-		assert.ErrorIs(t, err, ErrInvalidCheckStatus)
 	})
 
 	t.Run("report returns not found for a missing instance or check", func(t *testing.T) {

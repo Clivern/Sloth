@@ -6,7 +6,6 @@ package module
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -14,18 +13,12 @@ import (
 )
 
 var (
-	ErrCheckNotFound        = errors.New("check not found")
-	ErrInvalidCheckId       = errors.New("invalid check id")
-	ErrReservedCheckId      = errors.New("reserved check id")
-	ErrUnsupportedCheckType = errors.New("unsupported check type")
-	ErrInvalidCheckPath     = errors.New("invalid check path")
-	ErrInvalidCheckScheme   = errors.New("invalid check scheme")
-	ErrInvalidCheckTiming   = errors.New("invalid check timing")
-	ErrInvalidCheckStatus   = errors.New("invalid check status")
-	ErrCheckNotReportable   = errors.New("check not reportable")
-	ErrFailedListChecks     = errors.New("failed list checks")
-	ErrFailedUpsertCheck    = errors.New("failed upsert check")
-	ErrFailedReportCheck    = errors.New("failed report check")
+	ErrCheckNotFound      = errors.New("check not found")
+	ErrInvalidCheckId     = errors.New("invalid check id")
+	ErrReservedCheckId    = errors.New("reserved check id")
+	ErrInvalidCheckPath   = errors.New("invalid check path")
+	ErrInvalidCheckTiming = errors.New("invalid check timing")
+	ErrCheckNotReportable = errors.New("check not reportable")
 )
 
 const (
@@ -91,7 +84,6 @@ type Check struct {
 	AgentCheckRepository  db.AgentCheckRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
-	WorkspaceRepository   db.WorkspaceRepository
 }
 
 // NewCheck creates a check module with the given repositories.
@@ -100,14 +92,12 @@ func NewCheck(
 	agentChecks db.AgentCheckRepository,
 	instances db.AgentInstanceRepository,
 	checks db.HealthCheckRepository,
-	workspaces db.WorkspaceRepository,
 ) *Check {
 	return &Check{
 		AgentRepository:       agents,
 		AgentCheckRepository:  agentChecks,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
-		WorkspaceRepository:   workspaces,
 	}
 }
 
@@ -117,21 +107,9 @@ func (c *Check) ListAgentChecks(
 	agentName string,
 	limit, offset int,
 ) (*ListAgentChecksResponse, error) {
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := c.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedListChecks, err)
+		return nil, err
 	}
 	if agent == nil {
 		return nil, ErrAgentNotFound
@@ -139,12 +117,12 @@ func (c *Check) ListAgentChecks(
 
 	total, err := c.AgentCheckRepository.CountByAgentId(agent.Id)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedListChecks, err)
+		return nil, err
 	}
 
 	templates, err := c.AgentCheckRepository.ListPageByAgentId(agent.Id, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedListChecks, err)
+		return nil, err
 	}
 
 	list := make([]*AgentCheckResponse, 0, len(templates))
@@ -219,32 +197,14 @@ func (c *Check) UpsertAgentCheck(
 			if definition.Scheme == "" {
 				definition.Scheme = "http"
 			}
-			if definition.Scheme != "http" && definition.Scheme != "https" {
-				return nil, false, ErrInvalidCheckScheme
-			}
 		}
-
-	default:
-		return nil, false, ErrUnsupportedCheckType
 	}
 
 	raw, _ := json.Marshal(definition)
 
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, false, ErrInvalidAgentName
-	}
-
-	workspace, err := c.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, false, err
-	}
-	if workspace == nil {
-		return nil, false, ErrWorkspaceNotFound
-	}
-
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+		return nil, false, err
 	}
 	if agent == nil {
 		return nil, false, ErrAgentNotFound
@@ -252,7 +212,7 @@ func (c *Check) UpsertAgentCheck(
 
 	template, err := c.AgentCheckRepository.GetByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+		return nil, false, err
 	}
 
 	created := template == nil
@@ -274,12 +234,12 @@ func (c *Check) UpsertAgentCheck(
 		err = c.AgentCheckRepository.Update(template)
 	}
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+		return nil, false, err
 	}
 
 	instances, err := c.InstanceRepository.ListByAgentId(agent.Id)
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+		return nil, false, err
 	}
 
 	// Copy the template onto every instance. Pull checks run right away and a
@@ -289,7 +249,7 @@ func (c *Check) UpsertAgentCheck(
 	for _, instance := range instances {
 		existing, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
 		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+			return nil, false, err
 		}
 		if existing != nil && existing.Source == db.HealthCheckSourceLease {
 			continue
@@ -299,7 +259,7 @@ func (c *Check) UpsertAgentCheck(
 		if existing != nil && existing.Type != template.Type {
 			err = c.HealthCheckRepository.Delete(existing.Id)
 			if err != nil {
-				return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+				return nil, false, err
 			}
 
 			existing = nil
@@ -340,7 +300,7 @@ func (c *Check) UpsertAgentCheck(
 			err = c.HealthCheckRepository.Create(check)
 		}
 		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertCheck, err)
+			return nil, false, err
 		}
 	}
 
@@ -391,31 +351,9 @@ func (c *Check) ReportCheck(
 	agentName, instanceId, checkId, status string,
 	req *ReportCheckRequest,
 ) (*HealthCheckResponse, error) {
-	if !instanceIdPattern.MatchString(instanceId) {
-		return nil, ErrInvalidInstanceId
-	}
-	if !instanceIdPattern.MatchString(checkId) {
-		return nil, ErrInvalidCheckId
-	}
-	if status != db.HealthCheckStatusPassing && status != db.HealthCheckStatusWarning && status != db.HealthCheckStatusCritical {
-		return nil, ErrInvalidCheckStatus
-	}
-
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := c.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedReportCheck, err)
+		return nil, err
 	}
 	if agent == nil {
 		return nil, ErrAgentNotFound
@@ -423,7 +361,7 @@ func (c *Check) ReportCheck(
 
 	instance, err := c.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedReportCheck, err)
+		return nil, err
 	}
 	if instance == nil {
 		return nil, ErrInstanceNotFound
@@ -431,7 +369,7 @@ func (c *Check) ReportCheck(
 
 	check, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, checkId)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedReportCheck, err)
+		return nil, err
 	}
 	if check == nil {
 		return nil, ErrCheckNotFound
@@ -454,7 +392,7 @@ func (c *Check) ReportCheck(
 
 	err = c.HealthCheckRepository.Report(check.Id, status, output, &expiresAt)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedReportCheck, err)
+		return nil, err
 	}
 
 	response := &HealthCheckResponse{

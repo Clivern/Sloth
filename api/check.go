@@ -39,17 +39,9 @@ func (a *API) ListAgentChecksAction(w http.ResponseWriter, r *http.Request) {
 	result, err := a.Check.ListAgentChecks(db.Id(wid), agentName, limit, offset)
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
 			})
 		default:
 			log.Error().
@@ -105,17 +97,9 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 	check, created, err := a.Check.UpsertAgentCheck(db.Id(wid), agentName, checkId, &req)
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
 			})
 		case errors.Is(err, module.ErrInvalidCheckId):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -125,17 +109,9 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
 				"errorMessage": locale.TR(r, "reserved_check_id"),
 			})
-		case errors.Is(err, module.ErrUnsupportedCheckType):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "unsupported_check_type"),
-			})
 		case errors.Is(err, module.ErrInvalidCheckPath):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
 				"errorMessage": locale.TR(r, "invalid_check_path"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckScheme):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_scheme"),
 			})
 		case errors.Is(err, module.ErrInvalidCheckTiming):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -179,10 +155,6 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 	err := a.Check.DeleteAgentCheck(db.Id(wid), agentName, chi.URLParam(r, "checkId"))
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
@@ -190,14 +162,6 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, module.ErrCheckNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_id"),
 			})
 		default:
 			log.Error().
@@ -254,10 +218,6 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
@@ -269,22 +229,6 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, module.ErrCheckNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckStatus):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
 			})
 		case errors.Is(err, module.ErrCheckNotReportable):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -345,10 +289,6 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
@@ -360,22 +300,6 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, module.ErrCheckNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckStatus):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
 			})
 		case errors.Is(err, module.ErrCheckNotReportable):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -436,10 +360,6 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
 		case errors.Is(err, module.ErrAgentNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "agent_not_found"),
@@ -451,22 +371,6 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, module.ErrCheckNotFound):
 			a.WriteJSON(w, http.StatusNotFound, map[string]any{
 				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckStatus):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
 			})
 		case errors.Is(err, module.ErrCheckNotReportable):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{

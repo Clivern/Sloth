@@ -316,7 +316,6 @@ func (f *fakeHealthChecks) DeleteByAgentAndCheckId(agentId db.Id, checkId string
 }
 
 func newCheckAPI(
-	workspace *db.Workspace,
 	agent *fakeAgentCatalog,
 	checks *fakeAgentChecks,
 	instance *fakeCheckInstances,
@@ -328,7 +327,6 @@ func newCheckAPI(
 			checks,
 			instance,
 			health,
-			&fakeWorkspaceRecords{workspace: workspace},
 		),
 	}
 }

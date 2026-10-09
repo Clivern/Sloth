@@ -84,7 +84,7 @@ func New() *API {
 		Audit:     module.NewAudit(audits, workspaces),
 		Agent:     module.NewAgent(agents, instances, healthChecks, workspaces),
 		Instance:  module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
-		Check:     module.NewCheck(agents, agentChecks, instances, healthChecks, workspaces),
+		Check:     module.NewCheck(agents, agentChecks, instances, healthChecks),
 		Intention: module.NewIntention(intentions, workspaces),
 		KeyValue:  module.NewKeyValue(kv, workspaces),
 		Traffic:   module.NewTraffic(traffic, workspaces),

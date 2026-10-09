@@ -389,8 +389,8 @@ type checkFixture struct {
 	instances    *fakeInstances
 }
 
-// newCheckFixture wires a Check module to in-memory fakes; a nil workspace or agent simulates a missing one.
-func newCheckFixture(workspace *db.Workspace, agent *db.Agent) *checkFixture {
+// newCheckFixture wires a Check module to in-memory fakes; a nil agent simulates a missing one.
+func newCheckFixture(agent *db.Agent) *checkFixture {
 	f := &checkFixture{
 		agentChecks:  &fakeAgentChecks{},
 		healthChecks: &fakeHealthChecks{byInstance: map[db.Id]*db.HealthCheck{}},
@@ -401,17 +401,13 @@ func newCheckFixture(workspace *db.Workspace, agent *db.Agent) *checkFixture {
 		f.agentChecks,
 		f.instances,
 		f.healthChecks,
-		&fakeWorkspaces{workspace: workspace},
 	)
 
 	return f
 }
 
 func defaultCheckFixture() *checkFixture {
-	return newCheckFixture(
-		&db.Workspace{Id: "ws-1"},
-		&db.Agent{Id: "agent-1", Name: "support-assistant"},
-	)
+	return newCheckFixture(&db.Agent{Id: "agent-1", Name: "support-assistant"})
 }
 
 type agentFixture struct {
