@@ -13,9 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestUnitGatewayStubActions pins the catalog, discover, a2a and watch
-// handlers to 501 until they are implemented. Replace each case with real
-// behavior tests when its handler lands.
+// TestUnitGatewayStubActions pins catalog, discover and watch handlers to 501 until implemented.
 func TestUnitGatewayStubActions(t *testing.T) {
 	api := &API{}
 	router := chi.NewRouter()
@@ -24,9 +22,6 @@ func TestUnitGatewayStubActions(t *testing.T) {
 	router.Get("/api/v1/workspaces/{workspaceId}/catalog/agents/{agentName}/card", api.GetCatalogAgentCardAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/discover", api.DiscoverAgentsAction)
 	router.Post("/api/v1/workspaces/{workspaceId}/discover/resolve", api.ResolveDiscoverAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/a2a/agents/{agentName}/message:send", api.SendAgentMessageAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/a2a/skills/{skill}/message:send", api.SendSkillMessageAction)
-	router.Get("/api/v1/workspaces/{workspaceId}/a2a/tasks/{taskId}", api.GetTaskAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/watch/catalog", api.WatchCatalogAction)
 
 	cases := []struct {
@@ -39,9 +34,6 @@ func TestUnitGatewayStubActions(t *testing.T) {
 		{name: "get catalog agent card", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/catalog/agents/user-directory/card"},
 		{name: "discover agents", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/discover"},
 		{name: "resolve discover", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/discover/resolve"},
-		{name: "send agent message", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/a2a/agents/user-directory/message:send"},
-		{name: "send skill message", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/a2a/skills/lookup/message:send"},
-		{name: "get task", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/a2a/tasks/task-1"},
 		{name: "watch catalog", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/watch/catalog"},
 	}
 
