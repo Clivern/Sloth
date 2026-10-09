@@ -395,7 +395,7 @@ Change feed for `GET /watch/catalog`. Uses a `BIGSERIAL` id instead of a UUID so
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
 | `id` | UUID | no |  | primary key |
-| `agent_instance_id` | UUID | no |  | → `agent_instances.id` (cascade) |
+| `instance_id` | UUID | no |  | → `agent_instances.id` (cascade) |
 | `check_id` | VARCHAR(100) | no |  |  |
 | `name` | VARCHAR(120) | no |  |  |
 | `type` | VARCHAR(20) | no |  |  |
@@ -409,8 +409,8 @@ Change feed for `GET /watch/catalog`. Uses a `BIGSERIAL` id instead of a UUID so
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |
 | `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
 
-- Unique: `(agent_instance_id, check_id)`
-- Index: `idx_health_checks_agent_instance_id` on `(agent_instance_id)`
+- Unique: `(instance_id, check_id)`
+- Index: `idx_health_checks_instance_id` on `(instance_id)`
 - Index: `idx_health_checks_ttl_expires_at` on `(ttl_expires_at)` where `type = 'ttl'`
 - Index: `idx_health_checks_next_run_at` on `(next_run_at)` where `next_run_at IS NOT NULL`
 
