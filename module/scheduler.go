@@ -86,9 +86,9 @@ func (s *Scheduler) Tick(now time.Time) error {
 			continue
 		}
 
-		var definition json.RawMessage
+		var def json.RawMessage
 		if check.Definition != nil {
-			definition = json.RawMessage(*check.Definition)
+			def = json.RawMessage(*check.Definition)
 		}
 
 		raw, err := json.Marshal(HealthCheckJob{
@@ -96,7 +96,7 @@ func (s *Scheduler) Tick(now time.Time) error {
 			Type:       check.Type,
 			Address:    instance.Address,
 			Port:       instance.Port,
-			Definition: definition,
+			Definition: def,
 		})
 		if err != nil {
 			return err
