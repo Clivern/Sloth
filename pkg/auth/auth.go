@@ -16,8 +16,7 @@ const (
 	TypeBasicAuth = "basic_auth"
 )
 
-// Auth is one identity credential: a type, a config map, and the key used
-// to encrypt that config at rest.
+// Auth is one identity credential: a type, a config map, and an at-rest encryption key.
 type Auth struct {
 	Type          string
 	Config        map[string]string

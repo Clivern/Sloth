@@ -26,8 +26,7 @@ const (
 // Strategy is how Pick chooses among live replicas of an agent.
 type Strategy string
 
-// AgentInstance is one live replica of an agent. Map it from db.AgentInstance
-// plus current outstanding-task count.
+// AgentInstance is one live replica of an agent, mapped from db.AgentInstance plus outstanding tasks.
 type AgentInstance struct {
 	InstanceId  string
 	Address     string
@@ -57,8 +56,7 @@ func New() *Picker {
 	}
 }
 
-// Pick returns one live replica of an agent.
-// StickyKey pins a task to the same replica while it stays in the pool.
+// Pick returns one live replica of an agent, pinning StickyKey tasks to the same replica.
 func (p *Picker) Pick(instances []AgentInstance, opts Options) (*AgentInstance, error) {
 	if len(instances) == 0 {
 		return nil, ErrEmpty
