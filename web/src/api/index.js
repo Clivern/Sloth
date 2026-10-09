@@ -96,6 +96,19 @@ export const workspace_access_key_api = {
   delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/keys/${id}`),
 }
 
+// API endpoints for workspace agents
+export const agent_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/agents`, { params }),
+  get: (workspaceId, name) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}`),
+  upsert: (workspaceId, name, data) => api.put(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}`, data),
+  delete: (workspaceId, name) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}`),
+}
+
+export const agent_instance_api = {
+  list: (workspaceId, name, params) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances`, { params }),
+  delete: (workspaceId, name, instanceId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances/${encodeURIComponent(instanceId)}`),
+}
+
 // API endpoints for current user's API keys
 export const api_keys_api = {
   list: (params) => api.get('/apiKeys', { params }),
