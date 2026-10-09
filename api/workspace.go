@@ -9,7 +9,6 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/module"
 
 	"github.com/go-chi/chi/v5"
@@ -26,7 +25,7 @@ func (a *API) CreateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -60,7 +59,7 @@ func (a *API) CreateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 // ListWorkspacesAction returns workspaces the user is a member of (paginated).
 func (a *API) ListWorkspacesAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -98,7 +97,7 @@ func (a *API) ListWorkspacesAction(w http.ResponseWriter, r *http.Request) {
 
 // GetWorkspaceAction returns one workspace by Id.
 func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -145,7 +144,7 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 // UpdateWorkspaceAction updates a workspace.
 func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),

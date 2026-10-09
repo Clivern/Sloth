@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
 
 	"github.com/rs/zerolog/log"
 )
@@ -20,7 +19,7 @@ type UpdateSettingsRequest struct {
 
 // UpdateSettingsAction updates app settings (admin only).
 func (a *API) UpdateSettingsAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -62,7 +61,7 @@ func (a *API) UpdateSettingsAction(w http.ResponseWriter, r *http.Request) {
 
 // GetSettingsAction returns current app settings.
 func (a *API) GetSettingsAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),

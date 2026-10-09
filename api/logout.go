@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/pkg/util"
 
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,7 @@ import (
 func (a *API) LogoutAction(w http.ResponseWriter, r *http.Request) {
 	util.DeleteCookie(w, "_cognit_session")
 
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok {
 		log.Info().
 			Msg("New logout request")

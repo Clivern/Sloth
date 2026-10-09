@@ -6,6 +6,8 @@ package api
 import (
 	"net/http"
 
+	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/pkg/util"
 )
 
@@ -33,4 +35,9 @@ func (a *API) WriteValidationError(w http.ResponseWriter, err error) {
 // ParsePagination parses limit and offset from query parameters.
 func (a *API) ParsePagination(r *http.Request) (limit, offset int) {
 	return util.ParsePagination(r)
+}
+
+// GetUser returns the authenticated user from the request context.
+func (a *API) GetUser(r *http.Request) (*db.User, bool) {
+	return middleware.GetUserFromContext(r.Context())
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/module"
 
 	"github.com/go-chi/chi/v5"
@@ -19,7 +18,7 @@ import (
 
 // ListWorkspaceMembersAction returns workspace members for managers.
 func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -78,7 +77,7 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 
 // UpdateWorkspaceMemberRoleAction updates a workspace member role.
 func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
@@ -150,7 +149,7 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 
 // DeleteWorkspaceMemberAction removes a user from a workspace.
 func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),

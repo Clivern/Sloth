@@ -11,7 +11,6 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/module"
 	"github.com/clivern/cognit/pkg/stripe"
 
@@ -97,7 +96,7 @@ func (a *API) CreateBillingCheckoutAction(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	user, ok := middleware.GetUserFromContext(r.Context())
+	user, ok := a.GetUser(r)
 	if !ok || user == nil {
 		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"errorMessage": locale.TR(r, "not_authenticated"),
