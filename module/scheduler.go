@@ -39,11 +39,7 @@ type Scheduler struct {
 }
 
 // NewScheduler returns a scheduler that reads due checks from checks and publishes to publisher.
-func NewScheduler(
-	checks db.HealthCheckRepository,
-	instances db.AgentInstanceRepository,
-	publisher HealthCheckPublisher,
-) *Scheduler {
+func NewScheduler(checks db.HealthCheckRepository, instances db.AgentInstanceRepository, publisher HealthCheckPublisher) *Scheduler {
 	return &Scheduler{checks: checks, instances: instances, publisher: publisher}
 }
 
