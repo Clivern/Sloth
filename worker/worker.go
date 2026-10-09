@@ -9,6 +9,7 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/broker"
+	"github.com/clivern/cognit/pkg/pool"
 
 	"github.com/rs/zerolog/log"
 )
@@ -30,15 +31,17 @@ var Registrations []Registration
 // Dependencies are the services required by worker handlers.
 type Dependencies struct {
 	Tasks db.AsyncTaskRepository
+	Pool  *pool.Pool
 }
 
 type handlers struct {
 	tasks db.AsyncTaskRepository
+	pool  *pool.Pool
 }
 
 // Register attaches all worker handlers.
 func Register(deps Dependencies) {
-	h := &handlers{tasks: deps.Tasks}
+	h := &handlers{tasks: deps.Tasks, pool: deps.Pool}
 
 	On(db.AsyncTaskTypeNoop, h.HandleNoop)
 }
