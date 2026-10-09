@@ -230,7 +230,7 @@
     "previous": "Précédent",
     "next": "Suivant",
     "no_agents": "Aucun agent pour le moment.",
-    "no_agents_hint": "Créez votre premier agent pour commencer.",
+    "no_agents_hint": "Enregistrez une carte d'agent, ou laissez vos agents s'enregistrer avec une clé d'accès de l'espace.",
     "no_sessions": "Aucune session pour cet agent.",
     "not_found": "Agent introuvable.",
     "session_not_found": "Session introuvable.",
@@ -289,7 +289,9 @@
     "invalid_name": "Utilisez 1 à 100 lettres, chiffres, points, tirets ou underscores, en commençant par une lettre ou un chiffre.",
     "invalid_card_json": "La carte d'agent doit être un objet JSON valide.",
     "version_required": "Indiquez une version ici ou ajoutez un champ « version » à la carte.",
-    "already_exists": "Un agent nommé « {name} » existe déjà. Ouvrez-le pour modifier sa carte."
+    "already_exists": "Un agent nommé « {name} » existe déjà. Ouvrez-le pour modifier sa carte.",
+    "live_of_total": "{live} sur {total} OK",
+    "skills_count": "Aucune compétence | 1 compétence | {count} compétences"
   },
   "members_page": {
     "title": "Membres",

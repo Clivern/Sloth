@@ -230,7 +230,7 @@
     "previous": "Previous",
     "next": "Next",
     "no_agents": "No agents yet.",
-    "no_agents_hint": "Create your first agent to get started.",
+    "no_agents_hint": "Register an agent card, or let your agents register themselves with a workspace access key.",
     "no_sessions": "No sessions for this agent yet.",
     "not_found": "Agent not found.",
     "session_not_found": "Session not found.",
@@ -289,7 +289,9 @@
     "invalid_name": "Use 1–100 letters, numbers, dots, dashes or underscores, starting with a letter or number.",
     "invalid_card_json": "The agent card must be a valid JSON object.",
     "version_required": "Set a version here or add a \"version\" field to the card.",
-    "already_exists": "An agent named \"{name}\" already exists. Open it to edit its card."
+    "already_exists": "An agent named \"{name}\" already exists. Open it to edit its card.",
+    "live_of_total": "{live} of {total} passing",
+    "skills_count": "No skills | 1 skill | {count} skills"
   },
   "members_page": {
     "title": "Members",
