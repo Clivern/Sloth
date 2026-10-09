@@ -37,6 +37,7 @@ func GetPrincipal(r *http.Request) (*db.User, *db.AccessKey, bool) {
 	if !ok || p == nil {
 		return nil, nil, false
 	}
+
 	return p.User, p.AccessKey, true
 }
 
@@ -53,17 +54,20 @@ func GetAccessKeyFromContext(ctx context.Context) (*db.AccessKey, bool) {
 // GetWorkspaceFromContext returns the workspace attached by Protect with Workspace: true.
 func GetWorkspaceFromContext(ctx context.Context) (*db.Workspace, bool) {
 	workspace, ok := ctx.Value(ContextKeyWorkspace).(*db.Workspace)
+
 	return workspace, ok && workspace != nil
 }
 
 // WithUserContext sets the user in the request context
 func WithUserContext(ctx context.Context, user *db.User) context.Context {
 	ctx = module.WithPrincipal(ctx, &module.Principal{User: user})
+
 	return context.WithValue(ctx, ContextKeyUser, user)
 }
 
 // WithAccessKeyContext sets the workspace access key in the request context
 func WithAccessKeyContext(ctx context.Context, key *db.AccessKey) context.Context {
 	ctx = module.WithPrincipal(ctx, &module.Principal{AccessKey: key})
+
 	return context.WithValue(ctx, ContextKeyAccessKey, key)
 }

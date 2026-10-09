@@ -190,6 +190,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}
+
 		defer indexFile.Close()
 
 		stat, err := indexFile.Stat()

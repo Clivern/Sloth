@@ -25,6 +25,7 @@ func GetAll() []Migration {
 	if err != nil {
 		panic(err)
 	}
+
 	return migrations
 }
 
@@ -84,6 +85,7 @@ func loadMigrations() ([]Migration, error) {
 	for version := range byVersion {
 		versions = append(versions, version)
 	}
+
 	sort.Strings(versions)
 
 	migrations := make([]Migration, 0, len(versions))
@@ -117,6 +119,8 @@ func descriptionFromSlug(slug string) string {
 	if len(parts) == 0 {
 		return slug
 	}
+
 	parts[0] = strings.ToUpper(parts[0][:1]) + parts[0][1:]
+
 	return strings.Join(parts, " ")
 }

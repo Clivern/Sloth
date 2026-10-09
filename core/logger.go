@@ -41,6 +41,7 @@ func SetupLogging() error {
 					err,
 				)
 			}
+
 			f.Close()
 		}
 
@@ -52,6 +53,7 @@ func SetupLogging() error {
 		if err != nil {
 			return fmt.Errorf("error opening log file: %w", err)
 		}
+
 		writer = f
 	} else {
 		writer = os.Stdout

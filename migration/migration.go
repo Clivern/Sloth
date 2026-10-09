@@ -64,6 +64,7 @@ func (m *Manager) isApplied(version string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to check migration status: %w", err)
 	}
+
 	return count > 0, nil
 }
 
@@ -84,6 +85,7 @@ func (m *Manager) recordMigration(version, description string) error {
 	); err != nil {
 		return fmt.Errorf("failed to record migration: %w", err)
 	}
+
 	return nil
 }
 
@@ -93,6 +95,7 @@ func (m *Manager) removeMigration(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to remove migration record: %w", err)
 	}
+
 	return nil
 }
 
@@ -290,5 +293,6 @@ func exec(db *sql.DB, query string, args ...any) error {
 	}
 
 	_, err = db.Exec(query, args...)
+
 	return err
 }

@@ -41,6 +41,7 @@ func GetClientIP(r *http.Request) string {
 		if i := strings.Index(xff, ","); i >= 0 {
 			return strings.TrimSpace(xff[:i])
 		}
+
 		return strings.TrimSpace(xff)
 	}
 

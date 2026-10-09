@@ -70,10 +70,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewUserRepository(conn).Count()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -88,10 +90,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewWorkspaceRepository(conn).CountAll()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -106,10 +110,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewSessionRepository(conn).Count()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -124,10 +130,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewUserInviteRepository(conn).Count()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -142,10 +150,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAccessKeyRepository(conn).Count()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -160,10 +170,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAPIKeyRepository(conn).Count()
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -179,10 +191,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAsyncTaskRepository(conn).CountByStatus("pending")
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -198,10 +212,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAsyncTaskRepository(conn).CountByStatus("running")
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -217,10 +233,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAsyncTaskRepository(conn).CountByStatus("completed")
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -236,10 +254,12 @@ var (
 			if conn == nil {
 				return 0
 			}
+
 			count, err := db.NewAsyncTaskRepository(conn).CountByStatus("failed")
 			if err != nil {
 				return 0
 			}
+
 			return float64(count)
 		},
 	)
@@ -266,6 +286,7 @@ func (m *MetricsResponseWriter) WriteHeader(code int) {
 func (m *MetricsResponseWriter) Write(b []byte) (int, error) {
 	n, err := m.ResponseWriter.Write(b)
 	m.size += n
+
 	return n, err
 }
 

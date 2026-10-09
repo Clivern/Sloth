@@ -44,6 +44,7 @@ var migrateUpCmd = &cobra.Command{
 				Err(err).
 				Msg("Failed to connect to database")
 		}
+
 		defer conn.Close()
 
 		mgr := migration.NewManager(conn.DB)
@@ -90,6 +91,7 @@ var migrateDownCmd = &cobra.Command{
 				Err(err).
 				Msg("Failed to connect to database")
 		}
+
 		defer conn.Close()
 
 		mgr := migration.NewManager(conn.DB)
@@ -136,6 +138,7 @@ var migrateStatusCmd = &cobra.Command{
 				Err(err).
 				Msg("Failed to connect to database")
 		}
+
 		defer conn.Close()
 
 		mgr := migration.NewManager(conn.DB)

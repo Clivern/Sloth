@@ -25,6 +25,7 @@ func Edition() string {
 	if BuiltEdition == EditionSaaS {
 		return EditionSaaS
 	}
+
 	return EditionOSS
 }
 

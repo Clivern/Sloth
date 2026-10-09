@@ -28,14 +28,17 @@ func Load(f fs.FS) error {
 		if e.IsDir() {
 			continue
 		}
+
 		name := e.Name()
 		if !strings.HasSuffix(name, ".po") {
 			continue
 		}
+
 		data, err := fs.ReadFile(f, name)
 		if err != nil {
 			panic("locale: failed to read " + name + ": " + err.Error())
 		}
+
 		po := gotext.NewPo()
 		po.Parse(data)
 		locales[strings.TrimSuffix(name, ".po")] = po
@@ -93,12 +96,14 @@ func GetLangFromRequest(r *http.Request) string {
 		if idx := strings.Index(p, ";"); idx > 0 {
 			p = p[:idx]
 		}
+
 		p = strings.TrimSpace(p)
 		if len(p) >= 2 {
 			lang := strings.ToLower(p[:2])
 			if _, ok := locales[lang]; ok {
 				return lang
 			}
+
 			return lang
 		}
 	}

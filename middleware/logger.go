@@ -35,6 +35,7 @@ func (rw *ResponseWriter) WriteHeader(code int) {
 func (rw *ResponseWriter) Write(b []byte) (int, error) {
 	n, err := rw.ResponseWriter.Write(b)
 	rw.written += n
+
 	return n, err
 }
 

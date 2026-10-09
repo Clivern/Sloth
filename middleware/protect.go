@@ -123,6 +123,7 @@ func Protect(cfg Config) func(http.Handler) http.Handler {
 						})
 						return
 					}
+
 					perm = perm.WithWorkspaceId(db.Id(wid))
 				}
 
@@ -137,6 +138,7 @@ func Protect(cfg Config) func(http.Handler) http.Handler {
 						})
 						return
 					}
+
 					perm = perm.WithUser(user)
 				} else if key, ok := GetAccessKeyFromContext(r.Context()); ok && key != nil {
 					perm = perm.WithAccessKey(key)
@@ -158,6 +160,7 @@ func Protect(cfg Config) func(http.Handler) http.Handler {
 						})
 						return
 					}
+
 					log.Error().
 						Err(err).
 						Str("path", r.URL.Path).

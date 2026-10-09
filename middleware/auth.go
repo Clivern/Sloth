@@ -26,6 +26,7 @@ func Auth() func(http.Handler) http.Handler {
 						Str("path", r.URL.Path).
 						Msg("Skipping auth for public route")
 				}
+
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -44,6 +45,7 @@ func Auth() func(http.Handler) http.Handler {
 					})
 					return
 				}
+
 				log.Info().
 					Str("path", r.URL.Path).
 					Msg("API key validated")
@@ -76,6 +78,7 @@ func Auth() func(http.Handler) http.Handler {
 					})
 					return
 				}
+
 				log.Info().
 					Str("path", r.URL.Path).
 					Str("workspaceId", key.WorkspaceId.String()).
