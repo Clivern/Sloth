@@ -29,7 +29,10 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 
 	t.Run("create returns 201 with the raw key", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{})}
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)),
+			user,
+		)
 		w := httptest.NewRecorder()
 		newAPIKeyRouter(api).ServeHTTP(w, req)
 
@@ -41,7 +44,8 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 	t.Run("create returns 401 without a user", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{})}
 		w := httptest.NewRecorder()
-		newAPIKeyRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)))
+		newAPIKeyRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		assert.Contains(t, w.Body.String(), "not_authenticated")
@@ -49,7 +53,10 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 
 	t.Run("create returns 400 for invalid body", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{})}
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{}`)),
+			user,
+		)
 		w := httptest.NewRecorder()
 		newAPIKeyRouter(api).ServeHTTP(w, req)
 
@@ -58,7 +65,14 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 
 	t.Run("create returns 400 for malformed expiresAt", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{})}
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop","expiresAt":"soon"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPost,
+				"/api/v1/apiKeys",
+				strings.NewReader(`{"name":"laptop","expiresAt":"soon"}`),
+			),
+			user,
+		)
 		w := httptest.NewRecorder()
 		newAPIKeyRouter(api).ServeHTTP(w, req)
 
@@ -68,7 +82,10 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 
 	t.Run("create returns 500 when the repository fails", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{createErr: errors.New("boom")})}
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/apiKeys", strings.NewReader(`{"name":"laptop"}`)),
+			user,
+		)
 		w := httptest.NewRecorder()
 		newAPIKeyRouter(api).ServeHTTP(w, req)
 
@@ -90,7 +107,8 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 	t.Run("list returns 401 without a user", func(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{})}
 		w := httptest.NewRecorder()
-		newAPIKeyRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/apiKeys", nil))
+		newAPIKeyRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/apiKeys", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -148,7 +166,9 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 	})
 
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
-		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{apiKey: stored, deleteErr: errors.New("boom")})}
+		api := &API{
+			APIKey: module.NewAPIKey(&fakeAPIKeys{apiKey: stored, deleteErr: errors.New("boom")}),
+		}
 		req := requestWithUser(httptest.NewRequest(http.MethodDelete, "/api/v1/apiKeys/key-1", nil), user)
 		w := httptest.NewRecorder()
 		newAPIKeyRouter(api).ServeHTTP(w, req)
@@ -161,11 +181,13 @@ func TestUnitUserAPIKeyActions(t *testing.T) {
 		api := &API{APIKey: module.NewAPIKey(&fakeAPIKeys{apiKey: stored})}
 
 		w := httptest.NewRecorder()
-		newAPIKeyRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/apiKeys/key-1", nil))
+		newAPIKeyRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/apiKeys/key-1", nil))
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 		w = httptest.NewRecorder()
-		newAPIKeyRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/apiKeys/key-1", nil))
+		newAPIKeyRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/apiKeys/key-1", nil))
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
