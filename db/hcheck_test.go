@@ -158,7 +158,7 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   staleTTL.Id,
-		CheckId:      "heartbeat",
+		CheckId:      "heartbeat-fresh",
 		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
 		Source:       HealthCheckSourceAgent,
