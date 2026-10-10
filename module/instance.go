@@ -294,11 +294,9 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	// Make the instance's checks match the agent's templates. Pull checks run
-	// right away and a TTL check gets one TTL window for its first report.
-	wanted := make(map[string]bool, len(templates))
+	templateCheckIds := make(map[string]bool, len(templates))
 	for _, template := range templates {
-		wanted[template.CheckId] = true
+		templateCheckIds[template.CheckId] = true
 
 		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instanceId, template.CheckId)
 		if err != nil {
@@ -363,7 +361,7 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 	}
 
 	for _, check := range current {
-		if check.Source == db.HealthCheckSourceAgent && !wanted[check.CheckId] {
+		if check.Source == db.HealthCheckSourceAgent && !templateCheckIds[check.CheckId] {
 			err = i.HealthCheckRepository.Delete(check.Id)
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
