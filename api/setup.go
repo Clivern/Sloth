@@ -28,8 +28,8 @@ func (a *API) SetupAction(w http.ResponseWriter, r *http.Request) {
 
 	err = a.Setup.Install(&req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrPlatformAlreadyInstalled, http.StatusBadRequest, "platform_already_installed"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrPlatformAlreadyInstalled, http.StatusBadRequest, locale.TR(r, "platform_already_installed")},
 		}) {
 			return
 		}

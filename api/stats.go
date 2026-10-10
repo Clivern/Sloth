@@ -27,8 +27,8 @@ func (a *API) GetWorkspaceStatsAction(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := a.Stats.GetWorkspaceStats(db.Id(wid))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}

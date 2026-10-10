@@ -29,8 +29,8 @@ func (a *API) ListAgentsAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Agent.ListAgents(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -76,10 +76,10 @@ func (a *API) GetAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	agent, err := a.Agent.GetAgent(db.Id(wid), agentName)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 		}) {
 			return
 		}
@@ -131,11 +131,11 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	agent, created, err := a.Agent.UpsertAgent(db.Id(wid), agentName, &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
-			{module.ErrInvalidAgentCard, http.StatusBadRequest, "invalid_agent_card"},
-			{module.ErrAgentVersionRequired, http.StatusBadRequest, "invalid_agent_version"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
+			{module.ErrInvalidAgentCard, http.StatusBadRequest, locale.TR(r, "invalid_agent_card")},
+			{module.ErrAgentVersionRequired, http.StatusBadRequest, locale.TR(r, "invalid_agent_version")},
 		}) {
 			return
 		}
@@ -180,10 +180,10 @@ func (a *API) DeleteAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Agent.DeleteAgent(db.Id(wid), agentName)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 		}) {
 			return
 		}

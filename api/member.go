@@ -46,8 +46,8 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 		offset,
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -120,9 +120,9 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 		req.Role,
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, "workspace_member_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, locale.TR(r, "workspace_member_not_found")},
 		}) {
 			return
 		}
@@ -180,9 +180,9 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 		db.Id(memberUserId),
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, "workspace_member_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, locale.TR(r, "workspace_member_not_found")},
 		}) {
 			return
 		}

@@ -29,8 +29,8 @@ func (a *API) ListWorkspaceAuditsAction(w http.ResponseWriter, r *http.Request) 
 
 	result, err := a.Audit.ListAuditEvents(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -76,9 +76,9 @@ func (a *API) GetWorkspaceAuditAction(w http.ResponseWriter, r *http.Request) {
 
 	event, err := a.Audit.GetAuditEvent(db.Id(wid), db.Id(auditId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrAuditEventNotFound, http.StatusNotFound, "audit_event_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrAuditEventNotFound, http.StatusNotFound, locale.TR(r, "audit_event_not_found")},
 		}) {
 			return
 		}

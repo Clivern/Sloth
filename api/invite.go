@@ -47,10 +47,10 @@ func (a *API) CreateInviteAction(w http.ResponseWriter, r *http.Request) {
 
 	invite, err := a.Invite.CreateInvite(db.Id(workspaceId), &req, user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrUserAlreadyInWorkspace, http.StatusConflict, "user_already_workspace_member"},
-			{module.ErrPendingInviteExists, http.StatusConflict, "pending_invite_already_exists"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrUserAlreadyInWorkspace, http.StatusConflict, locale.TR(r, "user_already_workspace_member")},
+			{module.ErrPendingInviteExists, http.StatusConflict, locale.TR(r, "pending_invite_already_exists")},
 		}) {
 			return
 		}
@@ -95,8 +95,8 @@ func (a *API) ListInvitesAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Invite.ListInvites(db.Id(workspaceId), limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -147,9 +147,9 @@ func (a *API) GetInviteAction(w http.ResponseWriter, r *http.Request) {
 
 	invite, err := a.Invite.GetInvite(db.Id(workspaceId), db.Id(inviteId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInviteNotFound, http.StatusNotFound, "invite_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInviteNotFound, http.StatusNotFound, locale.TR(r, "invite_not_found")},
 		}) {
 			return
 		}
@@ -194,9 +194,9 @@ func (a *API) DeleteInviteAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Invite.DeleteInvite(db.Id(workspaceId), db.Id(inviteId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInviteNotFound, http.StatusNotFound, "invite_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInviteNotFound, http.StatusNotFound, locale.TR(r, "invite_not_found")},
 		}) {
 			return
 		}

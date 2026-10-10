@@ -35,8 +35,8 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	if lo.IsNotEmpty(apiKey) {
 		me, err := a.Me.GetByAPIKey(apiKey)
 		if err != nil {
-			if a.WriteError(w, r, err, []ErrorMapping{
-				{module.ErrAPIKeyNotFound, http.StatusUnauthorized, "invalid_api_key"},
+			if a.WriteError(w, err, []ErrorMapping{
+				{module.ErrAPIKeyNotFound, http.StatusUnauthorized, locale.TR(r, "invalid_api_key")},
 			}) {
 				return
 			}
@@ -58,8 +58,8 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	// Check if the request is for an access key
 	me, err := a.Me.GetByAccessKey(accessKey)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAccessKeyNotFound, http.StatusUnauthorized, "invalid_access_key"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAccessKeyNotFound, http.StatusUnauthorized, locale.TR(r, "invalid_access_key")},
 		}) {
 			return
 		}

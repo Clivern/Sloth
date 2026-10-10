@@ -119,8 +119,8 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := a.Workspace.GetWorkspace(db.Id(wid), user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -171,8 +171,8 @@ func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := a.Workspace.UpdateWorkspace(db.Id(wid), &req, user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -212,8 +212,8 @@ func (a *API) DeleteWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Workspace.DeleteWorkspace(db.Id(wid))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}

@@ -29,9 +29,9 @@ func (a *API) GetBillingStatusAction(w http.ResponseWriter, r *http.Request) {
 
 	status, err := a.Billing.GetBillingStatus(db.Id(workspaceId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, locale.TR(r, "workspace_subscription_not_found")},
 		}) {
 			return
 		}
@@ -61,9 +61,9 @@ func (a *API) GetBillingUsageAction(w http.ResponseWriter, r *http.Request) {
 		UsageRepository:         a.Usage,
 	})
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, locale.TR(r, "workspace_subscription_not_found")},
 		}) {
 			return
 		}
@@ -114,11 +114,11 @@ func (a *API) CreateBillingCheckoutAction(w http.ResponseWriter, r *http.Request
 		fmt.Sprintf("%s/billing?checkout=cancel", viper.GetString("app.url")),
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
-			{stripe.ErrInvalidAmount, http.StatusBadRequest, "invalid_billing_amount"},
-			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, "stripe_billing_not_configured"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, locale.TR(r, "workspace_subscription_not_found")},
+			{stripe.ErrInvalidAmount, http.StatusBadRequest, locale.TR(r, "invalid_billing_amount")},
+			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, locale.TR(r, "stripe_billing_not_configured")},
 		}) {
 			return
 		}
@@ -149,11 +149,11 @@ func (a *API) CreateBillingPortalAction(w http.ResponseWriter, r *http.Request) 
 		fmt.Sprintf("%s/billing", viper.GetString("app.url")),
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrBillingPortalUnavailable, http.StatusBadRequest, "stripe_billing_available_after_purchase"},
-			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
-			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, "stripe_billing_not_configured"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrBillingPortalUnavailable, http.StatusBadRequest, locale.TR(r, "stripe_billing_available_after_purchase")},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, locale.TR(r, "workspace_subscription_not_found")},
+			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, locale.TR(r, "stripe_billing_not_configured")},
 		}) {
 			return
 		}

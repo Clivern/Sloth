@@ -8,16 +8,15 @@ import (
 	"net/http"
 
 	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/locale"
 	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/pkg/util"
 )
 
-// ErrorMapping maps a module error to an HTTP status and a locale key.
+// ErrorMapping maps a module error to an HTTP status and a translated message.
 type ErrorMapping struct {
-	Err       error
-	Status    int
-	LocaleKey string
+	Err     error
+	Status  int
+	Message string
 }
 
 // WriteJSON writes data as a JSON response using util.WriteJSON.
@@ -51,11 +50,11 @@ func (a *API) GetUser(r *http.Request) (*db.User, bool) {
 }
 
 // WriteError writes the mapped response for err and reports false when err has no mapping.
-func (a *API) WriteError(w http.ResponseWriter, r *http.Request, err error, mappings []ErrorMapping) bool {
+func (a *API) WriteError(w http.ResponseWriter, err error, mappings []ErrorMapping) bool {
 	for _, m := range mappings {
 		if errors.Is(err, m.Err) {
 			a.WriteJSON(w, m.Status, map[string]any{
-				"errorMessage": locale.TR(r, m.LocaleKey),
+				"errorMessage": m.Message,
 			})
 
 			return true

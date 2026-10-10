@@ -37,8 +37,8 @@ func (a *API) ListAgentChecksAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Check.ListAgentChecks(db.Id(wid), agentName, limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
 		}) {
 			return
 		}
@@ -94,11 +94,11 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 
 	check, created, err := a.Check.UpsertAgentCheck(db.Id(wid), agentName, checkId, &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInvalidCheckId, http.StatusBadRequest, "invalid_check_id"},
-			{module.ErrInvalidCheckPath, http.StatusBadRequest, "invalid_check_path"},
-			{module.ErrInvalidCheckTiming, http.StatusBadRequest, "invalid_check_timing"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInvalidCheckId, http.StatusBadRequest, locale.TR(r, "invalid_check_id")},
+			{module.ErrInvalidCheckPath, http.StatusBadRequest, locale.TR(r, "invalid_check_path")},
+			{module.ErrInvalidCheckTiming, http.StatusBadRequest, locale.TR(r, "invalid_check_timing")},
 		}) {
 			return
 		}
@@ -138,9 +138,9 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Check.DeleteAgentCheck(db.Id(wid), agentName, chi.URLParam(r, "checkId"))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrCheckNotFound, http.StatusNotFound, locale.TR(r, "check_not_found")},
 		}) {
 			return
 		}
@@ -197,11 +197,11 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
-			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
-			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInstanceNotFound, http.StatusNotFound, locale.TR(r, "instance_not_found")},
+			{module.ErrCheckNotFound, http.StatusNotFound, locale.TR(r, "check_not_found")},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, locale.TR(r, "check_not_reportable")},
 		}) {
 			return
 		}
@@ -258,11 +258,11 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
-			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
-			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInstanceNotFound, http.StatusNotFound, locale.TR(r, "instance_not_found")},
+			{module.ErrCheckNotFound, http.StatusNotFound, locale.TR(r, "check_not_found")},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, locale.TR(r, "check_not_reportable")},
 		}) {
 			return
 		}
@@ -319,11 +319,11 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
-			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
-			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
-			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
+			{module.ErrInstanceNotFound, http.StatusNotFound, locale.TR(r, "instance_not_found")},
+			{module.ErrCheckNotFound, http.StatusNotFound, locale.TR(r, "check_not_found")},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, locale.TR(r, "check_not_reportable")},
 		}) {
 			return
 		}

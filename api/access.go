@@ -37,10 +37,10 @@ func (a *API) CreateAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	key, err := a.Access.CreateAccessKey(db.Id(wid), &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInvalidExpiresAt, http.StatusBadRequest, "invalid_expires_at_format"},
-			{module.ErrInvalidAccessKeyPermissions, http.StatusBadRequest, "invalid_access_key_permissions"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInvalidExpiresAt, http.StatusBadRequest, locale.TR(r, "invalid_expires_at_format")},
+			{module.ErrInvalidAccessKeyPermissions, http.StatusBadRequest, locale.TR(r, "invalid_access_key_permissions")},
 		}) {
 			return
 		}
@@ -78,8 +78,8 @@ func (a *API) ListAccessKeysAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Access.ListAccessKeys(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -126,9 +126,9 @@ func (a *API) GetAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	key, err := a.Access.GetAccessKey(db.Id(wid), db.Id(keyId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrAccessKeyNotFound, http.StatusNotFound, "access_key_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrAccessKeyNotFound, http.StatusNotFound, locale.TR(r, "access_key_not_found")},
 		}) {
 			return
 		}
@@ -168,9 +168,9 @@ func (a *API) DeleteAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Access.DeleteAccessKey(db.Id(wid), db.Id(keyId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrAccessKeyNotFound, http.StatusNotFound, "access_key_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrAccessKeyNotFound, http.StatusNotFound, locale.TR(r, "access_key_not_found")},
 		}) {
 			return
 		}

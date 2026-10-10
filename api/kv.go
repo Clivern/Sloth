@@ -28,9 +28,9 @@ func (a *API) ListKeyValueAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.KeyValue.ListKeyValue(db.Id(wid), r.URL.Query().Get("prefix"))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, "invalid_kv_key"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
 		}) {
 			return
 		}
@@ -74,10 +74,10 @@ func (a *API) GetKeyValueAction(w http.ResponseWriter, r *http.Request) {
 
 	item, err := a.KeyValue.GetKeyValue(db.Id(wid), key)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrKeyValueNotFound, http.StatusNotFound, "kv_not_found"},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, "invalid_kv_key"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrKeyValueNotFound, http.StatusNotFound, locale.TR(r, "kv_not_found")},
+			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
 		}) {
 			return
 		}
@@ -129,10 +129,10 @@ func (a *API) PutKeyValueAction(w http.ResponseWriter, r *http.Request) {
 
 	item, err := a.KeyValue.PutKeyValue(db.Id(wid), key, &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, "invalid_kv_key"},
-			{module.ErrInvalidExpiresAt, http.StatusBadRequest, "invalid_expires_at_format"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
+			{module.ErrInvalidExpiresAt, http.StatusBadRequest, locale.TR(r, "invalid_expires_at_format")},
 		}) {
 			return
 		}
@@ -177,10 +177,10 @@ func (a *API) DeleteKeyValueAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.KeyValue.DeleteKeyValue(db.Id(wid), key)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrKeyValueNotFound, http.StatusNotFound, "kv_not_found"},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, "invalid_kv_key"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrKeyValueNotFound, http.StatusNotFound, locale.TR(r, "kv_not_found")},
+			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
 		}) {
 			return
 		}

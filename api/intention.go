@@ -29,8 +29,8 @@ func (a *API) ListIntentionsAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Intention.ListIntentions(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}
@@ -76,9 +76,9 @@ func (a *API) GetIntentionAction(w http.ResponseWriter, r *http.Request) {
 
 	intention, err := a.Intention.GetIntention(db.Id(wid), db.Id(intentionId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrIntentionNotFound, http.StatusNotFound, "intention_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrIntentionNotFound, http.StatusNotFound, locale.TR(r, "intention_not_found")},
 		}) {
 			return
 		}
@@ -124,9 +124,9 @@ func (a *API) CreateIntentionAction(w http.ResponseWriter, r *http.Request) {
 
 	intention, err := a.Intention.CreateIntention(db.Id(wid), &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrInvalidIntentionAction, http.StatusBadRequest, "invalid_intention_action"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrInvalidIntentionAction, http.StatusBadRequest, locale.TR(r, "invalid_intention_action")},
 		}) {
 			return
 		}
@@ -178,10 +178,10 @@ func (a *API) UpdateIntentionAction(w http.ResponseWriter, r *http.Request) {
 
 	intention, err := a.Intention.UpdateIntention(db.Id(wid), db.Id(intentionId), &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrIntentionNotFound, http.StatusNotFound, "intention_not_found"},
-			{module.ErrInvalidIntentionAction, http.StatusBadRequest, "invalid_intention_action"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrIntentionNotFound, http.StatusNotFound, locale.TR(r, "intention_not_found")},
+			{module.ErrInvalidIntentionAction, http.StatusBadRequest, locale.TR(r, "invalid_intention_action")},
 		}) {
 			return
 		}
@@ -226,9 +226,9 @@ func (a *API) DeleteIntentionAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Intention.DeleteIntention(db.Id(wid), db.Id(intentionId))
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
-			{module.ErrIntentionNotFound, http.StatusNotFound, "intention_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
+			{module.ErrIntentionNotFound, http.StatusNotFound, locale.TR(r, "intention_not_found")},
 		}) {
 			return
 		}
@@ -267,8 +267,8 @@ func (a *API) CheckIntentionAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Intention.CheckIntention(db.Id(wid), &req)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 		}) {
 			return
 		}

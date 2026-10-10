@@ -38,8 +38,8 @@ func (a *API) CreateUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	apiKey, err := a.APIKey.CreateAPIKey(&req, user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrInvalidExpiresAt, http.StatusBadRequest, "invalid_expires_at_format"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrInvalidExpiresAt, http.StatusBadRequest, locale.TR(r, "invalid_expires_at_format")},
 		}) {
 			return
 		}
@@ -125,8 +125,8 @@ func (a *API) GetUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	k, err := a.APIKey.GetAPIKey(db.Id(apiKeyId), user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAPIKeyNotFound, http.StatusNotFound, "api_key_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAPIKeyNotFound, http.StatusNotFound, locale.TR(r, "api_key_not_found")},
 		}) {
 			return
 		}
@@ -170,8 +170,8 @@ func (a *API) DeleteUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.APIKey.DeleteAPIKey(db.Id(apiKeyId), user)
 	if err != nil {
-		if a.WriteError(w, r, err, []ErrorMapping{
-			{module.ErrAPIKeyNotFound, http.StatusNotFound, "api_key_not_found"},
+		if a.WriteError(w, err, []ErrorMapping{
+			{module.ErrAPIKeyNotFound, http.StatusNotFound, locale.TR(r, "api_key_not_found")},
 		}) {
 			return
 		}
