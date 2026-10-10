@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -120,23 +119,21 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := a.Workspace.GetWorkspace(db.Id(wid), user)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("userId", user.Id.String()).
-				Msg("Failed to get workspace")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_workspace"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("userId", user.Id.String()).
+			Msg("Failed to get workspace")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_workspace"),
+		})
+		return
 	}
 
 	a.WriteJSON(w, http.StatusOK, workspace)
@@ -174,23 +171,21 @@ func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := a.Workspace.UpdateWorkspace(db.Id(wid), &req, user)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("userId", user.Id.String()).
-				Msg("Failed to update workspace")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_update_workspace"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("userId", user.Id.String()).
+			Msg("Failed to update workspace")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_update_workspace"),
+		})
+		return
 	}
 
 	log.Info().
@@ -217,22 +212,20 @@ func (a *API) DeleteWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Workspace.DeleteWorkspace(db.Id(wid))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Msg("Failed to delete workspace")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_delete_workspace"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Msg("Failed to delete workspace")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_delete_workspace"),
+		})
+		return
 	}
 
 	log.Info().
