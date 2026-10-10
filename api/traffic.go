@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -30,20 +29,19 @@ func (a *API) ListTrafficAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Traffic.ListTraffic(db.Id(wid), limit, offset)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Msg("Failed to list traffic")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_traffic_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Msg("Failed to list traffic")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_traffic_request"),
+		})
 
 		return
 	}
@@ -78,25 +76,21 @@ func (a *API) GetTrafficAction(w http.ResponseWriter, r *http.Request) {
 
 	call, err := a.Traffic.GetTraffic(db.Id(wid), db.Id(trafficId))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrTrafficNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "traffic_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("trafficId", trafficId).
-				Msg("Failed to get traffic")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_traffic_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrTrafficNotFound, http.StatusNotFound, "traffic_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("trafficId", trafficId).
+			Msg("Failed to get traffic")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_traffic_request"),
+		})
 
 		return
 	}
