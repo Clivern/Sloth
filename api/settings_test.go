@@ -31,7 +31,14 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("update returns 200", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)), admin))
+		newRouter(api).
+			ServeHTTP(
+				w,
+				requestWithUser(
+					httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)),
+					admin,
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), "settings_updated_successfully")
@@ -40,7 +47,14 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("update returns 400 for an invalid email", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{})}
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(`{"platformEmail":"nope"}`)), admin)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/action/settings",
+				strings.NewReader(`{"platformEmail":"nope"}`),
+			),
+			admin,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -49,7 +63,8 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("update returns 401 without a user", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -57,7 +72,14 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("update returns 500 when the repository fails", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{updateErr: errors.New("boom")})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)), admin))
+		newRouter(api).
+			ServeHTTP(
+				w,
+				requestWithUser(
+					httptest.NewRequest(http.MethodPut, "/api/v1/action/settings", strings.NewReader(body)),
+					admin,
+				),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_update_settings")
@@ -66,7 +88,8 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("get returns the stored settings", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil), admin))
+		newRouter(api).
+			ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil), admin))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"platform_email":"value-of-platform_email"`)
@@ -75,7 +98,8 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{getErr: errors.New("boom")})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil), admin))
+		newRouter(api).
+			ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil), admin))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_get_settings")
@@ -84,7 +108,8 @@ func TestUnitSettingsActions(t *testing.T) {
 	t.Run("get returns 401 without a user", func(t *testing.T) {
 		api := &API{Settings: module.NewSettings(&fakeConfigs{})}
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/action/settings", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -105,7 +130,10 @@ func TestUnitLogoutAction(t *testing.T) {
 	t.Run("revokes sessions for a signed-in user", func(t *testing.T) {
 		api := &API{Auth: module.NewAuth(nil, &fakeSessions{}, nil)}
 		w := httptest.NewRecorder()
-		api.LogoutAction(w, requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/public/action/logout", nil), user))
+		api.LogoutAction(
+			w,
+			requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/public/action/logout", nil), user),
+		)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Set-Cookie"), "_cognit_session=")
@@ -114,7 +142,10 @@ func TestUnitLogoutAction(t *testing.T) {
 	t.Run("still returns 200 when session revocation fails", func(t *testing.T) {
 		api := &API{Auth: module.NewAuth(nil, &fakeSessions{deleteErr: errors.New("boom")}, nil)}
 		w := httptest.NewRecorder()
-		api.LogoutAction(w, requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/public/action/logout", nil), user))
+		api.LogoutAction(
+			w,
+			requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/public/action/logout", nil), user),
+		)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
