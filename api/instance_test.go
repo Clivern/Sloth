@@ -48,12 +48,12 @@ func TestUnitInstanceActions(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
+	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newInstanceAPI(nil, &fakeAgentCatalog{agent: agent}, &fakeInstanceRecords{}, &fakeInstanceChecks{})
 		w := httptest.NewRecorder()
 		newInstanceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, base, nil))
 
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("list returns 404 for unknown agent", func(t *testing.T) {

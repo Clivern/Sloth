@@ -221,18 +221,6 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		return nil, false, ErrInvalidInstanceId
 	}
 
-	if !AgentNamePattern.MatchString(agentName) {
-		return nil, false, ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, false, err
-	}
-	if workspace == nil {
-		return nil, false, ErrWorkspaceNotFound
-	}
-
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
@@ -270,11 +258,40 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	now := time.Now().UTC()
+	err = i.SyncChecks(instance.Id, agent.Id)
+	if err != nil {
+		return nil, false, err
+	}
 
-	templates, err := i.AgentCheckRepository.ListByAgentId(agent.Id)
+	instance.UpdatedAt = time.Now().UTC()
+	status, checks, err := i.GetHealth(instance.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	}
+
+	item := &InstanceResponse{
+		Id:         instance.Id,
+		AgentId:    instance.AgentId,
+		InstanceId: instance.InstanceId,
+		Address:    instance.Address,
+		Port:       instance.Port,
+		Meta:       util.JSONRawFromString(instance.Meta),
+		Status:     status,
+		Checks:     checks,
+		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+
+	return item, created, nil
+}
+
+// SyncChecks makes an instance's copied checks match its agent's templates.
+func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
+	now := time.Now().UTC()
+
+	templates, err := i.AgentCheckRepository.ListByAgentId(agentId)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
 	// Make the instance's checks match the agent's templates. Pull checks run
@@ -283,16 +300,16 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	for _, template := range templates {
 		wanted[template.CheckId] = true
 
-		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
+		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instanceId, template.CheckId)
 		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+			return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 		}
 
 		// A type change resets the check, since its old status no longer means anything.
 		if existing != nil && existing.Type != template.Type {
 			err = i.HealthCheckRepository.Delete(existing.Id)
 			if err != nil {
-				return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
 
 			existing = nil
@@ -311,7 +328,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			err = i.HealthCheckRepository.Update(existing)
 		} else {
 			check := &db.HealthCheck{
-				InstanceId: instance.Id,
+				InstanceId: instanceId,
 				CheckId:    template.CheckId,
 				Name:       template.Name,
 				Type:       template.Type,
@@ -335,45 +352,26 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			err = i.HealthCheckRepository.Create(check)
 		}
 		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+			return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 		}
 	}
 
 	// Remove copies of templates the agent no longer has.
-	current, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
+	current, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
 	for _, check := range current {
 		if check.Source == db.HealthCheckSourceAgent && !wanted[check.CheckId] {
 			err = i.HealthCheckRepository.Delete(check.Id)
 			if err != nil {
-				return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
 		}
 	}
 
-	instance.UpdatedAt = now
-	status, checks, err := i.GetHealth(instance.Id)
-	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-	}
-
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     status,
-		Checks:     checks,
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-
-	return item, created, nil
+	return nil
 }
 
 // DeregisterInstance removes an instance and its health checks.

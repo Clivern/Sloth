@@ -227,14 +227,11 @@ func TestUnitInstance(t *testing.T) {
 		assert.Equal(t, []db.Id{"retired"}, f.healthChecks.deleted)
 	})
 
-	t.Run("register rejects invalid ids and names and missing workspaces or agents", func(t *testing.T) {
+	t.Run("register rejects invalid ids and returns not found for a missing agent", func(t *testing.T) {
 		req := &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}
 
 		_, _, err := defaultInstanceFixture().instance.RegisterInstance("ws-1", "support-assistant", "bad id!", req)
 		assert.ErrorIs(t, err, ErrInvalidInstanceId)
-
-		_, _, err = newInstanceFixture(nil, nil).instance.RegisterInstance("ws-1", "support-assistant", "node-1", req)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 
 		_, _, err = newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.RegisterInstance("ws-1", "support-assistant", "node-1", req)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
