@@ -44,14 +44,24 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	newRouter := func(api *API) *chi.Mux {
 		router := chi.NewRouter()
 		router.Get("/api/v1/workspaces/{workspaceId}/members", api.ListWorkspaceMembersAction)
-		router.Put("/api/v1/workspaces/{workspaceId}/members/{memberUserId}", api.UpdateWorkspaceMemberRoleAction)
-		router.Delete("/api/v1/workspaces/{workspaceId}/members/{memberUserId}", api.DeleteWorkspaceMemberAction)
+		router.Put(
+			"/api/v1/workspaces/{workspaceId}/members/{memberUserId}",
+			api.UpdateWorkspaceMemberRoleAction,
+		)
+		router.Delete(
+			"/api/v1/workspaces/{workspaceId}/members/{memberUserId}",
+			api.DeleteWorkspaceMemberAction,
+		)
 		return router
 	}
 	roleBody := `{"role":"admin"}`
 
 	t.Run("list returns members with their names", func(t *testing.T) {
-		api := newAPI(workspace, &fakeWorkspaceMembers{list: []*db.WorkspaceUser{member}, count: 1}, &fakeUsers{user: profile})
+		api := newAPI(
+			workspace,
+			&fakeWorkspaceMembers{list: []*db.WorkspaceUser{member}, count: 1},
+			&fakeUsers{user: profile},
+		)
 		w := httptest.NewRecorder()
 		req := requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/members", nil), user)
 		newRouter(api).ServeHTTP(w, req)
@@ -64,7 +74,8 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("list returns 401 without a user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{}, &fakeUsers{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/members", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/members", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -90,7 +101,14 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("update returns 200 with the new role", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/members/user-2", strings.NewReader(roleBody)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/workspaces/ws-1/members/user-2",
+				strings.NewReader(roleBody),
+			),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -100,7 +118,14 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("update returns 400 for an unknown role", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/members/user-2", strings.NewReader(`{"role":"owner"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/workspaces/ws-1/members/user-2",
+				strings.NewReader(`{"role":"owner"}`),
+			),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -109,7 +134,14 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("update returns 404 when the user is not a member", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/members/user-2", strings.NewReader(roleBody)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/workspaces/ws-1/members/user-2",
+				strings.NewReader(roleBody),
+			),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -117,9 +149,20 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	})
 
 	t.Run("update returns 500 when the repository fails", func(t *testing.T) {
-		api := newAPI(workspace, &fakeWorkspaceMembers{member: member, updateErr: errors.New("boom")}, &fakeUsers{user: profile})
+		api := newAPI(
+			workspace,
+			&fakeWorkspaceMembers{member: member, updateErr: errors.New("boom")},
+			&fakeUsers{user: profile},
+		)
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/members/user-2", strings.NewReader(roleBody)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/workspaces/ws-1/members/user-2",
+				strings.NewReader(roleBody),
+			),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -128,7 +171,15 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("update returns 401 without a user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/members/user-2", strings.NewReader(roleBody)))
+		newRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/members/user-2",
+					strings.NewReader(roleBody),
+				),
+			)
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -136,7 +187,10 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
@@ -145,16 +199,26 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("delete returns 404 when the user is not a member", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
-		api := newAPI(workspace, &fakeWorkspaceMembers{member: member, deleteErr: errors.New("boom")}, &fakeUsers{user: profile})
+		api := newAPI(
+			workspace,
+			&fakeWorkspaceMembers{member: member, deleteErr: errors.New("boom")},
+			&fakeUsers{user: profile},
+		)
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -163,7 +227,8 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 	t.Run("delete returns 401 without a user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
