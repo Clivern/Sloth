@@ -109,7 +109,8 @@ func TestUnitBillingActions(t *testing.T) {
 	t.Run("checkout returns 401 without a user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeSubscriptionRecords{subscription: subscription})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -117,7 +118,10 @@ func TestUnitBillingActions(t *testing.T) {
 	t.Run("checkout returns 400 for an amount below the minimum", func(t *testing.T) {
 		api := newAPI(workspace, &fakeSubscriptionRecords{subscription: subscription})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(`{"amountCents":50}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(`{"amountCents":50}`)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -126,7 +130,10 @@ func TestUnitBillingActions(t *testing.T) {
 	t.Run("checkout returns 503 when stripe billing is not configured", func(t *testing.T) {
 		api := newAPI(workspace, &fakeSubscriptionRecords{subscription: subscription})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
@@ -136,7 +143,10 @@ func TestUnitBillingActions(t *testing.T) {
 	t.Run("checkout returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeSubscriptionRecords{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -161,7 +171,8 @@ func TestUnitBillingActions(t *testing.T) {
 	t.Run("webhook returns 503 when stripe billing is not configured", func(t *testing.T) {
 		api := newAPI(workspace, &fakeSubscriptionRecords{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/billing/webhook", strings.NewReader(`{}`)))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/billing/webhook", strings.NewReader(`{}`)))
 
 		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	})
