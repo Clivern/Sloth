@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/locale"
@@ -36,19 +35,18 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	if lo.IsNotEmpty(apiKey) {
 		me, err := a.Me.GetByAPIKey(apiKey)
 		if err != nil {
-			switch {
-			case errors.Is(err, module.ErrAPIKeyNotFound):
-				a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-					"errorMessage": locale.TR(r, "invalid_api_key"),
-				})
-			default:
-				log.Error().
-					Err(err).
-					Msg("Failed to resolve API key for /me")
-				a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-					"errorMessage": locale.TR(r, "failed_get_me"),
-				})
+			if a.WriteError(w, r, err, []ErrorMapping{
+				{module.ErrAPIKeyNotFound, http.StatusUnauthorized, "invalid_api_key"},
+			}) {
+				return
 			}
+
+			log.Error().
+				Err(err).
+				Msg("Failed to resolve API key for /me")
+			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+				"errorMessage": locale.TR(r, "failed_get_me"),
+			})
 
 			return
 		}
@@ -60,19 +58,18 @@ func (a *API) GetMeAction(w http.ResponseWriter, r *http.Request) {
 	// Check if the request is for an access key
 	me, err := a.Me.GetByAccessKey(accessKey)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAccessKeyNotFound):
-			a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_access_key"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Msg("Failed to resolve access key for /me")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_me"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAccessKeyNotFound, http.StatusUnauthorized, "invalid_access_key"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Msg("Failed to resolve access key for /me")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_me"),
+		})
 
 		return
 	}
