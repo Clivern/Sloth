@@ -27,7 +27,6 @@ var (
 	ErrFailedDeleteAgent    = errors.New("failed delete agent")
 )
 
-// AgentNamePattern is the regex pattern for agent names.
 var AgentNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Agent is the module for the workspace agent catalog.
@@ -153,25 +152,20 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		return nil, false, ErrWorkspaceNotFound
 	}
 
-	if req == nil || len(bytes.TrimSpace(req.Card)) == 0 {
+	if req == nil {
 		return nil, false, ErrInvalidAgentCard
 	}
 
 	var compact bytes.Buffer
-	err = json.Compact(&compact, req.Card)
-	if err != nil || compact.Len() == 0 || compact.Bytes()[0] != '{' {
+	var body struct {
+		Version string `json:"version"`
+	}
+	if json.Compact(&compact, req.Card) != nil || json.Unmarshal(req.Card, &body) != nil {
 		return nil, false, ErrInvalidAgentCard
 	}
 
 	version := req.Version
 	if version == "" {
-		var body struct {
-			Version string `json:"version"`
-		}
-		if json.Unmarshal(compact.Bytes(), &body) != nil {
-			return nil, false, ErrInvalidAgentCard
-		}
-
 		version = body.Version
 	}
 	if version == "" || len(version) > 40 {
