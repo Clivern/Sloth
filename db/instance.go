@@ -38,6 +38,10 @@ type AgentInstanceRepository interface {
 	Delete(id Id) error
 	ListByAgentId(agentId Id) ([]*AgentInstance, error)
 	ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error)
+	CountByAgentId(agentId Id) (int64, error)
+	ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentInstance, error)
+	CountLiveByAgentId(agentId Id, now time.Time) (int64, error)
+	ListLivePageByAgentId(agentId Id, now time.Time, limit, offset int) ([]*AgentInstance, error)
 }
 
 type AgentInstanceRepositoryPostgres struct {
@@ -270,6 +274,157 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 			&instance.Address,
 			&instance.Port,
 			&instance.Datacenter,
+			&instance.Meta,
+			&instance.Status,
+			&instance.CreatedAt,
+			&instance.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, instance)
+	}
+
+	return list, rows.Err()
+}
+
+// CountByAgentId counts the instances of an agent.
+func (r *AgentInstanceRepositoryPostgres) CountByAgentId(agentId Id) (int64, error) {
+	var total int64
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM agent_instances WHERE agent_id = $1`,
+		agentId.String(),
+	).Scan(&total)
+
+	return total, err
+}
+
+// ListPageByAgentId lists one page of instances for an agent.
+func (r *AgentInstanceRepositoryPostgres) ListPageByAgentId(
+	agentId Id,
+	limit, offset int,
+) ([]*AgentInstance, error) {
+	rows, err := r.db.Query(
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		FROM agent_instances
+		WHERE agent_id = $1
+		ORDER BY instance_id
+		LIMIT $2 OFFSET $3`,
+		agentId.String(),
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var list []*AgentInstance
+	for rows.Next() {
+		instance := &AgentInstance{}
+		err := rows.Scan(
+			&instance.Id,
+			&instance.AgentId,
+			&instance.InstanceId,
+			&instance.Address,
+			&instance.Port,
+			&instance.Meta,
+			&instance.Status,
+			&instance.CreatedAt,
+			&instance.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, instance)
+	}
+
+	return list, rows.Err()
+}
+
+// CountLiveByAgentId counts the instances with a live lease and no critical or expired checks.
+func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now time.Time) (int64, error) {
+	var total int64
+	err := r.db.QueryRow(
+		`SELECT COUNT(*)
+		FROM agent_instances
+		WHERE agent_id = $1
+			AND EXISTS (
+				SELECT 1 FROM health_checks lease
+				WHERE lease.instance_id = agent_instances.id
+					AND lease.source = $5
+					AND lease.ttl_expires_at > $2
+			)
+			AND NOT EXISTS (
+				SELECT 1 FROM health_checks hc
+				WHERE hc.instance_id = agent_instances.id
+					AND (
+						hc.status = $4
+						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+					)
+			)`,
+		agentId.String(),
+		now,
+		HealthCheckTypeTTL,
+		HealthCheckStatusCritical,
+		HealthCheckSourceLease,
+	).Scan(&total)
+
+	return total, err
+}
+
+// ListLivePageByAgentId lists one page of instances with a live lease and no critical or expired checks.
+func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(
+	agentId Id,
+	now time.Time,
+	limit, offset int,
+) ([]*AgentInstance, error) {
+	rows, err := r.db.Query(
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		FROM agent_instances
+		WHERE agent_id = $1
+			AND EXISTS (
+				SELECT 1 FROM health_checks lease
+				WHERE lease.instance_id = agent_instances.id
+					AND lease.source = $5
+					AND lease.ttl_expires_at > $2
+			)
+			AND NOT EXISTS (
+				SELECT 1 FROM health_checks hc
+				WHERE hc.instance_id = agent_instances.id
+					AND (
+						hc.status = $4
+						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+					)
+			)
+		ORDER BY instance_id
+		LIMIT $6 OFFSET $7`,
+		agentId.String(),
+		now,
+		HealthCheckTypeTTL,
+		HealthCheckStatusCritical,
+		HealthCheckSourceLease,
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var list []*AgentInstance
+	for rows.Next() {
+		instance := &AgentInstance{}
+		err := rows.Scan(
+			&instance.Id,
+			&instance.AgentId,
+			&instance.InstanceId,
+			&instance.Address,
+			&instance.Port,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,

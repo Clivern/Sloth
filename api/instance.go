@@ -35,8 +35,9 @@ func (a *API) ListInstancesAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	passing := r.URL.Query().Get("passing") == "true"
+	limit, offset := a.ParsePagination(r)
 
-	instances, err := a.Instance.ListInstances(db.Id(wid), agentName, passing)
+	result, err := a.Instance.ListInstances(db.Id(wid), agentName, passing, limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, module.ErrWorkspaceNotFound):
@@ -66,7 +67,12 @@ func (a *API) ListInstancesAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
-		"instances": instances,
+		"instances": result.Instances,
+		"_meta": map[string]any{
+			"total":  result.Total,
+			"limit":  limit,
+			"offset": offset,
+		},
 	})
 }
 

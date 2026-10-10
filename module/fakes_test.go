@@ -176,6 +176,36 @@ func (f *fakeInstances) ListLiveByAgentId(
 	return f.live, nil
 }
 
+func (f *fakeInstances) CountByAgentId(agentId db.Id) (int64, error) {
+	return int64(len(f.list)), nil
+}
+
+func (f *fakeInstances) ListPageByAgentId(agentId db.Id, limit, offset int) ([]*db.AgentInstance, error) {
+	return pageInstances(f.list, limit, offset), nil
+}
+
+func (f *fakeInstances) CountLiveByAgentId(agentId db.Id, now time.Time) (int64, error) {
+	return int64(len(f.live)), nil
+}
+
+func (f *fakeInstances) ListLivePageByAgentId(
+	agentId db.Id,
+	now time.Time,
+	limit, offset int,
+) ([]*db.AgentInstance, error) {
+	return pageInstances(f.live, limit, offset), nil
+}
+
+func pageInstances(items []*db.AgentInstance, limit, offset int) []*db.AgentInstance {
+	if offset >= len(items) {
+		return nil
+	}
+
+	end := min(offset+limit, len(items))
+
+	return items[offset:end]
+}
+
 func (f *fakeInstances) GetByAgentAndInstanceId(
 	agentId db.Id,
 	instanceId string,

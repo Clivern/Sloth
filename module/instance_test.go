@@ -16,13 +16,13 @@ import (
 
 func TestUnitInstance(t *testing.T) {
 	t.Run("list rejects invalid agent names and missing workspaces or agents", func(t *testing.T) {
-		_, err := defaultInstanceFixture().instance.ListInstances("ws-1", "-bad", false)
+		_, err := defaultInstanceFixture().instance.ListInstances("ws-1", "-bad", false, 50, 0)
 		assert.ErrorIs(t, err, ErrInvalidAgentName)
 
-		_, err = newInstanceFixture(nil, nil).instance.ListInstances("ws-1", "support-assistant", false)
+		_, err = newInstanceFixture(nil, nil).instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
 		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 
-		_, err = newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "support-assistant", false)
+		_, err = newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
@@ -32,24 +32,41 @@ func TestUnitInstance(t *testing.T) {
 		f.instances.live = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{leaseCheck()}
 
-		all, err := f.instance.ListInstances("ws-1", "support-assistant", false)
+		all, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
 		require.NoError(t, err)
-		assert.Len(t, all, 2)
+		assert.Len(t, all.Instances, 2)
 
-		live, err := f.instance.ListInstances("ws-1", "support-assistant", true)
+		live, err := f.instance.ListInstances("ws-1", "support-assistant", true, 50, 0)
 		require.NoError(t, err)
-		require.Len(t, live, 1)
-		assert.Equal(t, "node-1", live[0].InstanceId)
+		require.Len(t, live.Instances, 1)
+		assert.Equal(t, "node-1", live.Instances[0].InstanceId)
+		assert.Equal(t, int64(1), live.Total)
+	})
+
+	t.Run("list returns one page and the total across pages", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}, {Id: "inst-3", InstanceId: "node-3"}}
+
+		first, err := f.instance.ListInstances("ws-1", "support-assistant", false, 2, 0)
+		require.NoError(t, err)
+		require.Len(t, first.Instances, 2)
+		assert.Equal(t, int64(3), first.Total)
+
+		last, err := f.instance.ListInstances("ws-1", "support-assistant", false, 2, 2)
+		require.NoError(t, err)
+		require.Len(t, last.Instances, 1)
+		assert.Equal(t, "node-3", last.Instances[0].InstanceId)
+		assert.Equal(t, int64(3), last.Total)
 	})
 
 	t.Run("list marks an instance without a lease as critical", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusCritical, list[0].Status)
-		assert.Empty(t, list[0].Checks)
+		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[0].Status)
+		assert.Empty(t, list.Instances[0].Checks)
 	})
 
 	t.Run("list makes an instance warning when one check warns", func(t *testing.T) {
@@ -60,11 +77,11 @@ func TestUnitInstance(t *testing.T) {
 			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
 		}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusWarning, list[0].Status)
-		require.Len(t, list[0].Checks, 2)
-		assert.NotNil(t, list[0].LeaseExpiresAt)
+		assert.Equal(t, db.AgentInstanceStatusWarning, list.Instances[0].Status)
+		require.Len(t, list.Instances[0].Checks, 2)
+		assert.NotNil(t, list.Instances[0].LeaseExpiresAt)
 	})
 
 	t.Run("get rejects invalid ids and names", func(t *testing.T) {

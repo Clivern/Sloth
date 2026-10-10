@@ -385,6 +385,26 @@ func (f *fakeInstanceRecords) ListLiveByAgentId(
 	return f.list, f.listErr
 }
 
+func (f *fakeInstanceRecords) CountByAgentId(agentId db.Id) (int64, error) {
+	return int64(len(f.list)), f.listErr
+}
+
+func (f *fakeInstanceRecords) ListPageByAgentId(agentId db.Id, limit, offset int) ([]*db.AgentInstance, error) {
+	return f.list, f.listErr
+}
+
+func (f *fakeInstanceRecords) CountLiveByAgentId(agentId db.Id, now time.Time) (int64, error) {
+	return int64(len(f.list)), f.listErr
+}
+
+func (f *fakeInstanceRecords) ListLivePageByAgentId(
+	agentId db.Id,
+	now time.Time,
+	limit, offset int,
+) ([]*db.AgentInstance, error) {
+	return f.list, f.listErr
+}
+
 type fakeLeaseChecks struct {
 	db.HealthCheckRepository
 	lease     *db.HealthCheck

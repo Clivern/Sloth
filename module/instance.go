@@ -80,6 +80,12 @@ type LeaseDefinition struct {
 	TTL int `json:"ttl"`
 }
 
+// ListInstancesResponse is one page of an agent's instances and the total across all pages.
+type ListInstancesResponse struct {
+	Instances []*InstanceResponse
+	Total     int64
+}
+
 // NewInstance creates an instance module with the given repositories.
 func NewInstance(
 	agents db.AgentRepository,
@@ -97,12 +103,13 @@ func NewInstance(
 	}
 }
 
-// ListInstances returns an agent's instances, only live ones when passing is set.
+// ListInstances returns one page of an agent's instances, only live ones when passing is set.
 func (i *Instance) ListInstances(
 	workspaceId db.Id,
 	agentName string,
 	passing bool,
-) ([]*InstanceResponse, error) {
+	limit, offset int,
+) (*ListInstancesResponse, error) {
 	if !agentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
@@ -126,10 +133,21 @@ func (i *Instance) ListInstances(
 	now := time.Now().UTC()
 
 	var instances []*db.AgentInstance
+	var total int64
 	if passing {
-		instances, err = i.InstanceRepository.ListLiveByAgentId(agent.Id, now)
+		total, err = i.InstanceRepository.CountLiveByAgentId(agent.Id, now)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+		}
+
+		instances, err = i.InstanceRepository.ListLivePageByAgentId(agent.Id, now, limit, offset)
 	} else {
-		instances, err = i.InstanceRepository.ListByAgentId(agent.Id)
+		total, err = i.InstanceRepository.CountByAgentId(agent.Id)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+		}
+
+		instances, err = i.InstanceRepository.ListPageByAgentId(agent.Id, limit, offset)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
@@ -197,7 +215,7 @@ func (i *Instance) ListInstances(
 		list = append(list, item)
 	}
 
-	return list, nil
+	return &ListInstancesResponse{Instances: list, Total: total}, nil
 }
 
 // GetInstance returns one instance of an agent.
