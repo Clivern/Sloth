@@ -18,10 +18,28 @@ import (
 
 func TestUnitGetMeAction(t *testing.T) {
 	user := &db.User{Id: "user-1", Email: "ann@example.com", Name: "Ann", Role: db.UserRoleRegular}
-	owner := &db.User{Id: "user-1", Email: "ann@example.com", Name: "Ann", Role: db.UserRoleRegular}
-	apiKey := &db.APIKey{Id: "key-1", UserId: "user-1", Name: "laptop", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	owner := &db.User{
+		Id:    "user-1",
+		Email: "ann@example.com",
+		Name:  "Ann",
+		Role:  db.UserRoleRegular,
+	}
+	apiKey := &db.APIKey{
+		Id:        "key-1",
+		UserId:    "user-1",
+		Name:      "laptop",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 	meta := `{"permissions":["` + module.CanRegisterInstance + `"]}`
-	accessKey := &db.AccessKey{Id: "access-1", WorkspaceId: "ws-1", Name: "ci", Meta: &meta, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	accessKey := &db.AccessKey{
+		Id:          "access-1",
+		WorkspaceId: "ws-1",
+		Name:        "ci",
+		Meta:        &meta,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
 
 	newAPI := func(keys *fakeAPIKeys, access *fakeAccessKeys, users *fakeUsers) *API {
 		return &API{Me: module.NewMe(keys, users, access)}
