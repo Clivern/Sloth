@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -30,20 +29,19 @@ func (a *API) ListAgentsAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Agent.ListAgents(db.Id(wid), limit, offset)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Msg("Failed to list agents")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_agent_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Msg("Failed to list agents")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_agent_request"),
+		})
 
 		return
 	}
@@ -78,29 +76,22 @@ func (a *API) GetAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	agent, err := a.Agent.GetAgent(db.Id(wid), agentName)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to get agent")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_agent_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to get agent")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_agent_request"),
+		})
 
 		return
 	}
@@ -140,33 +131,23 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	agent, created, err := a.Agent.UpsertAgent(db.Id(wid), agentName, &req)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentCard):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_card"),
-			})
-		case errors.Is(err, module.ErrAgentVersionRequired):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_version"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to upsert agent")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_agent_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+			{module.ErrInvalidAgentCard, http.StatusBadRequest, "invalid_agent_card"},
+			{module.ErrAgentVersionRequired, http.StatusBadRequest, "invalid_agent_version"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to upsert agent")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_agent_request"),
+		})
 
 		return
 	}
@@ -199,29 +180,22 @@ func (a *API) DeleteAgentAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Agent.DeleteAgent(db.Id(wid), agentName)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to delete agent")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_agent_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to delete agent")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_agent_request"),
+		})
 
 		return
 	}
