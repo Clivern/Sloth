@@ -115,6 +115,13 @@ export const agent_instance_api = {
   delete: (workspaceId, name, instanceId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances/${encodeURIComponent(instanceId)}`),
 }
 
+export const intention_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/intentions`, { params }),
+  create: (workspaceId, data) => api.put(`/workspaces/${workspaceId}/intentions`, data),
+  update: (workspaceId, id, data) => api.put(`/workspaces/${workspaceId}/intentions/${id}`, data),
+  delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/intentions/${id}`),
+}
+
 // Keys may contain slashes, so they are not encoded
 export const kv_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/kv`, { params }),
