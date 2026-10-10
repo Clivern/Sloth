@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -47,21 +46,20 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 		offset,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("userId", user.Id.String()).
-				Msg("Failed to list workspace members")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_list_workspace_members"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("userId", user.Id.String()).
+			Msg("Failed to list workspace members")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_list_workspace_members"),
+		})
 
 		return
 	}
@@ -122,26 +120,22 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 		req.Role,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrWorkspaceUserNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_member_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("memberUserId", memberUserId).
-				Str("userId", user.Id.String()).
-				Msg("Failed to update workspace member role")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_update_workspace_member"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, "workspace_member_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("memberUserId", memberUserId).
+			Str("userId", user.Id.String()).
+			Msg("Failed to update workspace member role")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_update_workspace_member"),
+		})
 
 		return
 	}
@@ -186,26 +180,22 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 		db.Id(memberUserId),
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrWorkspaceUserNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_member_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("memberUserId", memberUserId).
-				Str("userId", user.Id.String()).
-				Msg("Failed to delete workspace member")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_delete_workspace_member"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, "workspace_member_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("memberUserId", memberUserId).
+			Str("userId", user.Id.String()).
+			Msg("Failed to delete workspace member")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_delete_workspace_member"),
+		})
 
 		return
 	}
