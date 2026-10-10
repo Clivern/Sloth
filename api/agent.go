@@ -29,12 +29,6 @@ func (a *API) ListAgentsAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Agent.ListAgents(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
-		}) {
-			return
-		}
-
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
@@ -77,9 +71,7 @@ func (a *API) GetAgentAction(w http.ResponseWriter, r *http.Request) {
 	agent, err := a.Agent.GetAgent(db.Id(wid), agentName)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 		}) {
 			return
 		}
@@ -181,9 +173,7 @@ func (a *API) DeleteAgentAction(w http.ResponseWriter, r *http.Request) {
 	err := a.Agent.DeleteAgent(db.Id(wid), agentName)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 		}) {
 			return
 		}
