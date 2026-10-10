@@ -58,7 +58,10 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 201 and sends the invite email", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -68,7 +71,10 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create still returns 201 when the email fails to send", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{err: errors.New("smtp down")})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -77,7 +83,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 401 without a user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -85,7 +92,14 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 400 for an invalid email", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(`{"email":"nope","role":"regular"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPost,
+				"/api/v1/workspaces/ws-1/invites",
+				strings.NewReader(`{"email":"nope","role":"regular"}`),
+			),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -94,7 +108,10 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -103,7 +120,10 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 409 when a pending invite already exists", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{pending: 1}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusConflict, w.Code)
@@ -122,7 +142,10 @@ func TestUnitInviteActions(t *testing.T) {
 			),
 		}
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusConflict, w.Code)
@@ -132,7 +155,10 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("create returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{createErr: errors.New("boom")}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/invites", strings.NewReader(body)),
+			user,
+		)
 		newRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -141,7 +167,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("list returns invites", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{list: []*db.UserInvite{stored}}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"email":"bo@example.com"`)
@@ -150,7 +177,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -158,7 +186,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("get returns one invite", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{invite: stored}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"role":"regular"`)
@@ -167,7 +196,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("get returns 404 for unknown invite", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "invite_not_found")
@@ -176,7 +206,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{getErr: errors.New("boom")}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -184,7 +215,8 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{invite: stored}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
@@ -192,15 +224,22 @@ func TestUnitInviteActions(t *testing.T) {
 	t.Run("delete returns 404 for unknown invite", func(t *testing.T) {
 		api := newAPI(workspace, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
-		api := newAPI(workspace, &fakeInvites{invite: stored, deleteErr: errors.New("boom")}, &fakeUsers{}, &fakeInviteMailer{})
+		api := newAPI(
+			workspace,
+			&fakeInvites{invite: stored, deleteErr: errors.New("boom")},
+			&fakeUsers{},
+			&fakeInviteMailer{},
+		)
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/invites/invite-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
