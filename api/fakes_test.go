@@ -405,9 +405,9 @@ func (f *fakeInstanceRecords) ListLivePageByAgentId(
 	return f.list, f.listErr
 }
 
-type fakeLeaseChecks struct {
+type fakeInstanceChecks struct {
 	db.HealthCheckRepository
-	lease     *db.HealthCheck
+	check     *db.HealthCheck
 	checks    []*db.HealthCheck
 	getErr    error
 	listErr   error
@@ -416,30 +416,30 @@ type fakeLeaseChecks struct {
 	passErr   error
 }
 
-func (f *fakeLeaseChecks) GetByInstanceAndCheckId(
+func (f *fakeInstanceChecks) GetByInstanceAndCheckId(
 	instanceId db.Id,
 	checkId string,
 ) (*db.HealthCheck, error) {
-	return f.lease, f.getErr
+	return f.check, f.getErr
 }
 
-func (f *fakeLeaseChecks) ListByInstanceId(instanceId db.Id) ([]*db.HealthCheck, error) {
+func (f *fakeInstanceChecks) ListByInstanceId(instanceId db.Id) ([]*db.HealthCheck, error) {
 	return f.checks, f.listErr
 }
 
-func (f *fakeLeaseChecks) Create(check *db.HealthCheck) error {
+func (f *fakeInstanceChecks) Create(check *db.HealthCheck) error {
 	return f.createErr
 }
 
-func (f *fakeLeaseChecks) Update(check *db.HealthCheck) error {
+func (f *fakeInstanceChecks) Update(check *db.HealthCheck) error {
 	return f.updateErr
 }
 
-func (f *fakeLeaseChecks) Pass(id db.Id, output string, ttlExpiresAt *time.Time) error {
+func (f *fakeInstanceChecks) Pass(id db.Id, output string, ttlExpiresAt *time.Time) error {
 	return f.passErr
 }
 
-func (f *fakeLeaseChecks) Delete(id db.Id) error {
+func (f *fakeInstanceChecks) Delete(id db.Id) error {
 	return nil
 }
 
@@ -447,7 +447,7 @@ func newInstanceAPI(
 	workspace *db.Workspace,
 	agent *fakeAgentCatalog,
 	instances *fakeInstanceRecords,
-	checks *fakeLeaseChecks,
+	checks *fakeInstanceChecks,
 ) *API {
 	return &API{
 		Instance: module.NewInstance(
@@ -466,7 +466,6 @@ func newInstanceRouter(api *API) *chi.Mux {
 	router.Get(base, api.ListInstancesAction)
 	router.Get(base+"/{instanceId}", api.GetInstanceAction)
 	router.Put(base+"/{instanceId}", api.RegisterInstanceAction)
-	router.Put(base+"/{instanceId}/renew", api.RenewInstanceAction)
 	router.Delete(base+"/{instanceId}", api.DeregisterInstanceAction)
 	return router
 }

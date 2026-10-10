@@ -135,8 +135,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.Route("/{agentName}/instances", func(r chi.Router) {
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanListInstances})).Get("/", a.ListInstancesAction)                                   // list agent instances
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanGetInstance})).Get("/{instanceId}", a.GetInstanceAction)                           // get an agent instance
-				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Put("/{instanceId}", a.RegisterInstanceAction)                 // register or update an instance and start its lease
-				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Put("/{instanceId}/renew", a.RenewInstanceAction)              // renew an instance lease
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Put("/{instanceId}", a.RegisterInstanceAction)                 // register or update an instance
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Delete("/{instanceId}", a.DeregisterInstanceAction)            // deregister an instance
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Post("/{instanceId}/checks/{checkId}/pass", a.PassCheckAction) // report a ttl check passing
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanRegisterInstance})).Post("/{instanceId}/checks/{checkId}/warn", a.WarnCheckAction) // report a ttl check warning

@@ -21,16 +21,16 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 	t.Run("create starts critical", func(t *testing.T) {
 		check := &HealthCheck{
 			InstanceId: instance.Id,
-			CheckId:    HealthCheckIDTTL,
-			Name:       "lease",
+			CheckId:    "heartbeat",
+			Name:       "heartbeat",
 			Type:       HealthCheckTypeTTL,
-			Source:     HealthCheckSourceLease,
+			Source:     HealthCheckSourceAgent,
 			Definition: stringPtr(`{"ttl":"30s"}`),
 		}
 		require.NoError(t, repo.Create(check))
 		assert.Equal(t, HealthCheckStatusCritical, check.Status)
 
-		got, err := repo.GetByInstanceAndCheckId(instance.Id, HealthCheckIDTTL)
+		got, err := repo.GetByInstanceAndCheckId(instance.Id, "heartbeat")
 		require.NoError(t, err)
 		require.NotNil(t, got)
 		assert.Equal(t, check.Id, got.Id)
@@ -40,12 +40,12 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 	t.Run("pass warn fail", func(t *testing.T) {
 		expires := time.Now().UTC().Add(30 * time.Second)
 		require.NoError(t, repo.Pass(
-			mustCheck(t, repo, instance.Id, HealthCheckIDTTL).Id,
+			mustCheck(t, repo, instance.Id, "heartbeat").Id,
 			"renewed",
 			&expires,
 		))
 
-		got, err := repo.GetByInstanceAndCheckId(instance.Id, HealthCheckIDTTL)
+		got, err := repo.GetByInstanceAndCheckId(instance.Id, "heartbeat")
 		require.NoError(t, err)
 		assert.Equal(t, HealthCheckStatusPassing, got.Status)
 		require.NotNil(t, got.TTLExpiresAt)
@@ -101,30 +101,30 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   live.Id,
-		CheckId:      HealthCheckIDTTL,
-		Name:         "lease",
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
-		Source:       HealthCheckSourceLease,
+		Source:       HealthCheckSourceAgent,
 		Status:       HealthCheckStatusPassing,
 		Definition:   stringPtr(`{"ttl":"30s"}`),
 		TTLExpiresAt: timePtr(now.Add(time.Minute)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   expired.Id,
-		CheckId:      HealthCheckIDTTL,
-		Name:         "lease",
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
-		Source:       HealthCheckSourceLease,
+		Source:       HealthCheckSourceAgent,
 		Status:       HealthCheckStatusPassing,
 		Definition:   stringPtr(`{"ttl":"30s"}`),
 		TTLExpiresAt: timePtr(now.Add(-time.Second)),
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   critical.Id,
-		CheckId:      HealthCheckIDTTL,
-		Name:         "lease",
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
-		Source:       HealthCheckSourceLease,
+		Source:       HealthCheckSourceAgent,
 		Status:       HealthCheckStatusPassing,
 		Definition:   stringPtr(`{"ttl":"30s"}`),
 		TTLExpiresAt: timePtr(now.Add(time.Minute)),
@@ -139,10 +139,10 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 	}))
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   warning.Id,
-		CheckId:      HealthCheckIDTTL,
-		Name:         "lease",
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
-		Source:       HealthCheckSourceLease,
+		Source:       HealthCheckSourceAgent,
 		Status:       HealthCheckStatusPassing,
 		Definition:   stringPtr(`{"ttl":"30s"}`),
 		TTLExpiresAt: timePtr(now.Add(time.Minute)),
@@ -158,10 +158,10 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   staleTTL.Id,
-		CheckId:      HealthCheckIDTTL,
-		Name:         "lease",
+		CheckId:      "heartbeat",
+		Name:         "heartbeat",
 		Type:         HealthCheckTypeTTL,
-		Source:       HealthCheckSourceLease,
+		Source:       HealthCheckSourceAgent,
 		Status:       HealthCheckStatusPassing,
 		Definition:   stringPtr(`{"ttl":"30s"}`),
 		TTLExpiresAt: timePtr(now.Add(time.Minute)),
@@ -197,8 +197,8 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 	t.Run("drops critical check", func(t *testing.T) {
 		assert.False(t, ids["critical-1"])
 	})
-	t.Run("drops missing ttl", func(t *testing.T) {
-		assert.False(t, ids["no-ttl-1"])
+	t.Run("includes an instance with no checks", func(t *testing.T) {
+		assert.True(t, ids["no-ttl-1"])
 	})
 	t.Run("drops expired template ttl", func(t *testing.T) {
 		assert.False(t, ids["stale-ttl-1"])
@@ -266,21 +266,21 @@ func TestIntegrationHealthCheckScheduling(t *testing.T) {
 	})
 
 	t.Run("delete by agent and check id", func(t *testing.T) {
-		lease := &HealthCheck{
+		heartbeat := &HealthCheck{
 			InstanceId: first.Id,
-			CheckId:    HealthCheckIDTTL,
-			Name:       "lease",
+			CheckId:    "heartbeat",
+			Name:       "heartbeat",
 			Type:       HealthCheckTypeTTL,
-			Source:     HealthCheckSourceLease,
+			Source:     HealthCheckSourceAgent,
 		}
-		require.NoError(t, repo.Create(lease))
+		require.NoError(t, repo.Create(heartbeat))
 
 		require.NoError(t, repo.DeleteByAgentAndCheckId(agent.Id, "http"))
 
 		firstChecks, err := repo.ListByInstanceId(first.Id)
 		require.NoError(t, err)
 		require.Len(t, firstChecks, 1)
-		assert.Equal(t, HealthCheckIDTTL, firstChecks[0].CheckId)
+		assert.Equal(t, "heartbeat", firstChecks[0].CheckId)
 
 		secondChecks, err := repo.ListByInstanceId(second.Id)
 		require.NoError(t, err)

@@ -471,13 +471,6 @@ func defaultAgentFixture() *agentFixture {
 	)
 }
 
-// leaseCheck is a healthy instance lease, the check every registered instance has.
-func leaseCheck() *db.HealthCheck {
-	expiresAt := time.Now().Add(time.Minute)
-
-	return &db.HealthCheck{Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceLease, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expiresAt}
-}
-
 type instanceFixture struct {
 	instance     *Instance
 	agents       *fakeAgents

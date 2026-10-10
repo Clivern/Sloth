@@ -103,15 +103,6 @@ func TestUnitAgentCheckActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "invalid_check_timing")
 	})
 
-	t.Run("upsert returns 400 for the reserved ttl check id", func(t *testing.T) {
-		api := newCheckAPI(&fakeAgentCatalog{agent: agent}, &fakeAgentChecks{}, &fakeCheckInstances{}, &fakeHealthChecks{})
-		w := httptest.NewRecorder()
-		newCheckRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory/checks/ttl", strings.NewReader(ttlBody)))
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Contains(t, w.Body.String(), "reserved_check_id")
-	})
-
 	t.Run("upsert returns 400 for an http path without a leading slash", func(t *testing.T) {
 		api := newCheckAPI(&fakeAgentCatalog{agent: agent}, &fakeAgentChecks{}, &fakeCheckInstances{}, &fakeHealthChecks{})
 		w := httptest.NewRecorder()

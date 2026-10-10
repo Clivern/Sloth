@@ -15,7 +15,6 @@ import (
 var (
 	ErrCheckNotFound      = errors.New("check not found")
 	ErrInvalidCheckId     = errors.New("invalid check id")
-	ErrReservedCheckId    = errors.New("reserved check id")
 	ErrInvalidCheckPath   = errors.New("invalid check path")
 	ErrInvalidCheckTiming = errors.New("invalid check timing")
 	ErrCheckNotReportable = errors.New("check not reportable")
@@ -160,9 +159,6 @@ func (c *Check) UpsertAgentCheck(
 	if !instanceIdPattern.MatchString(checkId) {
 		return nil, false, ErrInvalidCheckId
 	}
-	if checkId == db.HealthCheckIDTTL {
-		return nil, false, ErrReservedCheckId
-	}
 
 	var definition CheckDefinition
 	switch req.Type {
@@ -250,9 +246,6 @@ func (c *Check) UpsertAgentCheck(
 		existing, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
 		if err != nil {
 			return nil, false, err
-		}
-		if existing != nil && existing.Source == db.HealthCheckSourceLease {
-			continue
 		}
 
 		// A type change resets the check, since its old status no longer means anything.
@@ -374,7 +367,7 @@ func (c *Check) ReportCheck(
 	if check == nil {
 		return nil, ErrCheckNotFound
 	}
-	if check.Type != db.HealthCheckTypeTTL || check.Source == db.HealthCheckSourceLease {
+	if check.Type != db.HealthCheckTypeTTL {
 		return nil, ErrCheckNotReportable
 	}
 

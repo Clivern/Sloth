@@ -15,13 +15,10 @@ import (
 )
 
 func TestUnitCheck(t *testing.T) {
-	t.Run("upsert rejects reserved and malformed check ids", func(t *testing.T) {
+	t.Run("upsert rejects malformed check ids", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "ttl", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
-		assert.ErrorIs(t, err, ErrReservedCheckId)
-
-		_, _, err = f.check.UpsertAgentCheck("ws-1", "support-assistant", "bad id!", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
+		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "bad id!", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
 		assert.ErrorIs(t, err, ErrInvalidCheckId)
 	})
 
@@ -97,18 +94,6 @@ func TestUnitCheck(t *testing.T) {
 		assert.Equal(t, db.HealthCheckStatusPassing, check.Status)
 		assert.NotNil(t, check.TTLExpiresAt)
 		assert.Nil(t, check.NextRunAt)
-	})
-
-	t.Run("upsert leaves lease checks alone", func(t *testing.T) {
-		f := defaultCheckFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "lease-1", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceLease}
-
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "http", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "/healthz"})
-		require.NoError(t, err)
-		assert.Empty(t, f.healthChecks.created)
-		assert.Empty(t, f.healthChecks.updated)
-		assert.Empty(t, f.healthChecks.deleted)
 	})
 
 	t.Run("upsert resets a copied check when its type changes", func(t *testing.T) {
@@ -195,7 +180,7 @@ func TestUnitCheck(t *testing.T) {
 		assert.ErrorIs(t, err, ErrCheckNotFound)
 	})
 
-	t.Run("report rejects http checks and lease checks", func(t *testing.T) {
+	t.Run("report rejects http checks", func(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
 
@@ -203,9 +188,6 @@ func TestUnitCheck(t *testing.T) {
 		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
 		assert.ErrorIs(t, err, ErrCheckNotReportable)
 
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "lease-1", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceLease}
-		_, err = f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "ttl", db.HealthCheckStatusPassing, &ReportCheckRequest{})
-		assert.ErrorIs(t, err, ErrCheckNotReportable)
 	})
 
 	t.Run("report stores the status and restarts the ttl", func(t *testing.T) {

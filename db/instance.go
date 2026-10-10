@@ -222,7 +222,7 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 	return list, rows.Err()
 }
 
-// ListLiveByAgentId lists instances with a live lease and no critical or expired checks.
+// ListLiveByAgentId lists instances with no critical or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 	agentId Id,
 	now time.Time,
@@ -231,26 +231,19 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
-			AND EXISTS (
-				SELECT 1 FROM health_checks lease
-				WHERE lease.instance_id = agent_instances.id
-					AND lease.source = $5
-					AND lease.ttl_expires_at > $2
-			)
 			AND NOT EXISTS (
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $4
-						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+						hc.status = $3
+						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)
 		ORDER BY instance_id`,
 		agentId.String(),
 		now,
-		HealthCheckTypeTTL,
 		HealthCheckStatusCritical,
-		HealthCheckSourceLease,
+		HealthCheckTypeTTL,
 	)
 	if err != nil {
 		return nil, err
@@ -338,38 +331,31 @@ func (r *AgentInstanceRepositoryPostgres) ListPageByAgentId(
 	return list, rows.Err()
 }
 
-// CountLiveByAgentId counts the instances with a live lease and no critical or expired checks.
+// CountLiveByAgentId counts the instances with no critical or expired checks.
 func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now time.Time) (int64, error) {
 	var total int64
 	err := r.db.QueryRow(
 		`SELECT COUNT(*)
 		FROM agent_instances
 		WHERE agent_id = $1
-			AND EXISTS (
-				SELECT 1 FROM health_checks lease
-				WHERE lease.instance_id = agent_instances.id
-					AND lease.source = $5
-					AND lease.ttl_expires_at > $2
-			)
 			AND NOT EXISTS (
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $4
-						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+						hc.status = $3
+						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)`,
 		agentId.String(),
 		now,
-		HealthCheckTypeTTL,
 		HealthCheckStatusCritical,
-		HealthCheckSourceLease,
+		HealthCheckTypeTTL,
 	).Scan(&total)
 
 	return total, err
 }
 
-// ListLivePageByAgentId lists one page of instances with a live lease and no critical or expired checks.
+// ListLivePageByAgentId lists one page of instances with no critical or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(
 	agentId Id,
 	now time.Time,
@@ -379,27 +365,20 @@ func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
-			AND EXISTS (
-				SELECT 1 FROM health_checks lease
-				WHERE lease.instance_id = agent_instances.id
-					AND lease.source = $5
-					AND lease.ttl_expires_at > $2
-			)
 			AND NOT EXISTS (
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $4
-						OR (hc.type = $3 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
+						hc.status = $3
+						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)
 		ORDER BY instance_id
-		LIMIT $6 OFFSET $7`,
+		LIMIT $5 OFFSET $6`,
 		agentId.String(),
 		now,
-		HealthCheckTypeTTL,
 		HealthCheckStatusCritical,
-		HealthCheckSourceLease,
+		HealthCheckTypeTTL,
 		limit,
 		offset,
 	)

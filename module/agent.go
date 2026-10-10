@@ -132,16 +132,11 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			}
 
 			// The instance status is the worst check status. A TTL check past its TTL
-			// is critical, and so is an instance without a lease.
 			status := db.AgentInstanceStatusPassing
-			hasLease := false
 			for _, check := range checks {
 				current := check.Status
 				if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 					current = db.HealthCheckStatusCritical
-				}
-				if check.Source == db.HealthCheckSourceLease {
-					hasLease = true
 				}
 
 				switch current {
@@ -153,9 +148,6 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 				default:
 					status = db.AgentInstanceStatusCritical
 				}
-			}
-			if !hasLease {
-				status = db.AgentInstanceStatusCritical
 			}
 
 			// The agent is as healthy as its worst instance.
@@ -235,16 +227,11 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		}
 
 		// The instance status is the worst check status. A TTL check past its TTL
-		// is critical, and so is an instance without a lease.
 		status := db.AgentInstanceStatusPassing
-		hasLease := false
 		for _, check := range checks {
 			current := check.Status
 			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 				current = db.HealthCheckStatusCritical
-			}
-			if check.Source == db.HealthCheckSourceLease {
-				hasLease = true
 			}
 
 			switch current {
@@ -256,9 +243,6 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 			default:
 				status = db.AgentInstanceStatusCritical
 			}
-		}
-		if !hasLease {
-			status = db.AgentInstanceStatusCritical
 		}
 
 		// The agent is as healthy as its worst instance.
@@ -387,16 +371,11 @@ func (a *Agent) UpsertAgent(
 		}
 
 		// The instance status is the worst check status. A TTL check past its TTL
-		// is critical, and so is an instance without a lease.
 		status := db.AgentInstanceStatusPassing
-		hasLease := false
 		for _, check := range checks {
 			current := check.Status
 			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 				current = db.HealthCheckStatusCritical
-			}
-			if check.Source == db.HealthCheckSourceLease {
-				hasLease = true
 			}
 
 			switch current {
@@ -408,9 +387,6 @@ func (a *Agent) UpsertAgent(
 			default:
 				status = db.AgentInstanceStatusCritical
 			}
-		}
-		if !hasLease {
-			status = db.AgentInstanceStatusCritical
 		}
 
 		// The agent is as healthy as its worst instance.

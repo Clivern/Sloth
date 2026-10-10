@@ -398,7 +398,7 @@ Change feed for `GET /watch/catalog`. Uses a `BIGSERIAL` id instead of a UUID so
 | `check_id` | VARCHAR(100) | no |  |  |
 | `name` | VARCHAR(120) | no |  |  |
 | `type` | VARCHAR(20) | no |  |  |
-| `source` | VARCHAR(20) | no | `'agent'` | lease: the instance lease, agent: copied from an agent check template |
+| `source` | VARCHAR(20) | no | `'agent'` | agent: copied from an agent check template |
 | `status` | VARCHAR(20) | no | `'critical'` |  |
 | `definition` | JSONB | yes |  |  |
 | `output` | TEXT | yes |  |  |

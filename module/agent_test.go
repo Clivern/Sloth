@@ -36,11 +36,10 @@ func TestUnitAgent(t *testing.T) {
 		assert.Empty(t, result.Agents[0].Instances)
 	})
 
-	t.Run("list reports passing health when every instance has a lease and no failing checks", func(t *testing.T) {
+	t.Run("list reports passing health when an instance has no failing checks", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{leaseCheck()}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -48,10 +47,11 @@ func TestUnitAgent(t *testing.T) {
 		assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Instances[0].Status)
 	})
 
-	t.Run("list marks an instance without a lease as critical", func(t *testing.T) {
+	t.Run("list marks an instance with a critical check as critical", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical}}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -63,8 +63,7 @@ func TestUnitAgent(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}, {Id: "inst-2"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{leaseCheck()}
-		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{leaseCheck(), {Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning}}
+		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning}}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -78,7 +77,7 @@ func TestUnitAgent(t *testing.T) {
 		f.agents.list = []*db.Agent{f.agents.agent}
 		expired := time.Now().Add(-time.Minute)
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{leaseCheck(), {Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expired}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expired}}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -102,7 +101,6 @@ func TestUnitAgent(t *testing.T) {
 	t.Run("get returns the agent with its instance health", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{leaseCheck()}
 
 		response, err := f.agent.GetAgent("ws-1", "support-assistant")
 		require.NoError(t, err)

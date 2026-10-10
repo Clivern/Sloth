@@ -105,10 +105,6 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
 				"errorMessage": locale.TR(r, "invalid_check_id"),
 			})
-		case errors.Is(err, module.ErrReservedCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "reserved_check_id"),
-			})
 		case errors.Is(err, module.ErrInvalidCheckPath):
 			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
 				"errorMessage": locale.TR(r, "invalid_check_path"),

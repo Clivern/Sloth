@@ -20,16 +20,12 @@ var (
 	ErrFailedListInstances      = errors.New("failed list instances")
 	ErrFailedGetInstance        = errors.New("failed get instance")
 	ErrFailedRegisterInstance   = errors.New("failed register instance")
-	ErrFailedRenewInstance      = errors.New("failed renew instance")
 	ErrFailedDeregisterInstance = errors.New("failed deregister instance")
 )
 
-// DefaultLeaseTTL is the lease length in seconds when none is given.
-const DefaultLeaseTTL = 30
-
 var instanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
-// Instance is the module for agent instance registration and leases.
+// Instance is the module for agent instance registration and health.
 type Instance struct {
 	AgentRepository       db.AgentRepository
 	InstanceRepository    db.AgentInstanceRepository
@@ -40,10 +36,9 @@ type Instance struct {
 
 // RegisterInstanceRequest is the body for registering or updating an instance.
 type RegisterInstanceRequest struct {
-	Address  string          `json:"address" validate:"required,max=255" label:"Address"`
-	Port     int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
-	Meta     json.RawMessage `json:"meta" label:"Meta"`
-	LeaseTTL int             `json:"leaseTtl" validate:"omitempty,min=5,max=86400" label:"Lease TTL"`
+	Address string          `json:"address" validate:"required,max=255" label:"Address"`
+	Port    int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
+	Meta    json.RawMessage `json:"meta" label:"Meta"`
 }
 
 // HealthCheckResponse is one health check on an instance.
@@ -60,22 +55,16 @@ type HealthCheckResponse struct {
 
 // InstanceResponse is an instance shaped for API responses.
 type InstanceResponse struct {
-	Id             db.Id                  `json:"id"`
-	AgentId        db.Id                  `json:"agentId"`
-	InstanceId     string                 `json:"instanceId"`
-	Address        string                 `json:"address"`
-	Port           int                    `json:"port"`
-	Meta           json.RawMessage        `json:"meta,omitempty"`
-	Status         string                 `json:"status"`
-	LeaseExpiresAt *time.Time             `json:"leaseExpiresAt,omitempty"`
-	Checks         []*HealthCheckResponse `json:"checks"`
-	CreatedAt      string                 `json:"createdAt"`
-	UpdatedAt      string                 `json:"updatedAt"`
-}
-
-// LeaseDefinition is stored as the TTL check definition so renew knows the lease length.
-type LeaseDefinition struct {
-	TTL int `json:"ttl"`
+	Id         db.Id                  `json:"id"`
+	AgentId    db.Id                  `json:"agentId"`
+	InstanceId string                 `json:"instanceId"`
+	Address    string                 `json:"address"`
+	Port       int                    `json:"port"`
+	Meta       json.RawMessage        `json:"meta,omitempty"`
+	Status     string                 `json:"status"`
+	Checks     []*HealthCheckResponse `json:"checks"`
+	CreatedAt  string                 `json:"createdAt"`
+	UpdatedAt  string                 `json:"updatedAt"`
 }
 
 // ListInstancesResponse is one page of an agent's instances and the total across all pages.
@@ -172,16 +161,10 @@ func (i *Instance) ListInstances(
 		}
 
 		// The instance status is the worst check status. A TTL check past its TTL
-		// is critical, and so is an instance without a lease.
-		hasLease := false
 		for _, check := range checks {
 			status := check.Status
 			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 				status = db.HealthCheckStatusCritical
-			}
-			if check.Source == db.HealthCheckSourceLease {
-				hasLease = true
-				item.LeaseExpiresAt = check.TTLExpiresAt
 			}
 
 			switch status {
@@ -204,9 +187,6 @@ func (i *Instance) ListInstances(
 				TTLExpiresAt: check.TTLExpiresAt,
 				LastRunAt:    check.LastRunAt,
 			})
-		}
-		if !hasLease {
-			item.Status = db.AgentInstanceStatusCritical
 		}
 
 		list = append(list, item)
@@ -272,16 +252,10 @@ func (i *Instance) GetInstance(
 	}
 
 	// The instance status is the worst check status. A TTL check past its TTL
-	// is critical, and so is an instance without a lease.
-	hasLease := false
 	for _, check := range checks {
 		status := check.Status
 		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 			status = db.HealthCheckStatusCritical
-		}
-		if check.Source == db.HealthCheckSourceLease {
-			hasLease = true
-			item.LeaseExpiresAt = check.TTLExpiresAt
 		}
 
 		switch status {
@@ -305,14 +279,11 @@ func (i *Instance) GetInstance(
 			LastRunAt:    check.LastRunAt,
 		})
 	}
-	if !hasLease {
-		item.Status = db.AgentInstanceStatusCritical
-	}
 
 	return item, nil
 }
 
-// RegisterInstance creates or updates an instance, starts its lease and syncs its checks.
+// RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
 func (i *Instance) RegisterInstance(
 	workspaceId db.Id,
 	agentName, instanceId string,
@@ -371,43 +342,7 @@ func (i *Instance) RegisterInstance(
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	ttl := req.LeaseTTL
-	if ttl == 0 {
-		ttl = DefaultLeaseTTL
-	}
-
-	raw, _ := json.Marshal(LeaseDefinition{TTL: ttl})
-	definition := string(raw)
 	now := time.Now().UTC()
-	expiresAt := now.Add(time.Duration(ttl) * time.Second)
-
-	lease, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, db.HealthCheckIDTTL)
-	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-	}
-	if lease == nil {
-		lease = &db.HealthCheck{
-			InstanceId:   instance.Id,
-			CheckId:      db.HealthCheckIDTTL,
-			Name:         "Lease",
-			Type:         db.HealthCheckTypeTTL,
-			Source:       db.HealthCheckSourceLease,
-			Status:       db.HealthCheckStatusPassing,
-			Definition:   &definition,
-			TTLExpiresAt: &expiresAt,
-			LastRunAt:    &now,
-		}
-		err = i.HealthCheckRepository.Create(lease)
-	} else {
-		lease.Definition = &definition
-		err = i.HealthCheckRepository.Update(lease)
-		if err == nil {
-			err = i.HealthCheckRepository.Pass(lease.Id, "", &expiresAt)
-		}
-	}
-	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-	}
 
 	templates, err := i.AgentCheckRepository.ListByAgentId(agent.Id)
 	if err != nil {
@@ -423,9 +358,6 @@ func (i *Instance) RegisterInstance(
 		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
 		if err != nil {
 			return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-		}
-		if existing != nil && existing.Source == db.HealthCheckSourceLease {
-			continue
 		}
 
 		// A type change resets the check, since its old status no longer means anything.
@@ -515,16 +447,10 @@ func (i *Instance) RegisterInstance(
 	}
 
 	// The instance status is the worst check status. A TTL check past its TTL
-	// is critical, and so is an instance without a lease.
-	hasLease := false
 	for _, check := range checks {
 		status := check.Status
 		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
 			status = db.HealthCheckStatusCritical
-		}
-		if check.Source == db.HealthCheckSourceLease {
-			hasLease = true
-			item.LeaseExpiresAt = check.TTLExpiresAt
 		}
 
 		switch status {
@@ -547,127 +473,9 @@ func (i *Instance) RegisterInstance(
 			TTLExpiresAt: check.TTLExpiresAt,
 			LastRunAt:    check.LastRunAt,
 		})
-	}
-	if !hasLease {
-		item.Status = db.AgentInstanceStatusCritical
 	}
 
 	return item, created, nil
-}
-
-// RenewInstance extends an instance lease by its registered TTL.
-func (i *Instance) RenewInstance(
-	workspaceId db.Id,
-	agentName, instanceId string,
-) (*InstanceResponse, error) {
-	if !instanceIdPattern.MatchString(instanceId) {
-		return nil, ErrInvalidInstanceId
-	}
-
-	if !agentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
-	}
-
-	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-	if instance == nil {
-		return nil, ErrInstanceNotFound
-	}
-
-	// Registering always creates the lease, so it is there to extend.
-	lease, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, db.HealthCheckIDTTL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-	if lease == nil {
-		return nil, ErrInstanceNotFound
-	}
-
-	var def LeaseDefinition
-	json.Unmarshal([]byte(*lease.Definition), &def)
-	now := time.Now().UTC()
-	expiresAt := now.Add(time.Duration(def.TTL) * time.Second)
-
-	err = i.HealthCheckRepository.Pass(lease.Id, "", &expiresAt)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-
-	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedRenewInstance, err)
-	}
-
-	item := &InstanceResponse{
-		Id:         instance.Id,
-		AgentId:    instance.AgentId,
-		InstanceId: instance.InstanceId,
-		Address:    instance.Address,
-		Port:       instance.Port,
-		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusPassing,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
-		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-
-	// The instance status is the worst check status. A TTL check past its TTL
-	// is critical, and so is an instance without a lease.
-	hasLease := false
-	for _, check := range checks {
-		status := check.Status
-		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-			status = db.HealthCheckStatusCritical
-		}
-		if check.Source == db.HealthCheckSourceLease {
-			hasLease = true
-			item.LeaseExpiresAt = check.TTLExpiresAt
-		}
-
-		switch status {
-		case db.HealthCheckStatusPassing:
-		case db.HealthCheckStatusWarning:
-			if item.Status == db.AgentInstanceStatusPassing {
-				item.Status = db.AgentInstanceStatusWarning
-			}
-		default:
-			item.Status = db.AgentInstanceStatusCritical
-		}
-
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Source:       check.Source,
-			Status:       status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
-	}
-	if !hasLease {
-		item.Status = db.AgentInstanceStatusCritical
-	}
-
-	return item, nil
 }
 
 // DeregisterInstance removes an instance and its health checks.

@@ -21,11 +21,6 @@ const (
 	HealthCheckTypeCard  = "card"
 	HealthCheckTypeSkill = "skill"
 
-	// HealthCheckIDTTL is the check_id for the instance lease.
-	HealthCheckIDTTL = "ttl"
-
-	// HealthCheckSourceLease marks the instance lease check.
-	HealthCheckSourceLease = "lease"
 	// HealthCheckSourceAgent marks a check copied from an agent check template.
 	HealthCheckSourceAgent = "agent"
 )
