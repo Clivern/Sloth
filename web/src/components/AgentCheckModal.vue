@@ -20,33 +20,33 @@
           </div>
 
           <form class="mt-4 space-y-4" @submit.prevent="submit">
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label for="check-id" class="form-label">{{ $t('agents_page.check_id') }}</label>
-                <input
-                  id="check-id"
-                  v-model="form.checkId"
-                  type="text"
-                  required
-                  class="input-field font-mono"
-                  placeholder="http"
-                  autocomplete="off"
-                  :disabled="saving || isEdit"
-                />
-              </div>
-              <div>
-                <label for="check-name" class="form-label">{{ $t('agents_page.name') }}</label>
-                <input
-                  id="check-name"
-                  v-model="form.name"
-                  type="text"
-                  maxlength="120"
-                  class="input-field"
-                  :placeholder="$t('agents_page.check_name_placeholder')"
-                  autocomplete="off"
-                  :disabled="saving"
-                />
-              </div>
+            <div>
+              <label for="check-id" class="form-label">{{ $t('agents_page.check_id') }}</label>
+              <input
+                id="check-id"
+                v-model="form.checkId"
+                type="text"
+                required
+                class="input-field font-mono"
+                placeholder="http"
+                autocomplete="off"
+                :disabled="saving || isEdit"
+              />
+              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_id_hint') }}</p>
+            </div>
+            <div>
+              <label for="check-name" class="form-label">{{ $t('agents_page.name') }}</label>
+              <input
+                id="check-name"
+                v-model="form.name"
+                type="text"
+                maxlength="120"
+                class="input-field"
+                :placeholder="$t('agents_page.check_name_placeholder')"
+                autocomplete="off"
+                :disabled="saving"
+              />
+              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_name_hint') }}</p>
             </div>
 
             <div>
