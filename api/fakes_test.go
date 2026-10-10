@@ -289,7 +289,12 @@ func (f *fakeHealthChecks) DeleteByAgentAndCheckId(agentId db.Id, checkId string
 	return nil
 }
 
-func newCheckAPI(agent *fakeAgentCatalog, checks *fakeAgentChecks, instance *fakeCheckInstances, health *fakeHealthChecks) *API {
+func newCheckAPI(
+	agent *fakeAgentCatalog,
+	checks *fakeAgentChecks,
+	instance *fakeCheckInstances,
+	health *fakeHealthChecks,
+) *API {
 	return &API{
 		Check: module.NewCheck(
 			agent,
@@ -303,11 +308,26 @@ func newCheckAPI(agent *fakeAgentCatalog, checks *fakeAgentChecks, instance *fak
 func newCheckRouter(api *API) *chi.Mux {
 	router := chi.NewRouter()
 	router.Get("/api/v1/workspaces/{workspaceId}/agents/{agentName}/checks", api.ListAgentChecksAction)
-	router.Put("/api/v1/workspaces/{workspaceId}/agents/{agentName}/checks/{checkId}", api.UpsertAgentCheckAction)
-	router.Delete("/api/v1/workspaces/{workspaceId}/agents/{agentName}/checks/{checkId}", api.DeleteAgentCheckAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/pass", api.PassCheckAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/warn", api.WarnCheckAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/fail", api.FailCheckAction)
+	router.Put(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/checks/{checkId}",
+		api.UpsertAgentCheckAction,
+	)
+	router.Delete(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/checks/{checkId}",
+		api.DeleteAgentCheckAction,
+	)
+	router.Post(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/pass",
+		api.PassCheckAction,
+	)
+	router.Post(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/warn",
+		api.WarnCheckAction,
+	)
+	router.Post(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/fail",
+		api.FailCheckAction,
+	)
 	return router
 }
 
@@ -358,7 +378,11 @@ func (f *fakeInstanceRecords) CountLiveByAgentId(agentId db.Id, now time.Time) (
 	return int64(len(f.list)), f.listErr
 }
 
-func (f *fakeInstanceRecords) ListLivePageByAgentId(agentId db.Id, now time.Time, limit, offset int) ([]*db.AgentInstance, error) {
+func (f *fakeInstanceRecords) ListLivePageByAgentId(
+	agentId db.Id,
+	now time.Time,
+	limit, offset int,
+) ([]*db.AgentInstance, error) {
 	return f.list, f.listErr
 }
 
@@ -397,7 +421,12 @@ func (f *fakeInstanceChecks) Delete(id db.Id) error {
 	return nil
 }
 
-func newInstanceAPI(workspace *db.Workspace, agent *fakeAgentCatalog, instances *fakeInstanceRecords, checks *fakeInstanceChecks) *API {
+func newInstanceAPI(
+	workspace *db.Workspace,
+	agent *fakeAgentCatalog,
+	instances *fakeInstanceRecords,
+	checks *fakeInstanceChecks,
+) *API {
 	return &API{
 		Instance: module.NewInstance(
 			agent,
@@ -474,7 +503,10 @@ func newIntentionRouter(api *API) *chi.Mux {
 	router.Post("/api/v1/workspaces/{workspaceId}/intentions/check", api.CheckIntentionAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/intentions/{intentionId}", api.GetIntentionAction)
 	router.Put("/api/v1/workspaces/{workspaceId}/intentions/{intentionId}", api.UpdateIntentionAction)
-	router.Delete("/api/v1/workspaces/{workspaceId}/intentions/{intentionId}", api.DeleteIntentionAction)
+	router.Delete(
+		"/api/v1/workspaces/{workspaceId}/intentions/{intentionId}",
+		api.DeleteIntentionAction,
+	)
 	return router
 }
 
