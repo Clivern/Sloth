@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -30,20 +29,19 @@ func (a *API) ListWorkspaceAuditsAction(w http.ResponseWriter, r *http.Request) 
 
 	result, err := a.Audit.ListAuditEvents(db.Id(wid), limit, offset)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Msg("Failed to list audit events")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_list_audits"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Msg("Failed to list audit events")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_list_audits"),
+		})
 
 		return
 	}
@@ -78,24 +76,20 @@ func (a *API) GetWorkspaceAuditAction(w http.ResponseWriter, r *http.Request) {
 
 	event, err := a.Audit.GetAuditEvent(db.Id(wid), db.Id(auditId))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAuditEventNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "audit_event_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("auditId", auditId).
-				Msg("Failed to get audit event")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_audit"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAuditEventNotFound, http.StatusNotFound, "audit_event_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("auditId", auditId).
+			Msg("Failed to get audit event")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_audit"),
+		})
 
 		return
 	}
