@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -28,20 +27,19 @@ func (a *API) GetWorkspaceStatsAction(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := a.Stats.GetWorkspaceStats(db.Id(wid))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Msg("Failed to get workspace stats")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_workspace_stats"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Msg("Failed to get workspace stats")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_workspace_stats"),
+		})
 
 		return
 	}
