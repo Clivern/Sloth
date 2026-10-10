@@ -355,7 +355,8 @@
     "check_invalid_path": "Le chemin doit commencer par /.",
     "check_failed_save": "Impossible d'enregistrer la vérification",
     "check_failed_delete": "Impossible de supprimer la vérification",
-    "check_delete_confirm": "Supprimer la vérification « {name} » de toutes les instances de cet agent ?"
+    "check_delete_confirm": "Supprimer la vérification « {name} » de toutes les instances de cet agent ?",
+    "check_delete_title": "Supprimer la vérification de santé"
   },
   "members_page": {
     "title": "Membres",

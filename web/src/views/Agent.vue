@@ -169,11 +169,10 @@
                         </button>
                         <button
                           type="button"
-                          class="text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                          :disabled="deletingCheckId === check.checkId"
-                          @click="deleteCheck(check)"
+                          class="text-red-600 hover:text-red-700 hover:underline"
+                          @click="askDeleteCheck(check)"
                         >
-                          {{ deletingCheckId === check.checkId ? $t('agents_page.deleting') : $t('agents_page.delete') }}
+                          {{ $t('agents_page.delete') }}
                         </button>
                       </span>
                     </td>
@@ -318,6 +317,44 @@
     <Teleport to="body">
       <Transition name="modal">
         <div
+          v-show="checkDeleteTarget"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-check-title"
+          @click.self="closeDeleteCheck"
+        >
+          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
+            <h2 id="delete-check-title" class="text-lg font-semibold text-theme-text">
+              {{ $t('agents_page.check_delete_title') }}
+            </h2>
+            <div v-if="checkDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+              {{ checkDeleteError }}
+            </div>
+            <p class="mt-2 text-sm text-theme-textLight">
+              {{ $t('agents_page.check_delete_confirm', { name: checkDeleteTarget?.name }) }}
+            </p>
+            <div class="mt-6 flex gap-3 justify-end">
+              <button type="button" class="btn-secondary" :disabled="checkDeleting" @click="closeDeleteCheck">
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                :disabled="checkDeleting"
+                @click="confirmDeleteCheck"
+              >
+                {{ checkDeleting ? $t('agents_page.deleting') : $t('agents_page.delete') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
           v-show="showDeleteModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
           role="dialog"
@@ -399,7 +436,9 @@ const checks = ref([])
 const loadingChecks = ref(false)
 const checkModalOpen = ref(false)
 const editingCheck = ref(null)
-const deletingCheckId = ref(null)
+const checkDeleteTarget = ref(null)
+const checkDeleting = ref(false)
+const checkDeleteError = ref(null)
 const expanded = reactive({})
 
 const showEditModal = ref(false)
@@ -483,19 +522,28 @@ async function onCheckSaved() {
   }
 }
 
-async function deleteCheck(check) {
-  if (!window.confirm(t('agents_page.check_delete_confirm', { name: check.name }))) return
-  deletingCheckId.value = check.checkId
-  errorMessage.value = null
+function askDeleteCheck(check) {
+  checkDeleteTarget.value = check
+  checkDeleteError.value = null
+}
+
+function closeDeleteCheck() {
+  checkDeleteTarget.value = null
+}
+
+async function confirmDeleteCheck() {
+  checkDeleting.value = true
+  checkDeleteError.value = null
 
   try {
-    await agent_check_api.delete(currentWorkspace.id, agentName.value, check.checkId)
+    await agent_check_api.delete(currentWorkspace.id, agentName.value, checkDeleteTarget.value.checkId)
+    checkDeleteTarget.value = null
     showFlash(t('common.deleted'))
     await refreshHealth()
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.check_failed_delete')
+    checkDeleteError.value = err.response?.data?.errorMessage || t('agents_page.check_failed_delete')
   } finally {
-    deletingCheckId.value = null
+    checkDeleting.value = false
   }
 }
 

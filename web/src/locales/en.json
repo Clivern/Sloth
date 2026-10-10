@@ -355,7 +355,8 @@
     "check_invalid_path": "The path must start with /.",
     "check_failed_save": "Failed to save health check",
     "check_failed_delete": "Failed to delete health check",
-    "check_delete_confirm": "Delete the health check \"{name}\" from every instance of this agent?"
+    "check_delete_confirm": "Delete the health check \"{name}\" from every instance of this agent?",
+    "check_delete_title": "Delete health check"
   },
   "members_page": {
     "title": "Members",
