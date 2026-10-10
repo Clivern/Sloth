@@ -4,9 +4,11 @@
 package api
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/module"
 
 	"github.com/go-chi/chi/v5"
@@ -841,4 +843,8 @@ func (f *fakeUsers) GetByEmail(email string) (*db.User, error) {
 
 func (f *fakeSubscriptionRecords) Create(subscription *db.Subscription) error {
 	return nil
+}
+
+func requestWithUser(r *http.Request, user *db.User) *http.Request {
+	return r.WithContext(middleware.WithUserContext(r.Context(), user))
 }
