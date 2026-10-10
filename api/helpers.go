@@ -4,12 +4,21 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/locale"
 	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/pkg/util"
 )
+
+// ErrorMapping maps a module error to an HTTP status and a locale key.
+type ErrorMapping struct {
+	Err       error
+	Status    int
+	LocaleKey string
+}
 
 // WriteJSON writes data as a JSON response using util.WriteJSON.
 func (a *API) WriteJSON(w http.ResponseWriter, statusCode int, data any) error {
@@ -39,4 +48,19 @@ func (a *API) ParsePagination(r *http.Request) (limit, offset int) {
 // GetUser returns the authenticated user from the request context.
 func (a *API) GetUser(r *http.Request) (*db.User, bool) {
 	return middleware.GetUserFromContext(r.Context())
+}
+
+// WriteError writes the mapped response for err and reports false when err has no mapping.
+func (a *API) WriteError(w http.ResponseWriter, r *http.Request, err error, mappings []ErrorMapping) bool {
+	for _, m := range mappings {
+		if errors.Is(err, m.Err) {
+			a.WriteJSON(w, m.Status, map[string]any{
+				"errorMessage": locale.TR(r, m.LocaleKey),
+			})
+
+			return true
+		}
+	}
+
+	return false
 }
