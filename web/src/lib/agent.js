@@ -17,6 +17,7 @@ export const AGENT_CARD_EXAMPLE = JSON.stringify({
 export function healthClass(health) {
   return {
     passing: 'bg-emerald-50 text-emerald-800',
+    unknown: 'bg-slate-100 text-slate-700',
     warning: 'bg-amber-50 text-amber-800',
     critical: 'bg-red-50 text-red-800',
   }[health] || 'bg-theme-hover text-theme-textLight'
@@ -25,6 +26,7 @@ export function healthClass(health) {
 export function healthDotClass(health) {
   return {
     passing: 'bg-emerald-500',
+    unknown: 'bg-slate-400',
     warning: 'bg-amber-500',
     critical: 'bg-red-500',
   }[health] || 'bg-theme-textLight'
@@ -58,7 +60,7 @@ export function parseCard(card) {
 }
 
 export function countByStatus(instances) {
-  const counts = { critical: 0, warning: 0, passing: 0 }
+  const counts = { critical: 0, unknown: 0, warning: 0, passing: 0 }
   asArray(instances).forEach((instance) => {
     counts[instance.status] = (counts[instance.status] || 0) + 1
   })

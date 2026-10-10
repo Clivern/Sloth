@@ -21,6 +21,7 @@ const props = defineProps({
 
 const STATUSES = [
   { key: 'critical', class: 'text-red-700' },
+  { key: 'unknown', class: 'text-slate-600' },
   { key: 'warning', class: 'text-amber-700' },
   { key: 'passing', class: 'text-emerald-700' },
 ]
