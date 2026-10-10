@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -38,21 +37,20 @@ func (a *API) ListAgentChecksAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Check.ListAgentChecks(db.Id(wid), agentName, limit, offset)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to list agent checks")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to list agent checks")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
@@ -96,33 +94,23 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 
 	check, created, err := a.Check.UpsertAgentCheck(db.Id(wid), agentName, checkId, &req)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_id"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckPath):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_path"),
-			})
-		case errors.Is(err, module.ErrInvalidCheckTiming):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_check_timing"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to upsert agent check")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidCheckId, http.StatusBadRequest, "invalid_check_id"},
+			{module.ErrInvalidCheckPath, http.StatusBadRequest, "invalid_check_path"},
+			{module.ErrInvalidCheckTiming, http.StatusBadRequest, "invalid_check_timing"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to upsert agent check")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
@@ -150,25 +138,21 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Check.DeleteAgentCheck(db.Id(wid), agentName, chi.URLParam(r, "checkId"))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to delete agent check")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to delete agent check")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
@@ -213,33 +197,23 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInstanceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "instance_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotReportable):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_reportable"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to report check")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
+			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to report check")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
@@ -284,33 +258,23 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInstanceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "instance_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotReportable):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_reportable"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to report check")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
+			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to report check")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
@@ -355,33 +319,23 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 		&req,
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInstanceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "instance_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_found"),
-			})
-		case errors.Is(err, module.ErrCheckNotReportable):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "check_not_reportable"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to report check")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_check_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
+			{module.ErrCheckNotFound, http.StatusNotFound, "check_not_found"},
+			{module.ErrCheckNotReportable, http.StatusBadRequest, "check_not_reportable"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to report check")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_check_request"),
+		})
 
 		return
 	}
