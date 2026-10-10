@@ -441,7 +441,7 @@
     "updated": "Updated",
     "failed_load": "Failed to load keys",
     "empty": "No keys in this workspace yet.",
-    "add": "Add key",
+    "add": "Add Key",
     "add_title": "Add key",
     "add_desc": "Write a workspace key. Agents watching it pick up the new value.",
     "key_hint": "Letters, numbers, dots, dashes, underscores and slashes.",
