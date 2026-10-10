@@ -13,6 +13,7 @@ const (
 	AgentInstanceStatusPassing  = "passing"
 	AgentInstanceStatusWarning  = "warning"
 	AgentInstanceStatusCritical = "critical"
+	AgentInstanceStatusUnknown  = "unknown"
 )
 
 // AgentInstance is a single row in the agent_instances table.
@@ -222,7 +223,7 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 	return list, rows.Err()
 }
 
-// ListLiveByAgentId lists instances with no critical or expired checks.
+// ListLiveByAgentId lists instances with no critical, unknown, or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 	agentId Id,
 	now time.Time,
@@ -235,7 +236,7 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $3
+						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)
@@ -244,6 +245,7 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 		now,
 		HealthCheckStatusCritical,
 		HealthCheckTypeTTL,
+		HealthCheckStatusUnknown,
 	)
 	if err != nil {
 		return nil, err
@@ -342,7 +344,7 @@ func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now tim
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $3
+						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)`,
@@ -350,12 +352,13 @@ func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now tim
 		now,
 		HealthCheckStatusCritical,
 		HealthCheckTypeTTL,
+		HealthCheckStatusUnknown,
 	).Scan(&total)
 
 	return total, err
 }
 
-// ListLivePageByAgentId lists one page of instances with no critical or expired checks.
+// ListLivePageByAgentId lists one page of instances with no critical, unknown, or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(
 	agentId Id,
 	now time.Time,
@@ -369,16 +372,17 @@ func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(
 				SELECT 1 FROM health_checks hc
 				WHERE hc.instance_id = agent_instances.id
 					AND (
-						hc.status = $3
+						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
 					)
 			)
 		ORDER BY instance_id
-		LIMIT $5 OFFSET $6`,
+		LIMIT $6 OFFSET $7`,
 		agentId.String(),
 		now,
 		HealthCheckStatusCritical,
 		HealthCheckTypeTTL,
+		HealthCheckStatusUnknown,
 		limit,
 		offset,
 	)

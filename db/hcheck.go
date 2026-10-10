@@ -13,6 +13,7 @@ const (
 	HealthCheckStatusPassing  = "passing"
 	HealthCheckStatusWarning  = "warning"
 	HealthCheckStatusCritical = "critical"
+	HealthCheckStatusUnknown  = "unknown"
 
 	HealthCheckTypeTTL   = "ttl"
 	HealthCheckTypeHTTP  = "http"
@@ -93,7 +94,7 @@ func NewHealthCheckRepository(db *sql.DB) HealthCheckRepository {
 	return &HealthCheckRepositoryPostgres{db: db}
 }
 
-// Create inserts a health check row. A new check starts critical until it passes.
+// Create inserts a health check row. A new check starts unknown until its first result.
 func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	id, err := NewId()
 	if err != nil {
@@ -102,7 +103,7 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 
 	check.Id = id
 	if check.Status == "" {
-		check.Status = HealthCheckStatusCritical
+		check.Status = HealthCheckStatusUnknown
 	}
 	if check.Source == "" {
 		check.Source = HealthCheckSourceAgent

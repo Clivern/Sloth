@@ -18,7 +18,7 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 	instance := createTestInstance(t, database, agent.Id, "invoice-extractor-3")
 	repo := NewHealthCheckRepository(database)
 
-	t.Run("create starts critical", func(t *testing.T) {
+	t.Run("create starts unknown", func(t *testing.T) {
 		check := &HealthCheck{
 			InstanceId: instance.Id,
 			CheckId:    "heartbeat",
@@ -28,7 +28,7 @@ func TestIntegrationHealthCheckRepository(t *testing.T) {
 			Definition: stringPtr(`{"ttl":"30s"}`),
 		}
 		require.NoError(t, repo.Create(check))
-		assert.Equal(t, HealthCheckStatusCritical, check.Status)
+		assert.Equal(t, HealthCheckStatusUnknown, check.Status)
 
 		got, err := repo.GetByInstanceAndCheckId(instance.Id, "heartbeat")
 		require.NoError(t, err)
@@ -98,6 +98,7 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 	warning := createTestInstance(t, database, agent.Id, "warning-1")
 	staleTTL := createTestInstance(t, database, agent.Id, "stale-ttl-1")
 	createTestInstance(t, database, agent.Id, "no-ttl-1")
+	unknown := createTestInstance(t, database, agent.Id, "unknown-1")
 
 	require.NoError(t, checks.Create(&HealthCheck{
 		InstanceId:   live.Id,
@@ -177,6 +178,14 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 		TTLExpiresAt: timePtr(now.Add(-time.Second)),
 	}))
 
+	require.NoError(t, checks.Create(&HealthCheck{
+		InstanceId: unknown.Id,
+		CheckId:    "http",
+		Name:       "/health",
+		Type:       HealthCheckTypeHTTP,
+		Definition: stringPtr(`{"http":"http://10.0.12.42:8080/health"}`),
+	}))
+
 	list, err := instances.ListLiveByAgentId(agent.Id, now)
 	require.NoError(t, err)
 
@@ -184,6 +193,10 @@ func TestIntegrationListLiveByAgentId(t *testing.T) {
 	for _, item := range list {
 		ids[item.InstanceId] = true
 	}
+
+	t.Run("excludes unknown checks", func(t *testing.T) {
+		assert.False(t, ids["unknown-1"])
+	})
 
 	t.Run("includes live ttl", func(t *testing.T) {
 		assert.True(t, ids["live-1"])
