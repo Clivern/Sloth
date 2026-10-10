@@ -160,10 +160,6 @@
                 <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_tokens') }}</dt>
                 <dd class="text-sm font-medium text-theme-text text-right">{{ tokenBalanceLabel }}</dd>
               </div>
-              <div class="flex justify-between gap-4 py-3">
-                <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_members') }}</dt>
-                <dd class="text-sm font-medium text-theme-text text-right">{{ memberCount }}</dd>
-              </div>
             </dl>
           </div>
         </div>
@@ -206,12 +202,6 @@ const tokenBalanceLabel = computed(() => {
 })
 
 const roleLabel = computed(() => workspace.value?.role || '—')
-
-const memberCount = computed(() => {
-  const count = workspace.value?.membersCount
-  if (count == null) return loading.value ? '…' : '—'
-  return count.toLocaleString()
-})
 
 const attentionItems = computed(() => [
   {
