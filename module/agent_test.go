@@ -72,6 +72,18 @@ func TestUnitAgent(t *testing.T) {
 		assert.Equal(t, db.AgentInstanceStatusWarning, result.Agents[0].Health)
 	})
 
+	t.Run("list makes the agent unknown when its worst instance is unknown", func(t *testing.T) {
+		f := defaultAgentFixture()
+		f.agents.list = []*db.Agent{f.agents.agent}
+		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown}}
+
+		result, err := f.agent.ListAgents("ws-1", 20, 0)
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Instances[0].Status)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Health)
+	})
+
 	t.Run("list treats an expired ttl check as critical", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}

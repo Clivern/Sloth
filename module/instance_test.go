@@ -94,6 +94,24 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, list.Instances[0].Checks, 2)
 	})
 
+	t.Run("list ranks unknown between critical and warning", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
+			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
+		}
+		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{
+			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
+			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical},
+		}
+
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, list.Instances[0].Status)
+		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[1].Status)
+	})
+
 	t.Run("list makes an instance critical when a ttl check has expired", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
@@ -179,11 +197,11 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, f.healthChecks.created, 2)
 		http := f.healthChecks.created[0]
 		assert.Equal(t, db.HealthCheckSourceAgent, http.Source)
-		assert.Equal(t, db.HealthCheckStatusCritical, http.Status)
+		assert.Equal(t, db.HealthCheckStatusUnknown, http.Status)
 		assert.NotNil(t, http.NextRunAt)
 
 		heartbeat := f.healthChecks.created[1]
-		assert.Equal(t, db.HealthCheckStatusPassing, heartbeat.Status)
+		assert.Equal(t, db.HealthCheckStatusUnknown, heartbeat.Status)
 		assert.NotNil(t, heartbeat.TTLExpiresAt)
 		assert.Nil(t, heartbeat.NextRunAt)
 	})

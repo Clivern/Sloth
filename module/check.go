@@ -275,7 +275,7 @@ func (c *Check) UpsertAgentCheck(
 				Name:       template.Name,
 				Type:       template.Type,
 				Source:     db.HealthCheckSourceAgent,
-				Status:     db.HealthCheckStatusCritical,
+				Status:     db.HealthCheckStatusUnknown,
 				Definition: &stored,
 			}
 			if isPull {
@@ -285,7 +285,6 @@ func (c *Check) UpsertAgentCheck(
 			} else {
 				output := "Waiting for the first report"
 				expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
-				check.Status = db.HealthCheckStatusPassing
 				check.Output = &output
 				check.TTLExpiresAt = &expiresAt
 			}

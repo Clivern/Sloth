@@ -69,7 +69,7 @@ func TestUnitCheck(t *testing.T) {
 
 		require.Len(t, f.healthChecks.created, 2)
 		for _, check := range f.healthChecks.created {
-			assert.Equal(t, db.HealthCheckStatusCritical, check.Status)
+			assert.Equal(t, db.HealthCheckStatusUnknown, check.Status)
 			assert.Equal(t, db.HealthCheckSourceAgent, check.Source)
 			assert.NotNil(t, check.NextRunAt)
 			require.NotNil(t, check.Output)
@@ -79,7 +79,7 @@ func TestUnitCheck(t *testing.T) {
 		assert.Equal(t, db.Id("inst-2"), f.healthChecks.created[1].InstanceId)
 	})
 
-	t.Run("upsert creates a ttl template as passing with an expiry", func(t *testing.T) {
+	t.Run("upsert creates a ttl template as unknown with an expiry", func(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
 
@@ -91,7 +91,7 @@ func TestUnitCheck(t *testing.T) {
 
 		require.Len(t, f.healthChecks.created, 1)
 		check := f.healthChecks.created[0]
-		assert.Equal(t, db.HealthCheckStatusPassing, check.Status)
+		assert.Equal(t, db.HealthCheckStatusUnknown, check.Status)
 		assert.NotNil(t, check.TTLExpiresAt)
 		assert.Nil(t, check.NextRunAt)
 	})
@@ -106,7 +106,7 @@ func TestUnitCheck(t *testing.T) {
 
 		assert.Equal(t, []db.Id{"check-1"}, f.healthChecks.deleted)
 		require.Len(t, f.healthChecks.created, 1)
-		assert.Equal(t, db.HealthCheckStatusCritical, f.healthChecks.created[0].Status)
+		assert.Equal(t, db.HealthCheckStatusUnknown, f.healthChecks.created[0].Status)
 	})
 
 	t.Run("upsert updates an existing template in place", func(t *testing.T) {

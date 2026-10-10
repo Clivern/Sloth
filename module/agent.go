@@ -145,6 +145,10 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 					if status == db.AgentInstanceStatusPassing {
 						status = db.AgentInstanceStatusWarning
 					}
+				case db.HealthCheckStatusUnknown:
+					if status != db.AgentInstanceStatusCritical {
+						status = db.AgentInstanceStatusUnknown
+					}
 				default:
 					status = db.AgentInstanceStatusCritical
 				}
@@ -153,6 +157,8 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			// The agent is as healthy as its worst instance.
 			if status == db.AgentInstanceStatusCritical {
 				health = db.AgentInstanceStatusCritical
+			} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
+				health = db.AgentInstanceStatusUnknown
 			} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
 				health = db.AgentInstanceStatusWarning
 			}
@@ -240,6 +246,10 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 				if status == db.AgentInstanceStatusPassing {
 					status = db.AgentInstanceStatusWarning
 				}
+			case db.HealthCheckStatusUnknown:
+				if status != db.AgentInstanceStatusCritical {
+					status = db.AgentInstanceStatusUnknown
+				}
 			default:
 				status = db.AgentInstanceStatusCritical
 			}
@@ -248,6 +258,8 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		// The agent is as healthy as its worst instance.
 		if status == db.AgentInstanceStatusCritical {
 			health = db.AgentInstanceStatusCritical
+		} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
+			health = db.AgentInstanceStatusUnknown
 		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
 			health = db.AgentInstanceStatusWarning
 		}
@@ -384,6 +396,10 @@ func (a *Agent) UpsertAgent(
 				if status == db.AgentInstanceStatusPassing {
 					status = db.AgentInstanceStatusWarning
 				}
+			case db.HealthCheckStatusUnknown:
+				if status != db.AgentInstanceStatusCritical {
+					status = db.AgentInstanceStatusUnknown
+				}
 			default:
 				status = db.AgentInstanceStatusCritical
 			}
@@ -392,6 +408,8 @@ func (a *Agent) UpsertAgent(
 		// The agent is as healthy as its worst instance.
 		if status == db.AgentInstanceStatusCritical {
 			health = db.AgentInstanceStatusCritical
+		} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
+			health = db.AgentInstanceStatusUnknown
 		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
 			health = db.AgentInstanceStatusWarning
 		}

@@ -173,6 +173,10 @@ func (i *Instance) ListInstances(
 				if item.Status == db.AgentInstanceStatusPassing {
 					item.Status = db.AgentInstanceStatusWarning
 				}
+			case db.HealthCheckStatusUnknown:
+				if item.Status != db.AgentInstanceStatusCritical {
+					item.Status = db.AgentInstanceStatusUnknown
+				}
 			default:
 				item.Status = db.AgentInstanceStatusCritical
 			}
@@ -263,6 +267,10 @@ func (i *Instance) GetInstance(
 		case db.HealthCheckStatusWarning:
 			if item.Status == db.AgentInstanceStatusPassing {
 				item.Status = db.AgentInstanceStatusWarning
+			}
+		case db.HealthCheckStatusUnknown:
+			if item.Status != db.AgentInstanceStatusCritical {
+				item.Status = db.AgentInstanceStatusUnknown
 			}
 		default:
 			item.Status = db.AgentInstanceStatusCritical
@@ -388,7 +396,7 @@ func (i *Instance) RegisterInstance(
 				Name:       template.Name,
 				Type:       template.Type,
 				Source:     db.HealthCheckSourceAgent,
-				Status:     db.HealthCheckStatusCritical,
+				Status:     db.HealthCheckStatusUnknown,
 				Definition: &stored,
 			}
 			if isPull {
@@ -400,7 +408,6 @@ func (i *Instance) RegisterInstance(
 				_ = json.Unmarshal([]byte(template.Definition), &templateDefinition)
 				output := "Waiting for the first report"
 				expiresAt := now.Add(time.Duration(templateDefinition.TTL) * time.Second)
-				check.Status = db.HealthCheckStatusPassing
 				check.Output = &output
 				check.TTLExpiresAt = &expiresAt
 			}
@@ -458,6 +465,10 @@ func (i *Instance) RegisterInstance(
 		case db.HealthCheckStatusWarning:
 			if item.Status == db.AgentInstanceStatusPassing {
 				item.Status = db.AgentInstanceStatusWarning
+			}
+		case db.HealthCheckStatusUnknown:
+			if item.Status != db.AgentInstanceStatusCritical {
+				item.Status = db.AgentInstanceStatusUnknown
 			}
 		default:
 			item.Status = db.AgentInstanceStatusCritical
