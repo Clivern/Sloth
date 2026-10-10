@@ -23,7 +23,6 @@ var (
 	ErrFailedDeregisterInstance = errors.New("failed deregister instance")
 )
 
-// InstanceIdPattern is the regex pattern for instance IDs.
 var InstanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Instance is the module for agent instance registration and health.
@@ -132,7 +131,7 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 	list := make([]*InstanceResponse, 0, len(instances))
 	for _, instance := range instances {
-		checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
+		status, checks, err := i.GetHealth(instance.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 		}
@@ -144,43 +143,10 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 			Address:    instance.Address,
 			Port:       instance.Port,
 			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     db.AgentInstanceStatusPassing,
-			Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+			Status:     status,
+			Checks:     checks,
 			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-		}
-
-		// The instance status is the worst check status. A TTL check past its TTL
-		for _, check := range checks {
-			status := check.Status
-			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-				status = db.HealthCheckStatusCritical
-			}
-
-			switch status {
-			case db.HealthCheckStatusPassing:
-			case db.HealthCheckStatusWarning:
-				if item.Status == db.AgentInstanceStatusPassing {
-					item.Status = db.AgentInstanceStatusWarning
-				}
-			case db.HealthCheckStatusUnknown:
-				if item.Status != db.AgentInstanceStatusCritical {
-					item.Status = db.AgentInstanceStatusUnknown
-				}
-			default:
-				item.Status = db.AgentInstanceStatusCritical
-			}
-
-			item.Checks = append(item.Checks, &HealthCheckResponse{
-				CheckId:      check.CheckId,
-				Name:         check.Name,
-				Type:         check.Type,
-				Source:       check.Source,
-				Status:       status,
-				Output:       check.Output,
-				TTLExpiresAt: check.TTLExpiresAt,
-				LastRunAt:    check.LastRunAt,
-			})
 		}
 
 		list = append(list, item)
@@ -223,59 +189,23 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		return nil, ErrInstanceNotFound
 	}
 
-	now := time.Now().UTC()
-	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
+	status, checks, err := i.GetHealth(instance.Id)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
 	}
 
-	item := &InstanceResponse{
+	return &InstanceResponse{
 		Id:         instance.Id,
 		AgentId:    instance.AgentId,
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
 		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusPassing,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		Status:     status,
+		Checks:     checks,
 		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-
-	// The instance status is the worst check status. A TTL check past its TTL
-	for _, check := range checks {
-		status := check.Status
-		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-			status = db.HealthCheckStatusCritical
-		}
-
-		switch status {
-		case db.HealthCheckStatusPassing:
-		case db.HealthCheckStatusWarning:
-			if item.Status == db.AgentInstanceStatusPassing {
-				item.Status = db.AgentInstanceStatusWarning
-			}
-		case db.HealthCheckStatusUnknown:
-			if item.Status != db.AgentInstanceStatusCritical {
-				item.Status = db.AgentInstanceStatusUnknown
-			}
-		default:
-			item.Status = db.AgentInstanceStatusCritical
-		}
-
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Source:       check.Source,
-			Status:       status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
-	}
-
-	return item, nil
+	}, nil
 }
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
@@ -418,7 +348,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	}
 
 	instance.UpdatedAt = now
-	checks, err := i.HealthCheckRepository.ListByInstanceId(instance.Id)
+	status, checks, err := i.GetHealth(instance.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
@@ -430,43 +360,10 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		Address:    instance.Address,
 		Port:       instance.Port,
 		Meta:       util.JSONRawFromString(instance.Meta),
-		Status:     db.AgentInstanceStatusPassing,
-		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
+		Status:     status,
+		Checks:     checks,
 		CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-
-	// The instance status is the worst check status. A TTL check past its TTL
-	for _, check := range checks {
-		status := check.Status
-		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-			status = db.HealthCheckStatusCritical
-		}
-
-		switch status {
-		case db.HealthCheckStatusPassing:
-		case db.HealthCheckStatusWarning:
-			if item.Status == db.AgentInstanceStatusPassing {
-				item.Status = db.AgentInstanceStatusWarning
-			}
-		case db.HealthCheckStatusUnknown:
-			if item.Status != db.AgentInstanceStatusCritical {
-				item.Status = db.AgentInstanceStatusUnknown
-			}
-		default:
-			item.Status = db.AgentInstanceStatusCritical
-		}
-
-		item.Checks = append(item.Checks, &HealthCheckResponse{
-			CheckId:      check.CheckId,
-			Name:         check.Name,
-			Type:         check.Type,
-			Source:       check.Source,
-			Status:       status,
-			Output:       check.Output,
-			TTLExpiresAt: check.TTLExpiresAt,
-			LastRunAt:    check.LastRunAt,
-		})
 	}
 
 	return item, created, nil
@@ -496,4 +393,50 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 	}
 
 	return nil
+}
+
+// GetHealth returns the instance health and its checks, the worst status across checks.
+func (i *Instance) GetHealth(instanceId db.Id) (string, []*HealthCheckResponse, error) {
+	checks, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
+	if err != nil {
+		return "", nil, err
+	}
+
+	now := time.Now().UTC()
+	status := db.AgentInstanceStatusPassing
+	mapped := make([]*HealthCheckResponse, 0, len(checks))
+	for _, check := range checks {
+		current := check.Status
+		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+			current = db.HealthCheckStatusCritical
+		}
+
+		// The instance status is the worst check status. A TTL check past its TTL
+		switch current {
+		case db.HealthCheckStatusPassing:
+		case db.HealthCheckStatusWarning:
+			if status == db.AgentInstanceStatusPassing {
+				status = db.AgentInstanceStatusWarning
+			}
+		case db.HealthCheckStatusUnknown:
+			if status != db.AgentInstanceStatusCritical {
+				status = db.AgentInstanceStatusUnknown
+			}
+		default:
+			status = db.AgentInstanceStatusCritical
+		}
+
+		mapped = append(mapped, &HealthCheckResponse{
+			CheckId:      check.CheckId,
+			Name:         check.Name,
+			Type:         check.Type,
+			Source:       check.Source,
+			Status:       current,
+			Output:       check.Output,
+			TTLExpiresAt: check.TTLExpiresAt,
+			LastRunAt:    check.LastRunAt,
+		})
+	}
+
+	return status, mapped, nil
 }

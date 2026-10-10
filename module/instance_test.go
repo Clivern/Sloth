@@ -125,6 +125,24 @@ func TestUnitInstance(t *testing.T) {
 		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[0].Status)
 	})
 
+	t.Run("get health returns the worst check status and its checks", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
+			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
+		}
+
+		status, checks, err := f.instance.GetHealth("inst-1")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, status)
+		assert.Len(t, checks, 2)
+
+		status, checks, err = defaultInstanceFixture().instance.GetHealth("inst-2")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusPassing, status)
+		assert.Empty(t, checks)
+	})
+
 	t.Run("get returns the instance with its checks", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080}
