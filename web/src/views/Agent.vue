@@ -3,10 +3,6 @@
     <AppNav />
 
     <main class="w-full py-8 px-4 sm:px-6 lg:px-8">
-      <router-link to="/agents" class="text-sm font-medium text-primary-800 hover:underline">
-        {{ $t('agents_page.back_to_agents') }}
-      </router-link>
-
       <div v-if="loading" class="mt-8 rounded-xl border border-theme-border bg-white p-12 text-center shadow-sm">
         <svg class="animate-spin h-8 w-8 mx-auto text-theme-text" fill="none" viewBox="0 0 24 24" aria-hidden="true">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -28,14 +24,6 @@
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h1 class="text-3xl font-semibold text-theme-text font-mono break-all">{{ agent.name }}</h1>
-              <span
-                class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                :class="healthClass(agent.health)"
-              >
-                <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(agent.health)" aria-hidden="true" />
-                {{ $t(`agents_page.health_${agent.health}`) }}
-              </span>
-              <StatusBreakdown :counts="agent.statusCounts" />
             </div>
             <p v-if="card.description" class="text-theme-textLight mt-2">{{ card.description }}</p>
           </div>
