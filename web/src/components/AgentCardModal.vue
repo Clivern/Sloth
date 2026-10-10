@@ -22,7 +22,7 @@
           </div>
 
           <form class="mt-4 space-y-4" @submit.prevent="submit">
-            <div class="grid gap-4 sm:grid-cols-[1fr_180px]">
+            <div class="space-y-4">
               <div>
                 <label for="agent-card-name" class="form-label">{{ $t('agents_page.name') }}</label>
                 <input
