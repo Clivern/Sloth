@@ -1068,7 +1068,7 @@ paths:
           in: query
           schema:
             type: boolean
-          description: When true, return only instances with no critical or expired checks.
+          description: When true, return only instances with no critical, unknown, or expired checks.
       responses:
         "200":
           description: OK
@@ -2365,7 +2365,7 @@ components:
           additionalProperties: true
         status:
           type: string
-          enum: [passing, warning, critical]
+          enum: [passing, warning, unknown, critical]
         createdAt:
           type: string
           format: date-time
@@ -2435,8 +2435,8 @@ components:
           description: "`agent` is copied from an agent check template."
         status:
           type: string
-          enum: [passing, warning, critical]
-          description: A TTL check whose TTL has run out is reported as critical.
+          enum: [passing, warning, critical, unknown]
+          description: A new check is unknown until its first result. A TTL check whose TTL has run out is reported as critical.
         output:
           type: string
           nullable: true

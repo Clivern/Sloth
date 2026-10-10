@@ -125,7 +125,7 @@ PUT    /v1/workspaces/{workspace}/sessions/{session}/renew
 DELETE /v1/workspaces/{workspace}/sessions/{session}
 ```
 
-Registration creates no checks. An instance is passing until one of its checks is critical, or a TTL check runs out. Define a TTL heartbeat check if you want the agent to prove it is alive.
+Registration creates no checks. An instance with no checks is passing. Each check starts unknown and keeps the instance out of discovery until it reports pass or warn. Define a TTL heartbeat check if you want the agent to prove it is alive.
 
 ---
 
@@ -148,7 +148,7 @@ PUT /v1/workspaces/{workspace}/agents/support-assistant/checks/http
 { "type": "http", "path": "/healthz", "interval": 10, "timeout": 2 }
 ```
 
-An instance's status is the worst status across its checks: any critical check, or an expired TTL check, makes it critical and drops it from discovery. An instance with no checks is passing. Warning instances stay in discovery.
+An instance's status is the worst status across its checks, in this order: critical, unknown, warning, passing. Critical and unknown instances are dropped from discovery, and so are instances with an expired TTL check. Warning instances stay in discovery. A new check starts unknown, and an instance with no checks is passing.
 
 Check types:
 
