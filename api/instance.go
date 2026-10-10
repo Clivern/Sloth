@@ -97,11 +97,8 @@ func (a *API) GetInstanceAction(w http.ResponseWriter, r *http.Request) {
 	instance, err := a.Instance.GetInstance(db.Id(wid), agentName, instanceId)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
 			{module.ErrInstanceNotFound, http.StatusNotFound, locale.TR(r, "instance_not_found")},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
-			{module.ErrInvalidInstanceId, http.StatusBadRequest, locale.TR(r, "invalid_instance_id")},
 		}) {
 			return
 		}

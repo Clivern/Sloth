@@ -37,9 +37,7 @@ func (a *API) GetAgentCardAction(w http.ResponseWriter, r *http.Request) {
 	agent, err := a.Agent.GetAgent(db.Id(wid), agentName)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},
-			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 		}) {
 			return
 		}
