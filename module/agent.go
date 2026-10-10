@@ -27,6 +27,7 @@ var (
 	ErrFailedDeleteAgent    = errors.New("failed delete agent")
 )
 
+// AgentNamePattern is the regex pattern for agent names.
 var AgentNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Agent is the module for the workspace agent catalog.
