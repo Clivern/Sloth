@@ -34,28 +34,41 @@ func TestUnitOAuthActions(t *testing.T) {
 	router.Get("/api/v1/public/oauth/google", api.GoogleOAuthStartAction)
 	router.Get("/api/v1/public/oauth/google/callback", api.GoogleOAuthCallbackAction)
 
-	t.Run("github start redirects to the authorize URL and sets a state cookie", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/github", nil))
+	t.Run(
+		"github start redirects to the authorize URL and sets a state cookie",
+		func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/github", nil))
 
-		assert.Equal(t, http.StatusFound, w.Code)
-		assert.Contains(t, w.Header().Get("Location"), "github-client")
-		assert.Contains(t, w.Header().Get("Location"), "state=")
-		assert.Contains(t, w.Header().Get("Set-Cookie"), OauthStateCookie+"=")
-	})
+			assert.Equal(t, http.StatusFound, w.Code)
+			assert.Contains(t, w.Header().Get("Location"), "github-client")
+			assert.Contains(t, w.Header().Get("Location"), "state=")
+			assert.Contains(t, w.Header().Get("Set-Cookie"), OauthStateCookie+"=")
+		},
+	)
 
-	t.Run("google start redirects to the authorize URL and sets a state cookie", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/google", nil))
+	t.Run(
+		"google start redirects to the authorize URL and sets a state cookie",
+		func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/google", nil))
 
-		assert.Equal(t, http.StatusFound, w.Code)
-		assert.Contains(t, w.Header().Get("Location"), "google-client")
-		assert.Contains(t, w.Header().Get("Set-Cookie"), OauthStateCookie+"=")
-	})
+			assert.Equal(t, http.StatusFound, w.Code)
+			assert.Contains(t, w.Header().Get("Location"), "google-client")
+			assert.Contains(t, w.Header().Get("Set-Cookie"), OauthStateCookie+"=")
+		},
+	)
 
 	t.Run("github callback rejects a mismatched state", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/github/callback?code=abc&state=forged", nil))
+		router.ServeHTTP(
+			w,
+			httptest.NewRequest(
+				http.MethodGet,
+				"/api/v1/public/oauth/github/callback?code=abc&state=forged",
+				nil,
+			),
+		)
 
 		assert.Equal(t, http.StatusFound, w.Code)
 		assert.Contains(t, w.Header().Get("Location"), "/login?oauth_error=github")
@@ -63,7 +76,14 @@ func TestUnitOAuthActions(t *testing.T) {
 
 	t.Run("google callback rejects a mismatched state", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/public/oauth/google/callback?code=abc&state=forged", nil))
+		router.ServeHTTP(
+			w,
+			httptest.NewRequest(
+				http.MethodGet,
+				"/api/v1/public/oauth/google/callback?code=abc&state=forged",
+				nil,
+			),
+		)
 
 		assert.Equal(t, http.StatusFound, w.Code)
 		assert.Contains(t, w.Header().Get("Location"), "/login?oauth_error=google")
