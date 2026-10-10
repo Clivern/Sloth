@@ -125,7 +125,7 @@ watch(() => props.open, (open) => {
   if (!open) return
   error.value = null
   form.name = props.agent?.name || ''
-  form.version = ''
+  form.version = props.agent?.version || ''
   form.card = props.agent ? JSON.stringify(props.agent.card ?? {}, null, 2) : ''
 })
 
