@@ -304,6 +304,7 @@
     "no_instances_hint": "Instances register with a workspace access key that has the register-instance permission.",
     "deregister": "Deregister",
     "deregistering": "Deregistering…",
+    "deregister_title": "Deregister instance",
     "deregister_confirm": "Deregister instance \"{id}\"? It will stop receiving traffic until it registers again.",
     "failed_load_agent": "Failed to load agent",
     "failed_load_instances": "Failed to load instances",

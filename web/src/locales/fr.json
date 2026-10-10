@@ -304,6 +304,7 @@
     "no_instances_hint": "Les instances s'enregistrent avec une clé d'accès de l'espace disposant de la permission d'enregistrement.",
     "deregister": "Désenregistrer",
     "deregistering": "Désenregistrement…",
+    "deregister_title": "Désenregistrer l'instance",
     "deregister_confirm": "Désenregistrer l'instance « {id} » ? Elle ne recevra plus de trafic jusqu'à son prochain enregistrement.",
     "failed_load_agent": "Impossible de charger l'agent",
     "failed_load_instances": "Impossible de charger les instances",

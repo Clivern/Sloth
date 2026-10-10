@@ -250,11 +250,10 @@
                     <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
                       <button
                         type="button"
-                        class="text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="deregisteringId === instance.instanceId"
-                        @click="deregister(instance)"
+                        class="text-red-600 hover:text-red-700 hover:underline"
+                        @click="askDeregister(instance)"
                       >
-                        {{ deregisteringId === instance.instanceId ? $t('agents_page.deregistering') : $t('agents_page.deregister') }}
+                        {{ $t('agents_page.deregister') }}
                       </button>
                     </td>
                   </tr>
@@ -313,6 +312,44 @@
       @close="showEditModal = false"
       @saved="onCardSaved"
     />
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-show="deregisterTarget"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deregister-instance-title"
+          @click.self="closeDeregister"
+        >
+          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
+            <h2 id="deregister-instance-title" class="text-lg font-semibold text-theme-text">
+              {{ $t('agents_page.deregister_title') }}
+            </h2>
+            <div v-if="deregisterError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+              {{ deregisterError }}
+            </div>
+            <p class="mt-2 text-sm text-theme-textLight">
+              {{ $t('agents_page.deregister_confirm', { id: deregisterTarget?.instanceId }) }}
+            </p>
+            <div class="mt-6 flex gap-3 justify-end">
+              <button type="button" class="btn-secondary" :disabled="deregistering" @click="closeDeregister">
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                :disabled="deregistering"
+                @click="confirmDeregister"
+              >
+                {{ deregistering ? $t('agents_page.deregistering') : $t('agents_page.deregister') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <Teleport to="body">
       <Transition name="modal">
@@ -430,7 +467,9 @@ const loading = ref(false)
 const loadingInstances = ref(false)
 const notFound = ref(false)
 const errorMessage = ref(null)
-const deregisteringId = ref(null)
+const deregisterTarget = ref(null)
+const deregistering = ref(false)
+const deregisterError = ref(null)
 
 const checks = ref([])
 const loadingChecks = ref(false)
@@ -570,22 +609,31 @@ function onCardSaved(updated) {
   showFlash(t('common.saved'))
 }
 
-async function deregister(instance) {
-  if (!window.confirm(t('agents_page.deregister_confirm', { id: instance.instanceId }))) return
-  deregisteringId.value = instance.instanceId
-  errorMessage.value = null
+function askDeregister(instance) {
+  deregisterTarget.value = instance
+  deregisterError.value = null
+}
+
+function closeDeregister() {
+  deregisterTarget.value = null
+}
+
+async function confirmDeregister() {
+  deregistering.value = true
+  deregisterError.value = null
 
   try {
-    await agent_instance_api.delete(currentWorkspace.id, agentName.value, instance.instanceId)
+    await agent_instance_api.delete(currentWorkspace.id, agentName.value, deregisterTarget.value.instanceId)
+    deregisterTarget.value = null
     // Refresh the agent too, since its health is derived from the remaining instances
     const res = await agent_api.get(currentWorkspace.id, agentName.value)
     agent.value = res.data
     await loadInstances()
     showFlash(t('common.deleted'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_deregister')
+    deregisterError.value = err.response?.data?.errorMessage || t('agents_page.failed_deregister')
   } finally {
-    deregisteringId.value = null
+    deregistering.value = false
   }
 }
 
