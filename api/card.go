@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -37,29 +36,22 @@ func (a *API) GetAgentCardAction(w http.ResponseWriter, r *http.Request) {
 
 	agent, err := a.Agent.GetAgent(db.Id(wid), agentName)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to get agent card")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_agent_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to get agent card")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_agent_request"),
+		})
 
 		return
 	}
