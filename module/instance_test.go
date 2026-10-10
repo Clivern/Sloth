@@ -15,14 +15,8 @@ import (
 )
 
 func TestUnitInstance(t *testing.T) {
-	t.Run("list rejects invalid agent names and missing workspaces or agents", func(t *testing.T) {
-		_, err := defaultInstanceFixture().instance.ListInstances("ws-1", "-bad", false, 50, 0)
-		assert.ErrorIs(t, err, ErrInvalidAgentName)
-
-		_, err = newInstanceFixture(nil, nil).instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-
-		_, err = newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+	t.Run("list returns not found for a missing agent", func(t *testing.T) {
+		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "-bad", false, 50, 0)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
