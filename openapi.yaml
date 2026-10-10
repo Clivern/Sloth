@@ -2348,31 +2348,6 @@ components:
           maxLength: 40
           description: Optional; taken from card.version when omitted
 
-    AgentInstanceSummary:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        instanceId:
-          type: string
-        address:
-          type: string
-        port:
-          type: integer
-        meta:
-          type: object
-          additionalProperties: true
-        status:
-          type: string
-          enum: [passing, warning, unknown, critical]
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
     Agent:
       type: object
       properties:
@@ -2393,10 +2368,20 @@ components:
           type: string
         health:
           type: string
-        instances:
-          type: array
-          items:
-            $ref: "#/components/schemas/AgentInstanceSummary"
+          enum: [passing, warning, unknown, critical]
+          description: The worst status across the agent's instances.
+        statusCounts:
+          type: object
+          description: How many of the agent's instances are in each status.
+          properties:
+            passing:
+              type: integer
+            warning:
+              type: integer
+            unknown:
+              type: integer
+            critical:
+              type: integer
         createdAt:
           type: string
           format: date-time
