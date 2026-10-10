@@ -17,8 +17,14 @@ import (
 func TestUnitA2AStubActions(t *testing.T) {
 	api := &API{}
 	router := chi.NewRouter()
-	router.Post("/api/v1/workspaces/{workspaceId}/a2a/agents/{agentName}/message:send", api.SendAgentMessageAction)
-	router.Post("/api/v1/workspaces/{workspaceId}/a2a/skills/{skill}/message:send", api.SendSkillMessageAction)
+	router.Post(
+		"/api/v1/workspaces/{workspaceId}/a2a/agents/{agentName}/message:send",
+		api.SendAgentMessageAction,
+	)
+	router.Post(
+		"/api/v1/workspaces/{workspaceId}/a2a/skills/{skill}/message:send",
+		api.SendSkillMessageAction,
+	)
 	router.Get("/api/v1/workspaces/{workspaceId}/a2a/tasks/{taskId}", api.GetTaskAction)
 
 	cases := []struct {
@@ -26,9 +32,21 @@ func TestUnitA2AStubActions(t *testing.T) {
 		method string
 		path   string
 	}{
-		{name: "send agent message", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/a2a/agents/user-directory/message:send"},
-		{name: "send skill message", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/a2a/skills/lookup/message:send"},
-		{name: "get task", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/a2a/tasks/task-1"},
+		{
+			name:   "send agent message",
+			method: http.MethodPost,
+			path:   "/api/v1/workspaces/ws-1/a2a/agents/user-directory/message:send",
+		},
+		{
+			name:   "send skill message",
+			method: http.MethodPost,
+			path:   "/api/v1/workspaces/ws-1/a2a/skills/lookup/message:send",
+		},
+		{
+			name:   "get task",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/a2a/tasks/task-1",
+		},
 	}
 
 	for _, tc := range cases {
