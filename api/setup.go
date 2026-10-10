@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/conf"
@@ -29,20 +28,19 @@ func (a *API) SetupAction(w http.ResponseWriter, r *http.Request) {
 
 	err = a.Setup.Install(&req)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrPlatformAlreadyInstalled):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "platform_already_installed"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("platformEmail", req.PlatformEmail).
-				Msg("Setup failed")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_complete_setup"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrPlatformAlreadyInstalled, http.StatusBadRequest, "platform_already_installed"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("platformEmail", req.PlatformEmail).
+			Msg("Setup failed")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_complete_setup"),
+		})
 
 		return
 	}
