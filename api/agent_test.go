@@ -33,7 +33,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("list returns agents with pagination meta", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{list: []*db.Agent{stored}, total: 1})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"name":"user-directory"`)
@@ -43,7 +44,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newAgentAPI(nil, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
@@ -51,7 +53,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{listErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_agent_request")
@@ -60,7 +63,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("get returns one agent", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{agent: stored})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"cardChecksum":"9f2c"`)
@@ -69,7 +73,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("get returns 404 for unknown agent", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "agent_not_found")
@@ -78,7 +83,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("get returns 404 for an invalid agent name", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/-bad", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/-bad", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "agent_not_found")
@@ -87,7 +93,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{getErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_agent_request")
@@ -96,7 +103,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 201 when the agent is new", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(validBody))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(validBody),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -106,7 +117,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 200 when the agent already exists", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{agent: stored})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(validBody))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(validBody),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -115,7 +130,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 400 for invalid body", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(`{`))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(`{`),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -124,7 +143,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 400 for a card that is not an object", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(`{"card":"text","version":"1.0.0"}`))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(`{"card":"text","version":"1.0.0"}`),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -134,7 +157,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 400 when no version is given", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(`{"card":{"name":"User Directory"}}`))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(`{"card":{"name":"User Directory"}}`),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -144,7 +171,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 400 for invalid agent name", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/-bad", strings.NewReader(validBody))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/-bad",
+			strings.NewReader(validBody),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -154,7 +185,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAgentAPI(nil, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(validBody))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(validBody),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -163,7 +198,11 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("upsert returns 500 when the repository fails", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{createErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/agents/user-directory", strings.NewReader(validBody))
+		req := httptest.NewRequest(
+			http.MethodPut,
+			"/api/v1/workspaces/ws-1/agents/user-directory",
+			strings.NewReader(validBody),
+		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -173,7 +212,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{agent: stored})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
@@ -181,7 +221,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("delete returns 404 for unknown agent", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "agent_not_found")
@@ -190,7 +231,8 @@ func TestUnitAgentActions(t *testing.T) {
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{agent: stored, deleteErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newAgentRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
+		newAgentRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/agents/user-directory", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
