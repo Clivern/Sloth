@@ -72,7 +72,7 @@
                   {{ $t('agents_page.skills_count', agent.skillCount) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
-                  {{ $t('agents_page.live_of_total', { live: agent.live, total: agent.instanceCount }) }}
+                  <StatusBreakdown :counts="agent.statusCounts" />
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                   <span
@@ -128,6 +128,7 @@
 </template>
 
 <script setup>
+import StatusBreakdown from '@/components/StatusBreakdown.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -137,7 +138,7 @@ import { agent_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
-import { countPassing, healthClass, healthDotClass, parseCard } from '@/lib/agent'
+import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
 import { formatRelative } from '@/utils/date'
 
 const { t } = useI18n()
@@ -161,7 +162,7 @@ const rows = computed(() => agents.value.map((agent) => {
     version: agent.version,
     description: card.description,
     skillCount: card.skills.length,
-    live: countPassing(instances),
+    statusCounts: countByStatus(instances),
     instanceCount: instances.length,
     health: agent.health,
     updatedAt: agent.updatedAt,

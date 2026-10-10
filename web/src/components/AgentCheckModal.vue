@@ -246,10 +246,6 @@ async function submit() {
     error.value = t('agents_page.check_invalid_id')
     return
   }
-  if (checkId === 'ttl') {
-    error.value = t('agents_page.check_reserved_id')
-    return
-  }
   if (!isEdit.value && props.existingIds.includes(checkId)) {
     error.value = t('agents_page.check_already_exists', { id: checkId })
     return

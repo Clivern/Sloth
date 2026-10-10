@@ -38,24 +38,3 @@ export function formatRelative(dateString, fallback = '—') {
     return fallback
   }
 }
-
-export function formatExpires(dateString, fallback = '—') {
-  if (dateString == null || dateString === '') return fallback
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return fallback
-    const now = new Date()
-    if (date < now) return formatRelative(dateString, fallback)
-    const diffMs = date - now
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    if (diffMins < 60) return `in ${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'}`
-    if (diffHours < 24) return `in ${diffHours} ${diffHours === 1 ? 'hour' : 'hours'}`
-    if (diffDays < 7) return `in ${diffDays} ${diffDays === 1 ? 'day' : 'days'}`
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    return `${months[date.getMonth()]} ${date.getDate()}`
-  } catch {
-    return fallback
-  }
-}

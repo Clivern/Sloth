@@ -57,6 +57,11 @@ export function parseCard(card) {
   }
 }
 
-export function countPassing(instances) {
-  return asArray(instances).filter((instance) => instance.status === 'passing').length
+export function countByStatus(instances) {
+  const counts = { critical: 0, warning: 0, passing: 0 }
+  asArray(instances).forEach((instance) => {
+    counts[instance.status] = (counts[instance.status] || 0) + 1
+  })
+
+  return counts
 }

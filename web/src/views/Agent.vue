@@ -212,7 +212,6 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.instance') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.address') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.health') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.lease_expires') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.checks_title') }}</th>
                     <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
                   </tr>
@@ -231,15 +230,16 @@
                         {{ $t(`agents_page.health_${instance.status}`) }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">{{ formatExpires(instance.leaseExpiresAt) }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <span v-if="!(instance.checks || []).length" class="text-theme-textLight">{{ $t('agents_page.instance_no_checks') }}</span>
                       <button
+                        v-else
                         type="button"
                         class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
                         :aria-expanded="!!expanded[instance.id]"
                         @click="toggleInstance(instance.id)"
                       >
-                        {{ $t('agents_page.checks_failing', { failing: failingCount(instance), total: (instance.checks || []).length }) }}
+                        <StatusBreakdown :counts="countByStatus(instance.checks)" />
                         <svg class="h-3.5 w-3.5 transition-transform" :class="expanded[instance.id] ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -256,11 +256,11 @@
                     </td>
                   </tr>
                   <tr v-if="expanded[instance.id]">
-                    <td :colspan="canManage ? 6 : 5" class="bg-theme-hover px-6 py-4">
+                    <td :colspan="canManage ? 5 : 4" class="bg-theme-hover px-6 py-4">
                       <ul class="space-y-3">
                         <li v-for="check in instance.checks" :key="check.checkId" class="grid gap-1 sm:grid-cols-[220px_110px_1fr]">
                           <div>
-                            <p class="text-sm font-medium text-theme-text">{{ check.source === 'lease' ? $t('agents_page.check_lease') : check.name }}</p>
+                            <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
                             <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }} · {{ $t(`agents_page.check_type_${check.type}`) }}</p>
                           </div>
                           <div>
@@ -469,6 +469,7 @@
 </template>
 
 <script setup>
+import StatusBreakdown from '@/components/StatusBreakdown.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -478,8 +479,8 @@ import AgentCheckModal from '@/components/AgentCheckModal.vue'
 import { agent_api, agent_check_api, agent_instance_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'
-import { healthClass, healthDotClass, parseCard } from '@/lib/agent'
-import { formatExpires, formatRelative } from '@/utils/date'
+import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
+import { formatRelative } from '@/utils/date'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -642,10 +643,6 @@ function goToInstancesPage(newOffset) {
 
 function toggleInstance(id) {
   expanded[id] = !expanded[id]
-}
-
-function failingCount(instance) {
-  return (instance.checks || []).filter((check) => check.status !== 'passing').length
 }
 
 function onCardSaved(updated) {
