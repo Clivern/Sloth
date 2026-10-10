@@ -34,6 +34,7 @@ func TestUnitAgent(t *testing.T) {
 		assert.Equal(t, int64(1), result.Total)
 		require.Len(t, result.Agents, 1)
 		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Health)
+		assert.NotEmpty(t, result.Agents[0].UpdatedAt)
 		assert.Equal(t, map[string]int{db.AgentInstanceStatusPassing: 0, db.AgentInstanceStatusWarning: 0, db.AgentInstanceStatusUnknown: 0, db.AgentInstanceStatusCritical: 0}, result.Agents[0].StatusCounts)
 	})
 

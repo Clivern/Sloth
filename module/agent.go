@@ -101,75 +101,12 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			CardChecksum: item.CardChecksum,
 			Health:       health,
 			StatusCounts: counts,
+			CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt:    item.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
 
 	return &ListAgentsResponse{Agents: list, Total: total}, nil
-}
-
-// GetHealthStatus returns the agent health and how many of its instances are in each status.
-func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
-	instances, err := a.InstanceRepository.ListByAgentId(agentId)
-
-	if err != nil {
-		return "", nil, err
-	}
-
-	now := time.Now().UTC()
-	counts := map[string]int{
-		db.AgentInstanceStatusPassing:  0,
-		db.AgentInstanceStatusWarning:  0,
-		db.AgentInstanceStatusUnknown:  0,
-		db.AgentInstanceStatusCritical: 0,
-	}
-
-	for _, instance := range instances {
-		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
-		if err != nil {
-			return "", nil, err
-		}
-
-		// The instance status is the worst check status. A TTL check past its TTL
-		status := db.AgentInstanceStatusPassing
-		for _, check := range checks {
-			current := check.Status
-			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-				current = db.HealthCheckStatusCritical
-			}
-
-			switch current {
-			case db.HealthCheckStatusPassing:
-			case db.HealthCheckStatusWarning:
-				if status == db.AgentInstanceStatusPassing {
-					status = db.AgentInstanceStatusWarning
-				}
-			case db.HealthCheckStatusUnknown:
-				if status != db.AgentInstanceStatusCritical {
-					status = db.AgentInstanceStatusUnknown
-				}
-			default:
-				status = db.AgentInstanceStatusCritical
-			}
-		}
-
-		counts[status]++
-	}
-
-	// The agent is as healthy as its worst instance. No instances means unknown.
-	health := db.AgentInstanceStatusUnknown
-	for _, status := range []string{
-		db.AgentInstanceStatusCritical,
-		db.AgentInstanceStatusUnknown,
-		db.AgentInstanceStatusWarning,
-		db.AgentInstanceStatusPassing,
-	} {
-		if counts[status] > 0 {
-			health = status
-			break
-		}
-	}
-
-	return health, counts, nil
 }
 
 // GetAgent returns one agent by name.// GetAgent returns one agent by name.
@@ -306,4 +243,68 @@ func (a *Agent) DeleteAgent(workspaceId db.Id, name string) error {
 	}
 
 	return nil
+}
+
+// GetHealthStatus returns the agent health and how many of its instances are in each status.
+func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
+	instances, err := a.InstanceRepository.ListByAgentId(agentId)
+	if err != nil {
+		return "", nil, err
+	}
+
+	now := time.Now().UTC()
+	counts := map[string]int{
+		db.AgentInstanceStatusPassing:  0,
+		db.AgentInstanceStatusWarning:  0,
+		db.AgentInstanceStatusUnknown:  0,
+		db.AgentInstanceStatusCritical: 0,
+	}
+
+	for _, instance := range instances {
+		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
+		if err != nil {
+			return "", nil, err
+		}
+
+		// The instance status is the worst check status. A TTL check past its TTL
+		status := db.AgentInstanceStatusPassing
+		for _, check := range checks {
+			current := check.Status
+			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
+				current = db.HealthCheckStatusCritical
+			}
+
+			switch current {
+			case db.HealthCheckStatusPassing:
+			case db.HealthCheckStatusWarning:
+				if status == db.AgentInstanceStatusPassing {
+					status = db.AgentInstanceStatusWarning
+				}
+			case db.HealthCheckStatusUnknown:
+				if status != db.AgentInstanceStatusCritical {
+					status = db.AgentInstanceStatusUnknown
+				}
+			default:
+				status = db.AgentInstanceStatusCritical
+			}
+		}
+
+		counts[status]++
+	}
+
+	// The agent is as healthy as its worst instance. No instances means unknown.
+	health := db.AgentInstanceStatusUnknown
+	for _, status := range []string{
+		db.AgentInstanceStatusCritical,
+		db.AgentInstanceStatusUnknown,
+		db.AgentInstanceStatusWarning,
+		db.AgentInstanceStatusPassing,
+	} {
+		if counts[status] > 0 {
+			health = status
+			break
+		}
+	}
+
+	return health, counts, nil
 }
