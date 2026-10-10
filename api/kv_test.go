@@ -30,7 +30,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("list returns items with total", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{items: []*db.WorkspaceKeyValue{stored}})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv?prefix=config/", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv?prefix=config/", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"key":"config/app"`)
@@ -40,7 +41,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("list returns 400 for an invalid prefix", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv?prefix=a$", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv?prefix=a$", nil))
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "invalid_kv_key")
@@ -49,7 +51,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
 		api := newKeyValueAPI(nil, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -57,7 +60,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("get returns one key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{item: stored})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"value":"on"`)
@@ -66,7 +70,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("get returns 404 for a missing key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "kv_not_found")
@@ -75,7 +80,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("get returns 400 for an invalid key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/bad$key", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/bad$key", nil))
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -83,7 +89,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{getErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_kv_request")
@@ -92,7 +99,15 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("put returns 200 with the stored key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/kv/config/app", strings.NewReader(`{"value":"on"}`)))
+		newKeyValueRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/kv/config/app",
+					strings.NewReader(`{"value":"on"}`),
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"value":"on"`)
@@ -101,7 +116,15 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("put returns 400 when value is missing", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/kv/config/app", strings.NewReader(`{}`)))
+		newKeyValueRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/kv/config/app",
+					strings.NewReader(`{}`),
+				),
+			)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -109,7 +132,15 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("put returns 400 for malformed expiresAt", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/kv/config/app", strings.NewReader(`{"value":"on","expiresAt":"later"}`)))
+		newKeyValueRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/kv/config/app",
+					strings.NewReader(`{"value":"on","expiresAt":"later"}`),
+				),
+			)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 		assert.Contains(t, w.Body.String(), "invalid_expires_at_format")
@@ -118,7 +149,15 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("put returns 404 for unknown workspace", func(t *testing.T) {
 		api := newKeyValueAPI(nil, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/kv/config/app", strings.NewReader(`{"value":"on"}`)))
+		newKeyValueRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/kv/config/app",
+					strings.NewReader(`{"value":"on"}`),
+				),
+			)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -126,7 +165,15 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("put returns 500 when the repository fails", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{upsertErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/kv/config/app", strings.NewReader(`{"value":"on"}`)))
+		newKeyValueRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/kv/config/app",
+					strings.NewReader(`{"value":"on"}`),
+				),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_kv_request")
@@ -135,7 +182,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{item: stored})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
@@ -143,7 +191,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("delete returns 404 for a missing key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -151,7 +200,8 @@ func TestUnitKeyValueActions(t *testing.T) {
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{item: stored, deleteErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newKeyValueRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
+		newKeyValueRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/kv/config/app", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -164,7 +214,10 @@ func TestUnitKeyValueActions(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		w = httptest.NewRecorder()
-		api.PutKeyValueAction(w, httptest.NewRequest(http.MethodPut, "/", strings.NewReader(`{"value":"on"}`)))
+		api.PutKeyValueAction(
+			w,
+			httptest.NewRequest(http.MethodPut, "/", strings.NewReader(`{"value":"on"}`)),
+		)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		w = httptest.NewRecorder()
