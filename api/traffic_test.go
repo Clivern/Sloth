@@ -43,7 +43,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("list returns calls with total", func(t *testing.T) {
 		api := newAPI(workspace, &fakeTrafficCalls{calls: []*db.TrafficCall{stored}, total: 1})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"latencyMs":42`)
@@ -53,7 +54,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeTrafficCalls{})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "workspace_not_found")
@@ -62,7 +64,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeTrafficCalls{listErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -70,7 +73,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("get returns one call", func(t *testing.T) {
 		api := newAPI(workspace, &fakeTrafficCalls{call: stored})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"taskId":"task-1"`)
@@ -81,7 +85,8 @@ func TestUnitTrafficActions(t *testing.T) {
 		other.WorkspaceId = "ws-2"
 		api := newAPI(workspace, &fakeTrafficCalls{call: &other})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "traffic_not_found")
@@ -90,7 +95,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("get returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeTrafficCalls{call: stored})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -98,7 +104,8 @@ func TestUnitTrafficActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeTrafficCalls{getErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newTrafficRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
+		newTrafficRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/traffic/call-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
