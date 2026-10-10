@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+
+	"github.com/samber/lo"
 )
 
 var (
@@ -86,14 +88,6 @@ func NewIntention(intentions db.IntentionRepository, workspaces db.WorkspaceRepo
 
 // ListIntentions returns paginated intentions in a workspace.
 func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListIntentionsResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	total, err := i.IntentionRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListIntentions, err)
@@ -128,14 +122,6 @@ func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListI
 
 // GetIntention returns one intention by id.
 func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	intention, err := i.IntentionRepository.GetById(intentionId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetIntention, err)
@@ -163,19 +149,12 @@ func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResp
 
 // CreateIntention inserts an allow or deny rule.
 func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest) (*IntentionResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-	if req.Action != db.IntentionActionAllow && req.Action != db.IntentionActionDeny {
+	if !lo.Contains([]string{db.IntentionActionAllow, db.IntentionActionDeny}, req.Action) {
 		return nil, ErrInvalidIntentionAction
 	}
 
 	var skill *string
-	if req.Destination.Skill != "" {
+	if !lo.IsEmpty(req.Destination.Skill) {
 		value := req.Destination.Skill
 		skill = &value
 	}
@@ -187,7 +166,7 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 		Skill:            skill,
 		Action:           req.Action,
 	}
-	err = i.IntentionRepository.Create(intention)
+	err := i.IntentionRepository.Create(intention)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateIntention, err)
 	}
@@ -211,14 +190,7 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 
 // UpdateIntention replaces an existing rule.
 func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveIntentionRequest) (*IntentionResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-	if req.Action != db.IntentionActionAllow && req.Action != db.IntentionActionDeny {
+	if !lo.Contains([]string{db.IntentionActionAllow, db.IntentionActionDeny}, req.Action) {
 		return nil, ErrInvalidIntentionAction
 	}
 
@@ -231,7 +203,7 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 	}
 
 	var skill *string
-	if req.Destination.Skill != "" {
+	if !lo.IsEmpty(req.Destination.Skill) {
 		value := req.Destination.Skill
 		skill = &value
 	}
@@ -269,14 +241,6 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 
 // DeleteIntention removes a rule.
 func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
 	intention, err := i.IntentionRepository.GetById(intentionId)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteIntention, err)
@@ -295,14 +259,6 @@ func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
 
 // CheckIntention returns the matching rule, or deny when none exists.
 func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest) (*CheckIntentionResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	intention, err := i.IntentionRepository.Match(
 		workspaceId,
 		req.Source.Agent,
