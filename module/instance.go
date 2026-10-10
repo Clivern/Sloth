@@ -97,7 +97,7 @@ func (i *Instance) ListInstances(
 	passing bool,
 	limit, offset int,
 ) (*ListInstancesResponse, error) {
-	if !agentNamePattern.MatchString(agentName) {
+	if !AgentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
 
@@ -208,7 +208,7 @@ func (i *Instance) GetInstance(
 		return nil, ErrInvalidInstanceId
 	}
 
-	if !agentNamePattern.MatchString(agentName) {
+	if !AgentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
 
@@ -301,7 +301,7 @@ func (i *Instance) RegisterInstance(
 		return nil, false, ErrInvalidInstanceId
 	}
 
-	if !agentNamePattern.MatchString(agentName) {
+	if !AgentNamePattern.MatchString(agentName) {
 		return nil, false, ErrInvalidAgentName
 	}
 
@@ -495,7 +495,7 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		return ErrInvalidInstanceId
 	}
 
-	if !agentNamePattern.MatchString(agentName) {
+	if !AgentNamePattern.MatchString(agentName) {
 		return ErrInvalidAgentName
 	}
 

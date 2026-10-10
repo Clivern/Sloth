@@ -16,14 +16,15 @@ import (
 )
 
 func TestUnitAgent(t *testing.T) {
-	t.Run("list returns not found for a missing workspace", func(t *testing.T) {
+	t.Run("list returns an empty page for a missing workspace", func(t *testing.T) {
 		f := newAgentFixture(nil, nil)
 
-		_, err := f.agent.ListAgents("ws-1", 20, 0)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
+		result, err := f.agent.ListAgents("ws-1", 20, 0)
+		require.NoError(t, err)
+		assert.Empty(t, result.Agents)
 	})
 
-	t.Run("list reports critical health when the agent has no instances", func(t *testing.T) {
+	t.Run("list reports unknown health when the agent has no instances", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.agents.total = 1
@@ -32,8 +33,8 @@ func TestUnitAgent(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), result.Total)
 		require.Len(t, result.Agents, 1)
-		assert.Equal(t, db.AgentInstanceStatusCritical, result.Agents[0].Health)
-		assert.Empty(t, result.Agents[0].Instances)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Health)
+		assert.Equal(t, map[string]int{db.AgentInstanceStatusPassing: 0, db.AgentInstanceStatusWarning: 0, db.AgentInstanceStatusUnknown: 0, db.AgentInstanceStatusCritical: 0}, result.Agents[0].StatusCounts)
 	})
 
 	t.Run("list reports passing health when an instance has no failing checks", func(t *testing.T) {
@@ -44,7 +45,7 @@ func TestUnitAgent(t *testing.T) {
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Health)
-		assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Instances[0].Status)
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusPassing])
 	})
 
 	t.Run("list marks an instance with a critical check as critical", func(t *testing.T) {
@@ -55,7 +56,7 @@ func TestUnitAgent(t *testing.T) {
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusCritical, result.Agents[0].Instances[0].Status)
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusCritical])
 		assert.Equal(t, db.AgentInstanceStatusCritical, result.Agents[0].Health)
 	})
 
@@ -67,8 +68,8 @@ func TestUnitAgent(t *testing.T) {
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Instances[0].Status)
-		assert.Equal(t, db.AgentInstanceStatusWarning, result.Agents[0].Instances[1].Status)
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusPassing])
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusWarning])
 		assert.Equal(t, db.AgentInstanceStatusWarning, result.Agents[0].Health)
 	})
 
@@ -80,7 +81,7 @@ func TestUnitAgent(t *testing.T) {
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Instances[0].Status)
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusUnknown])
 		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Health)
 	})
 
@@ -93,24 +94,37 @@ func TestUnitAgent(t *testing.T) {
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusCritical, result.Agents[0].Instances[0].Status)
+		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusCritical])
 		assert.Equal(t, db.AgentInstanceStatusCritical, result.Agents[0].Health)
 	})
 
-	t.Run("get returns invalid name, not found and missing workspace errors", func(t *testing.T) {
-		_, err := defaultAgentFixture().agent.GetAgent("ws-1", "-bad")
-		assert.ErrorIs(t, err, ErrInvalidAgentName)
-
-		noWorkspace := newAgentFixture(nil, nil)
-		_, err = noWorkspace.agent.GetAgent("ws-1", "support-assistant")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-
+	t.Run("get returns not found for a missing agent", func(t *testing.T) {
 		noAgent := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
-		_, err = noAgent.agent.GetAgent("ws-1", "support-assistant")
+		_, err := noAgent.agent.GetAgent("ws-1", "support-assistant")
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
-	t.Run("get returns the agent with its instance health", func(t *testing.T) {
+	t.Run("get health status returns agent health and status counts", func(t *testing.T) {
+		f := defaultAgentFixture()
+		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning}}
+		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical}}
+
+		health, counts, err := f.agent.GetHealthStatus("agent-1")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusCritical, health)
+		assert.Equal(t, 1, counts[db.AgentInstanceStatusWarning])
+		assert.Equal(t, 1, counts[db.AgentInstanceStatusCritical])
+		assert.Equal(t, 0, counts[db.AgentInstanceStatusPassing])
+
+		f.instances.list = nil
+		health, counts, err = f.agent.GetHealthStatus("agent-1")
+		require.NoError(t, err)
+		assert.Equal(t, db.AgentInstanceStatusUnknown, health)
+		assert.Equal(t, 0, counts[db.AgentInstanceStatusCritical])
+	})
+
+	t.Run("get returns the agent with its status breakdown", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080}}
 
@@ -119,9 +133,7 @@ func TestUnitAgent(t *testing.T) {
 		assert.Equal(t, db.Id("agent-1"), response.Id)
 		assert.Equal(t, "1.0.0", response.Version)
 		assert.Equal(t, db.AgentInstanceStatusPassing, response.Health)
-		require.Len(t, response.Instances, 1)
-		assert.Equal(t, "10.0.0.12", response.Instances[0].Address)
-		assert.Equal(t, 8080, response.Instances[0].Port)
+		assert.Equal(t, 1, response.StatusCounts[db.AgentInstanceStatusPassing])
 	})
 
 	t.Run("upsert rejects invalid names and missing workspaces", func(t *testing.T) {

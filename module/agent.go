@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/util"
 )
 
 var (
@@ -28,7 +27,7 @@ var (
 	ErrFailedDeleteAgent    = errors.New("failed delete agent")
 )
 
-var agentNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
+var AgentNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Agent is the module for the workspace agent catalog.
 type Agent struct {
@@ -44,30 +43,18 @@ type UpsertAgentRequest struct {
 	Version string          `json:"version" validate:"omitempty,max=40" label:"Version"`
 }
 
-// AgentInstanceResponse is one registered instance of an agent.
-type AgentInstanceResponse struct {
-	Id         db.Id           `json:"id"`
-	InstanceId string          `json:"instanceId"`
-	Address    string          `json:"address"`
-	Port       int             `json:"port"`
-	Meta       json.RawMessage `json:"meta,omitempty"`
-	Status     string          `json:"status"`
-	CreatedAt  string          `json:"createdAt"`
-	UpdatedAt  string          `json:"updatedAt"`
-}
-
 // AgentResponse is an agent shaped for API responses.
 type AgentResponse struct {
-	Id           db.Id                    `json:"id"`
-	WorkspaceId  db.Id                    `json:"workspaceId"`
-	Name         string                   `json:"name"`
-	Version      string                   `json:"version"`
-	Card         json.RawMessage          `json:"card"`
-	CardChecksum string                   `json:"cardChecksum"`
-	Health       string                   `json:"health"`
-	Instances    []*AgentInstanceResponse `json:"instances"`
-	CreatedAt    string                   `json:"createdAt"`
-	UpdatedAt    string                   `json:"updatedAt"`
+	Id           db.Id           `json:"id"`
+	WorkspaceId  db.Id           `json:"workspaceId"`
+	Name         string          `json:"name"`
+	Version      string          `json:"version"`
+	Card         json.RawMessage `json:"card"`
+	CardChecksum string          `json:"cardChecksum"`
+	Health       string          `json:"health"`
+	StatusCounts map[string]int  `json:"statusCounts"`
+	CreatedAt    string          `json:"createdAt"`
+	UpdatedAt    string          `json:"updatedAt"`
 }
 
 // ListAgentsResponse is returned when listing agents.
@@ -77,12 +64,7 @@ type ListAgentsResponse struct {
 }
 
 // NewAgent creates an agent module with the given repositories.
-func NewAgent(
-	agents db.AgentRepository,
-	instances db.AgentInstanceRepository,
-	checks db.HealthCheckRepository,
-	workspaces db.WorkspaceRepository,
-) *Agent {
+func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, workspaces db.WorkspaceRepository) *Agent {
 	return &Agent{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
@@ -93,14 +75,6 @@ func NewAgent(
 
 // ListAgents returns paginated agents in a workspace.
 func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsResponse, error) {
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	total, err := a.AgentRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
@@ -113,66 +87,9 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 
 	list := make([]*AgentResponse, 0, len(agents))
 	for _, item := range agents {
-		instances, err := a.InstanceRepository.ListByAgentId(item.Id)
+		health, counts, err := a.GetHealthStatus(item.Id)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
-		}
-
-		now := time.Now().UTC()
-		health := db.AgentInstanceStatusCritical
-		if len(instances) > 0 {
-			health = db.AgentInstanceStatusPassing
-		}
-
-		mapped := make([]*AgentInstanceResponse, 0, len(instances))
-		for _, instance := range instances {
-			checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
-			if err != nil {
-				return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
-			}
-
-			// The instance status is the worst check status. A TTL check past its TTL
-			status := db.AgentInstanceStatusPassing
-			for _, check := range checks {
-				current := check.Status
-				if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-					current = db.HealthCheckStatusCritical
-				}
-
-				switch current {
-				case db.HealthCheckStatusPassing:
-				case db.HealthCheckStatusWarning:
-					if status == db.AgentInstanceStatusPassing {
-						status = db.AgentInstanceStatusWarning
-					}
-				case db.HealthCheckStatusUnknown:
-					if status != db.AgentInstanceStatusCritical {
-						status = db.AgentInstanceStatusUnknown
-					}
-				default:
-					status = db.AgentInstanceStatusCritical
-				}
-			}
-
-			// The agent is as healthy as its worst instance.
-			if status == db.AgentInstanceStatusCritical {
-				health = db.AgentInstanceStatusCritical
-			} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
-				health = db.AgentInstanceStatusUnknown
-			} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
-				health = db.AgentInstanceStatusWarning
-			}
-
-			mapped = append(mapped, &AgentInstanceResponse{
-				Id:         instance.Id,
-				InstanceId: instance.InstanceId,
-				Address:    instance.Address,
-				Port:       instance.Port,
-				Meta:       util.JSONRawFromString(instance.Meta),
-				Status:     status,
-				CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-				UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-			})
 		}
 
 		list = append(list, &AgentResponse{
@@ -183,53 +100,33 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			Card:         json.RawMessage(item.Card),
 			CardChecksum: item.CardChecksum,
 			Health:       health,
-			Instances:    mapped,
-			CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:    item.UpdatedAt.UTC().Format(time.RFC3339),
+			StatusCounts: counts,
 		})
 	}
 
 	return &ListAgentsResponse{Agents: list, Total: total}, nil
 }
 
-// GetAgent returns one agent by name.
-func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error) {
-	if !agentNamePattern.MatchString(name) {
-		return nil, ErrInvalidAgentName
-	}
+// GetHealthStatus returns the agent health and how many of its instances are in each status.
+func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
+	instances, err := a.InstanceRepository.ListByAgentId(agentId)
 
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
-	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
-	}
-	if agent == nil {
-		return nil, ErrAgentNotFound
-	}
-
-	instances, err := a.InstanceRepository.ListByAgentId(agent.Id)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
+		return "", nil, err
 	}
 
 	now := time.Now().UTC()
-	health := db.AgentInstanceStatusCritical
-	if len(instances) > 0 {
-		health = db.AgentInstanceStatusPassing
+	counts := map[string]int{
+		db.AgentInstanceStatusPassing:  0,
+		db.AgentInstanceStatusWarning:  0,
+		db.AgentInstanceStatusUnknown:  0,
+		db.AgentInstanceStatusCritical: 0,
 	}
 
-	mapped := make([]*AgentInstanceResponse, 0, len(instances))
 	for _, instance := range instances {
 		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
+			return "", nil, err
 		}
 
 		// The instance status is the worst check status. A TTL check past its TTL
@@ -255,25 +152,39 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 			}
 		}
 
-		// The agent is as healthy as its worst instance.
-		if status == db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusCritical
-		} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusUnknown
-		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
-			health = db.AgentInstanceStatusWarning
-		}
+		counts[status]++
+	}
 
-		mapped = append(mapped, &AgentInstanceResponse{
-			Id:         instance.Id,
-			InstanceId: instance.InstanceId,
-			Address:    instance.Address,
-			Port:       instance.Port,
-			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     status,
-			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-		})
+	// The agent is as healthy as its worst instance. No instances means unknown.
+	health := db.AgentInstanceStatusUnknown
+	for _, status := range []string{
+		db.AgentInstanceStatusCritical,
+		db.AgentInstanceStatusUnknown,
+		db.AgentInstanceStatusWarning,
+		db.AgentInstanceStatusPassing,
+	} {
+		if counts[status] > 0 {
+			health = status
+			break
+		}
+	}
+
+	return health, counts, nil
+}
+
+// GetAgent returns one agent by name.// GetAgent returns one agent by name.
+func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error) {
+	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
+	}
+	if agent == nil {
+		return nil, ErrAgentNotFound
+	}
+
+	health, counts, err := a.GetHealthStatus(agent.Id)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 	}
 
 	return &AgentResponse{
@@ -284,19 +195,15 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		Card:         json.RawMessage(agent.Card),
 		CardChecksum: agent.CardChecksum,
 		Health:       health,
-		Instances:    mapped,
+		StatusCounts: counts,
 		CreatedAt:    agent.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    agent.UpdatedAt.UTC().Format(time.RFC3339),
 	}, nil
 }
 
 // UpsertAgent creates or replaces the agent card for a name.
-func (a *Agent) UpsertAgent(
-	workspaceId db.Id,
-	name string,
-	req *UpsertAgentRequest,
-) (*AgentResponse, bool, error) {
-	if !agentNamePattern.MatchString(name) {
+func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequest) (*AgentResponse, bool, error) {
+	if !AgentNamePattern.MatchString(name) {
 		return nil, false, ErrInvalidAgentName
 	}
 
@@ -364,66 +271,9 @@ func (a *Agent) UpsertAgent(
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 	}
 
-	instances, err := a.InstanceRepository.ListByAgentId(existing.Id)
+	health, counts, err := a.GetHealthStatus(existing.Id)
 	if err != nil {
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
-	}
-
-	now := time.Now().UTC()
-	health := db.AgentInstanceStatusCritical
-	if len(instances) > 0 {
-		health = db.AgentInstanceStatusPassing
-	}
-
-	mapped := make([]*AgentInstanceResponse, 0, len(instances))
-	for _, instance := range instances {
-		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
-		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
-		}
-
-		// The instance status is the worst check status. A TTL check past its TTL
-		status := db.AgentInstanceStatusPassing
-		for _, check := range checks {
-			current := check.Status
-			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-				current = db.HealthCheckStatusCritical
-			}
-
-			switch current {
-			case db.HealthCheckStatusPassing:
-			case db.HealthCheckStatusWarning:
-				if status == db.AgentInstanceStatusPassing {
-					status = db.AgentInstanceStatusWarning
-				}
-			case db.HealthCheckStatusUnknown:
-				if status != db.AgentInstanceStatusCritical {
-					status = db.AgentInstanceStatusUnknown
-				}
-			default:
-				status = db.AgentInstanceStatusCritical
-			}
-		}
-
-		// The agent is as healthy as its worst instance.
-		if status == db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusCritical
-		} else if status == db.AgentInstanceStatusUnknown && health != db.AgentInstanceStatusCritical {
-			health = db.AgentInstanceStatusUnknown
-		} else if status == db.AgentInstanceStatusWarning && health == db.AgentInstanceStatusPassing {
-			health = db.AgentInstanceStatusWarning
-		}
-
-		mapped = append(mapped, &AgentInstanceResponse{
-			Id:         instance.Id,
-			InstanceId: instance.InstanceId,
-			Address:    instance.Address,
-			Port:       instance.Port,
-			Meta:       util.JSONRawFromString(instance.Meta),
-			Status:     status,
-			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
-		})
 	}
 
 	return &AgentResponse{
@@ -434,7 +284,7 @@ func (a *Agent) UpsertAgent(
 		Card:         json.RawMessage(existing.Card),
 		CardChecksum: existing.CardChecksum,
 		Health:       health,
-		Instances:    mapped,
+		StatusCounts: counts,
 		CreatedAt:    existing.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    existing.UpdatedAt.UTC().Format(time.RFC3339),
 	}, created, nil
@@ -442,18 +292,6 @@ func (a *Agent) UpsertAgent(
 
 // DeleteAgent removes an agent by name.
 func (a *Agent) DeleteAgent(workspaceId db.Id, name string) error {
-	if !agentNamePattern.MatchString(name) {
-		return ErrInvalidAgentName
-	}
-
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
 	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteAgent, err)
