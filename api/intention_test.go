@@ -34,7 +34,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("list returns intentions with total", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{list: []*db.Intention{stored}, total: 1})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"source":"frontend"`)
@@ -44,7 +45,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newIntentionAPI(nil, &fakeIntentions{})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
@@ -52,7 +54,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{listErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_intention_request")
@@ -61,7 +64,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("get returns one intention", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: stored})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"skill":"lookup"`)
@@ -72,7 +76,8 @@ func TestUnitIntentionActions(t *testing.T) {
 		other.WorkspaceId = "ws-2"
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: &other})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "intention_not_found")
@@ -81,7 +86,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{getErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -89,7 +95,11 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("create returns 201", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(body)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(body)),
+			)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
 		assert.Contains(t, w.Body.String(), `"destination":"users"`)
@@ -99,7 +109,11 @@ func TestUnitIntentionActions(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{})
 		w := httptest.NewRecorder()
 		bad := strings.Replace(body, `"allow"`, `"maybe"`, 1)
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(bad)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(bad)),
+			)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
@@ -107,7 +121,11 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("create returns 500 when the repository fails", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{createErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(body)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(body)),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -115,7 +133,15 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("update returns 200", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: stored})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions/intent-1", strings.NewReader(body)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/intentions/intent-1",
+					strings.NewReader(body),
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
@@ -123,7 +149,15 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("update returns 404 for unknown intention", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions/intent-1", strings.NewReader(body)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/intentions/intent-1",
+					strings.NewReader(body),
+				),
+			)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "intention_not_found")
@@ -132,7 +166,15 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("update returns 500 when the repository fails", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: stored, updateErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions/intent-1", strings.NewReader(body)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPut,
+					"/api/v1/workspaces/ws-1/intentions/intent-1",
+					strings.NewReader(body),
+				),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -140,7 +182,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: stored})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
@@ -148,7 +191,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("delete returns 404 for unknown intention", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -156,7 +200,8 @@ func TestUnitIntentionActions(t *testing.T) {
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{intention: stored, deleteErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
+		newIntentionRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/intentions/intent-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
@@ -165,7 +210,15 @@ func TestUnitIntentionActions(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{match: stored})
 		checkBody := `{"source":{"agent":"frontend"},"destination":{"agent":"users","skill":"lookup"}}`
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/intentions/check", strings.NewReader(checkBody)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPost,
+					"/api/v1/workspaces/ws-1/intentions/check",
+					strings.NewReader(checkBody),
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"action":"allow"`)
@@ -176,7 +229,15 @@ func TestUnitIntentionActions(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{})
 		checkBody := `{"source":{"agent":"frontend"},"destination":{"agent":"users"}}`
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/intentions/check", strings.NewReader(checkBody)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPost,
+					"/api/v1/workspaces/ws-1/intentions/check",
+					strings.NewReader(checkBody),
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"action":"deny"`)
@@ -187,7 +248,15 @@ func TestUnitIntentionActions(t *testing.T) {
 		api := newIntentionAPI(nil, &fakeIntentions{})
 		checkBody := `{"source":{"agent":"frontend"},"destination":{"agent":"users"}}`
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/intentions/check", strings.NewReader(checkBody)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPost,
+					"/api/v1/workspaces/ws-1/intentions/check",
+					strings.NewReader(checkBody),
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
@@ -196,7 +265,15 @@ func TestUnitIntentionActions(t *testing.T) {
 		api := newIntentionAPI(workspace, &fakeIntentions{matchErr: errors.New("boom")})
 		checkBody := `{"source":{"agent":"frontend"},"destination":{"agent":"users"}}`
 		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/intentions/check", strings.NewReader(checkBody)))
+		newIntentionRouter(api).
+			ServeHTTP(
+				w,
+				httptest.NewRequest(
+					http.MethodPost,
+					"/api/v1/workspaces/ws-1/intentions/check",
+					strings.NewReader(checkBody),
+				),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
