@@ -251,9 +251,7 @@ func (r *SubscriptionMetaRepositoryPostgres) Delete(id Id, key string) error {
 }
 
 // ListBySubscriptionId lists subscription metadata rows by subscription id. TODO: remove if not used in future.
-func (r *SubscriptionMetaRepositoryPostgres) ListBySubscriptionId(
-	id Id,
-) ([]*SubscriptionMeta, error) {
+func (r *SubscriptionMetaRepositoryPostgres) ListBySubscriptionId(id Id) ([]*SubscriptionMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, subscription_id, key, value #>> '{}', created_at, updated_at
 		FROM subscriptions_meta

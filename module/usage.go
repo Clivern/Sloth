@@ -31,18 +31,12 @@ func NewUsage() *Usage {
 }
 
 // MembersCount returns the number of members in a workspace.
-func (u *Usage) MembersCount(
-	workspaceUsers db.WorkspaceUserRepository,
-	workspaceId db.Id,
-) (int64, error) {
+func (u *Usage) MembersCount(workspaceUsers db.WorkspaceUserRepository, workspaceId db.Id) (int64, error) {
 	return workspaceUsers.CountByWorkspaceId(workspaceId)
 }
 
 // GetWorkspaceUsage returns all billing usage metrics for a workspace.
-func (u *Usage) GetWorkspaceUsage(
-	deps UsageSnapshotDeps,
-	workspaceId db.Id,
-) (*WorkspaceUsageMetrics, error) {
+func (u *Usage) GetWorkspaceUsage(deps UsageSnapshotDeps, workspaceId db.Id) (*WorkspaceUsageMetrics, error) {
 	members, err := u.MembersCount(deps.WorkspaceUserRepository, workspaceId)
 	if err != nil {
 		return nil, err
@@ -84,12 +78,7 @@ func (u *Usage) AICost(usage db.UsageRepository, workspaceId db.Id) (float64, er
 }
 
 // IncrementAIUsage adds AI token and cost usage for the current calendar month. TODO: remove if not used in future.
-func (u *Usage) IncrementAIUsage(
-	usage db.UsageRepository,
-	subscriptions db.SubscriptionRepository,
-	workspaceId db.Id,
-	tokens, cost int64,
-) error {
+func (u *Usage) IncrementAIUsage(usage db.UsageRepository, subscriptions db.SubscriptionRepository, workspaceId db.Id, tokens, cost int64) error {
 	if tokens == 0 && cost == 0 {
 		return nil
 	}

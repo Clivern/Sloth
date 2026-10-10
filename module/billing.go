@@ -76,12 +76,7 @@ var workspaceUsageLimits = WorkspaceUsageLimits{
 }
 
 // NewBilling creates a billing module.
-func NewBilling(
-	workspaces db.WorkspaceRepository,
-	subscriptions db.SubscriptionRepository,
-	purchases db.TokenPurchaseRepository,
-	usage Usage,
-) *Billing {
+func NewBilling(workspaces db.WorkspaceRepository, subscriptions db.SubscriptionRepository, purchases db.TokenPurchaseRepository, usage Usage) *Billing {
 	return &Billing{
 		WorkspaceRepository:    workspaces,
 		SubscriptionRepository: subscriptions,
@@ -120,10 +115,7 @@ func (b *Billing) GetBillingStatus(workspaceId db.Id) (*BillingStatusResponse, e
 }
 
 // GetBillingUsage returns usage and limits for a workspace.
-func (b *Billing) GetBillingUsage(
-	workspaceId db.Id,
-	deps UsageSnapshotDeps,
-) (*BillingUsageResponse, error) {
+func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*BillingUsageResponse, error) {
 	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -158,14 +150,7 @@ func (b *Billing) GetBillingUsage(
 }
 
 // CreateCheckoutSession starts Stripe Checkout for an AI token purchase.
-func (b *Billing) CreateCheckoutSession(
-	ctx context.Context,
-	workspaceId db.Id,
-	user *db.User,
-	req *BillingCheckoutRequest,
-	successURL string,
-	cancelURL string,
-) (*BillingSessionResponse, error) {
+func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, user *db.User, req *BillingCheckoutRequest, successURL string, cancelURL string) (*BillingSessionResponse, error) {
 	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -209,11 +194,7 @@ func (b *Billing) CreateCheckoutSession(
 }
 
 // CreatePortalSession opens Stripe's customer portal.
-func (b *Billing) CreatePortalSession(
-	ctx context.Context,
-	workspaceId db.Id,
-	returnURL string,
-) (*BillingSessionResponse, error) {
+func (b *Billing) CreatePortalSession(ctx context.Context, workspaceId db.Id, returnURL string) (*BillingSessionResponse, error) {
 	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -277,10 +258,7 @@ func (b *Billing) HandleWebhook(payload []byte, signature string) error {
 }
 
 // CreditTokenPurchase credits AI tokens after a successful Stripe payment.
-func (b *Billing) CreditTokenPurchase(
-	client *stripe.Client,
-	session *stripesdk.CheckoutSession,
-) error {
+func (b *Billing) CreditTokenPurchase(client *stripe.Client, session *stripesdk.CheckoutSession) error {
 	workspaceId := db.Id(session.Metadata["workspaceId"])
 	if lo.IsEmpty(workspaceId) {
 		return nil

@@ -86,12 +86,7 @@ type Check struct {
 }
 
 // NewCheck creates a check module with the given repositories.
-func NewCheck(
-	agents db.AgentRepository,
-	agentChecks db.AgentCheckRepository,
-	instances db.AgentInstanceRepository,
-	checks db.HealthCheckRepository,
-) *Check {
+func NewCheck(agents db.AgentRepository, agentChecks db.AgentCheckRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository) *Check {
 	return &Check{
 		AgentRepository:       agents,
 		AgentCheckRepository:  agentChecks,
@@ -101,11 +96,7 @@ func NewCheck(
 }
 
 // ListAgentChecks returns one page of the check templates of an agent.
-func (c *Check) ListAgentChecks(
-	workspaceId db.Id,
-	agentName string,
-	limit, offset int,
-) (*ListAgentChecksResponse, error) {
+func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offset int) (*ListAgentChecksResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, err
@@ -151,11 +142,7 @@ func (c *Check) ListAgentChecks(
 }
 
 // UpsertAgentCheck creates or replaces a check template and applies it to every instance.
-func (c *Check) UpsertAgentCheck(
-	workspaceId db.Id,
-	agentName, checkId string,
-	req *UpsertAgentCheckRequest,
-) (*AgentCheckResponse, bool, error) {
+func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, req *UpsertAgentCheckRequest) (*AgentCheckResponse, bool, error) {
 	if !instanceIdPattern.MatchString(checkId) {
 		return nil, false, ErrInvalidCheckId
 	}
@@ -338,11 +325,7 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 }
 
 // ReportCheck records an instance's report for one of its TTL checks and restarts the TTL.
-func (c *Check) ReportCheck(
-	workspaceId db.Id,
-	agentName, instanceId, checkId, status string,
-	req *ReportCheckRequest,
-) (*HealthCheckResponse, error) {
+func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest) (*HealthCheckResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, err

@@ -147,10 +147,7 @@ func (r *IntegrationRepositoryPostgres) Delete(id Id) error {
 }
 
 // ListByWorkspaceId returns a list of integrations by workspace Id. TODO: remove if not used in future.
-func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(
-	workspaceId Id,
-	limit, offset int,
-) ([]*Integration, error) {
+func (r *IntegrationRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Integration, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, type, name, config, created_at, updated_at
 		FROM integrations

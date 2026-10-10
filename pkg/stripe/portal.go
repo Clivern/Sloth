@@ -17,10 +17,7 @@ type PortalOptions struct {
 }
 
 // CreatePortalSession opens the Stripe customer billing portal.
-func (c *Client) CreatePortalSession(
-	ctx context.Context,
-	opts PortalOptions,
-) (*stripesdk.BillingPortalSession, error) {
+func (c *Client) CreatePortalSession(ctx context.Context, opts PortalOptions) (*stripesdk.BillingPortalSession, error) {
 	session, err := c.api.V1BillingPortalSessions.Create(ctx, &stripesdk.BillingPortalSessionCreateParams{
 		Customer:  stripesdk.String(opts.CustomerId),
 		ReturnURL: stripesdk.String(opts.ReturnURL),

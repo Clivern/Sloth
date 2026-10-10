@@ -165,10 +165,7 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 }
 
 // GetByInstanceAndCheckId returns a health check by instance and check id.
-func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(
-	instanceId Id,
-	checkId string,
-) (*HealthCheck, error) {
+func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(instanceId Id, checkId string) (*HealthCheck, error) {
 	check := &HealthCheck{}
 	err := r.db.QueryRow(
 		`SELECT
@@ -354,11 +351,7 @@ func (r *HealthCheckRepositoryPostgres) Fail(id Id, output string) error {
 }
 
 // Report sets a check status and output, optionally extending its TTL.
-func (r *HealthCheckRepositoryPostgres) Report(
-	id Id,
-	status, output string,
-	ttlExpiresAt *time.Time,
-) error {
+func (r *HealthCheckRepositoryPostgres) Report(id Id, status, output string, ttlExpiresAt *time.Time) error {
 	now := time.Now().UTC()
 	var raw *string
 	if output != "" {
@@ -381,11 +374,7 @@ func (r *HealthCheckRepositoryPostgres) Report(
 }
 
 // ClaimDue locks due http and tcp checks and pushes their next run out by hold. TODO: remove if not used in future.
-func (r *HealthCheckRepositoryPostgres) ClaimDue(
-	now time.Time,
-	limit int,
-	hold time.Duration,
-) ([]*HealthCheck, error) {
+func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold time.Duration) ([]*HealthCheck, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
@@ -455,11 +444,7 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(
 }
 
 // Record stores the result of a probe and schedules the next one. TODO: remove if not used in future.
-func (r *HealthCheckRepositoryPostgres) Record(
-	id Id,
-	status, output string,
-	nextRunAt time.Time,
-) error {
+func (r *HealthCheckRepositoryPostgres) Record(id Id, status, output string, nextRunAt time.Time) error {
 	now := time.Now().UTC()
 	var raw *string
 	if output != "" {

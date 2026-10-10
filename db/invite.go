@@ -141,10 +141,7 @@ func (r *UserInviteRepositoryPostgres) GetByToken(token string) (*UserInvite, er
 }
 
 // ListByWorkspaceId returns a paginated list of invites for a workspace.
-func (r *UserInviteRepositoryPostgres) ListByWorkspaceId(
-	workspaceId Id,
-	limit, offset int,
-) ([]*UserInvite, error) {
+func (r *UserInviteRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*UserInvite, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -192,10 +189,7 @@ func (r *UserInviteRepositoryPostgres) ListByWorkspaceId(
 }
 
 // ListByEmail returns a paginated list of invites for an email address. TODO: remove if not used in future.
-func (r *UserInviteRepositoryPostgres) ListByEmail(
-	email string,
-	limit, offset int,
-) ([]*UserInvite, error) {
+func (r *UserInviteRepositoryPostgres) ListByEmail(email string, limit, offset int) ([]*UserInvite, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -285,11 +279,7 @@ func (r *UserInviteRepositoryPostgres) ListPendingByEmail(email string) ([]*User
 }
 
 // UpdateStatus updates the status of a user invite (e.g. to "accepted" with acceptedAt set).
-func (r *UserInviteRepositoryPostgres) UpdateStatus(
-	id Id,
-	status string,
-	acceptedAt *time.Time,
-) error {
+func (r *UserInviteRepositoryPostgres) UpdateStatus(id Id, status string, acceptedAt *time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE user_invites
 		SET
@@ -372,10 +362,7 @@ func (r *UserInviteRepositoryPostgres) CountByEmail(email string) (int64, error)
 }
 
 // CountPendingByEmailInWorkspace returns pending invites for an email in a workspace.
-func (r *UserInviteRepositoryPostgres) CountPendingByEmailInWorkspace(
-	workspaceId Id,
-	email string,
-) (int64, error) {
+func (r *UserInviteRepositoryPostgres) CountPendingByEmailInWorkspace(workspaceId Id, email string) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
 		`SELECT COUNT(*)

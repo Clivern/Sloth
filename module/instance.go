@@ -74,13 +74,7 @@ type ListInstancesResponse struct {
 }
 
 // NewInstance creates an instance module with the given repositories.
-func NewInstance(
-	agents db.AgentRepository,
-	instances db.AgentInstanceRepository,
-	checks db.HealthCheckRepository,
-	agentChecks db.AgentCheckRepository,
-	workspaces db.WorkspaceRepository,
-) *Instance {
+func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
 	return &Instance{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
@@ -91,12 +85,7 @@ func NewInstance(
 }
 
 // ListInstances returns one page of an agent's instances, only live ones when passing is set.
-func (i *Instance) ListInstances(
-	workspaceId db.Id,
-	agentName string,
-	passing bool,
-	limit, offset int,
-) (*ListInstancesResponse, error) {
+func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool, limit, offset int) (*ListInstancesResponse, error) {
 	if !AgentNamePattern.MatchString(agentName) {
 		return nil, ErrInvalidAgentName
 	}
@@ -200,10 +189,7 @@ func (i *Instance) ListInstances(
 }
 
 // GetInstance returns one instance of an agent.
-func (i *Instance) GetInstance(
-	workspaceId db.Id,
-	agentName, instanceId string,
-) (*InstanceResponse, error) {
+func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}
@@ -292,11 +278,7 @@ func (i *Instance) GetInstance(
 }
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
-func (i *Instance) RegisterInstance(
-	workspaceId db.Id,
-	agentName, instanceId string,
-	req *RegisterInstanceRequest,
-) (*InstanceResponse, bool, error) {
+func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest) (*InstanceResponse, bool, error) {
 	if !instanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}

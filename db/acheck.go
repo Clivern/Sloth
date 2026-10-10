@@ -64,10 +64,7 @@ func (r *AgentCheckRepositoryPostgres) Create(check *AgentCheck) error {
 }
 
 // GetByAgentAndCheckId returns an agent check template by its check id.
-func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(
-	agentId Id,
-	checkId string,
-) (*AgentCheck, error) {
+func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId string) (*AgentCheck, error) {
 	check := &AgentCheck{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
@@ -155,10 +152,7 @@ func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck,
 }
 
 // ListPageByAgentId lists one page of the check templates of an agent.
-func (r *AgentCheckRepositoryPostgres) ListPageByAgentId(
-	agentId Id,
-	limit, offset int,
-) ([]*AgentCheck, error) {
+func (r *AgentCheckRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentCheck, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
 		FROM agent_checks

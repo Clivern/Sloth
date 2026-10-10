@@ -56,11 +56,7 @@ type MeSessionResponse struct {
 }
 
 // NewMe creates a /me module with the given repositories.
-func NewMe(
-	apiKeys db.APIKeyRepository,
-	users db.UserRepository,
-	accessKeys db.AccessKeyRepository,
-) *Me {
+func NewMe(apiKeys db.APIKeyRepository, users db.UserRepository, accessKeys db.AccessKeyRepository) *Me {
 	return &Me{
 		APIKeyRepository:    apiKeys,
 		UserRepository:      users,

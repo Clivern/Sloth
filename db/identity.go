@@ -94,10 +94,7 @@ func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error)
 }
 
 // GetByAgentAndName returns an agent identity by agent and name. TODO: remove if not used in future.
-func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(
-	agentId Id,
-	name string,
-) (*AgentIdentity, error) {
+func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name string) (*AgentIdentity, error) {
 	identity := &AgentIdentity{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
@@ -185,9 +182,7 @@ func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIde
 }
 
 // ListActiveByAgentId lists the active identity rows of an agent. TODO: remove if not used in future.
-func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(
-	agentId Id,
-) ([]*AgentIdentity, error) {
+func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentIdentity, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
 		FROM agent_identity

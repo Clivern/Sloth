@@ -344,12 +344,7 @@ func TestIntegrationHealthCheckMetaRepository(t *testing.T) {
 	})
 }
 
-func mustCheck(
-	t *testing.T,
-	repo HealthCheckRepository,
-	instanceId Id,
-	checkId string,
-) *HealthCheck {
+func mustCheck(t *testing.T, repo HealthCheckRepository, instanceId Id, checkId string) *HealthCheck {
 	t.Helper()
 	got, err := repo.GetByInstanceAndCheckId(instanceId, checkId)
 	require.NoError(t, err)

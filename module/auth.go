@@ -41,11 +41,7 @@ type Auth struct {
 }
 
 // NewAuth creates an Auth module with the given repositories.
-func NewAuth(
-	users db.UserRepository,
-	sessions db.SessionRepository,
-	config db.ConfigRepository,
-) *Auth {
+func NewAuth(users db.UserRepository, sessions db.SessionRepository, config db.ConfigRepository) *Auth {
 	return &Auth{
 		UserRepository:    users,
 		SessionRepository: sessions,

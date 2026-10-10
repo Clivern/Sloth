@@ -237,9 +237,7 @@ func (r *WorkspaceRepositoryPostgres) CountAll() (int64, error) {
 }
 
 // GetWorkspaceMembership returns the user's membership (role, etc.) for the workspace, or nil if not a member.
-func (r *WorkspaceRepositoryPostgres) GetWorkspaceMembership(
-	workspaceId, userId Id,
-) (*WorkspaceUser, error) {
+func (r *WorkspaceRepositoryPostgres) GetWorkspaceMembership(workspaceId, userId Id) (*WorkspaceUser, error) {
 	m := &WorkspaceUser{}
 	err := r.db.QueryRow(
 		`SELECT

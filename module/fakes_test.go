@@ -61,9 +61,7 @@ func (f *fakeWorkspaces) Count(userId db.Id) (int64, error) {
 	return f.total, nil
 }
 
-func (f *fakeWorkspaces) GetWorkspaceMembership(
-	workspaceId, userId db.Id,
-) (*db.WorkspaceUser, error) {
+func (f *fakeWorkspaces) GetWorkspaceMembership(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
 	return f.membership, nil
 }
 
@@ -118,10 +116,7 @@ type fakeAgentChecks struct {
 	deleted  []db.Id
 }
 
-func (f *fakeAgentChecks) GetByAgentAndCheckId(
-	agentId db.Id,
-	checkId string,
-) (*db.AgentCheck, error) {
+func (f *fakeAgentChecks) GetByAgentAndCheckId(agentId db.Id, checkId string) (*db.AgentCheck, error) {
 	return f.template, nil
 }
 
@@ -144,10 +139,7 @@ func (f *fakeAgentChecks) ListByAgentId(agentId db.Id) ([]*db.AgentCheck, error)
 	return f.list, nil
 }
 
-func (f *fakeAgentChecks) ListPageByAgentId(
-	agentId db.Id,
-	limit, offset int,
-) ([]*db.AgentCheck, error) {
+func (f *fakeAgentChecks) ListPageByAgentId(agentId db.Id, limit, offset int) ([]*db.AgentCheck, error) {
 	return f.list, nil
 }
 
@@ -169,10 +161,7 @@ func (f *fakeInstances) ListByAgentId(agentId db.Id) ([]*db.AgentInstance, error
 	return f.list, nil
 }
 
-func (f *fakeInstances) ListLiveByAgentId(
-	agentId db.Id,
-	now time.Time,
-) ([]*db.AgentInstance, error) {
+func (f *fakeInstances) ListLiveByAgentId(agentId db.Id, now time.Time) ([]*db.AgentInstance, error) {
 	return f.live, nil
 }
 
@@ -188,11 +177,7 @@ func (f *fakeInstances) CountLiveByAgentId(agentId db.Id, now time.Time) (int64,
 	return int64(len(f.live)), nil
 }
 
-func (f *fakeInstances) ListLivePageByAgentId(
-	agentId db.Id,
-	now time.Time,
-	limit, offset int,
-) ([]*db.AgentInstance, error) {
+func (f *fakeInstances) ListLivePageByAgentId(agentId db.Id, now time.Time, limit, offset int) ([]*db.AgentInstance, error) {
 	return pageInstances(f.live, limit, offset), nil
 }
 
@@ -206,10 +191,7 @@ func pageInstances(items []*db.AgentInstance, limit, offset int) []*db.AgentInst
 	return items[offset:end]
 }
 
-func (f *fakeInstances) GetByAgentAndInstanceId(
-	agentId db.Id,
-	instanceId string,
-) (*db.AgentInstance, error) {
+func (f *fakeInstances) GetByAgentAndInstanceId(agentId db.Id, instanceId string) (*db.AgentInstance, error) {
 	return f.instance, nil
 }
 
@@ -252,10 +234,7 @@ type fakeHealthChecks struct {
 	passed         []reportCall
 }
 
-func (f *fakeHealthChecks) GetByInstanceAndCheckId(
-	instanceId db.Id,
-	checkId string,
-) (*db.HealthCheck, error) {
+func (f *fakeHealthChecks) GetByInstanceAndCheckId(instanceId db.Id, checkId string) (*db.HealthCheck, error) {
 	return f.byInstance[instanceId], nil
 }
 
@@ -531,10 +510,7 @@ func (f *fakeWorkspaceKeyValues) Delete(workspaceId db.Id, key string) error {
 	return f.err
 }
 
-func (f *fakeWorkspaceKeyValues) ListByPrefix(
-	workspaceId db.Id,
-	prefix string,
-) ([]*db.WorkspaceKeyValue, error) {
+func (f *fakeWorkspaceKeyValues) ListByPrefix(workspaceId db.Id, prefix string) ([]*db.WorkspaceKeyValue, error) {
 	f.prefixes = append(f.prefixes, prefix)
 
 	return f.items, f.err
@@ -620,10 +596,7 @@ func (f *fakeAccessKeys) DeleteExpired() (int64, error) {
 	return f.expired, f.err
 }
 
-func (f *fakeAccessKeys) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.AccessKey, error) {
+func (f *fakeAccessKeys) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AccessKey, error) {
 	return f.list, f.err
 }
 
@@ -643,10 +616,7 @@ func (f *fakeAuditEvents) GetById(id db.Id) (*db.AuditEvent, error) {
 	return f.item, f.err
 }
 
-func (f *fakeAuditEvents) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.AuditEvent, error) {
+func (f *fakeAuditEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AuditEvent, error) {
 	return f.list, f.err
 }
 
@@ -666,10 +636,7 @@ func (f *fakeTrafficCalls) GetById(id db.Id) (*db.TrafficCall, error) {
 	return f.item, f.err
 }
 
-func (f *fakeTrafficCalls) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.TrafficCall, error) {
+func (f *fakeTrafficCalls) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.TrafficCall, error) {
 	return f.list, f.err
 }
 
@@ -688,9 +655,7 @@ type fakeWorkspaceUsers struct {
 	err        error
 }
 
-func (f *fakeWorkspaceUsers) GetByWorkspaceAndUser(
-	workspaceId, userId db.Id,
-) (*db.WorkspaceUser, error) {
+func (f *fakeWorkspaceUsers) GetByWorkspaceAndUser(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
 	return f.membership, f.err
 }
 
@@ -712,10 +677,7 @@ func (f *fakeWorkspaceUsers) Delete(id db.Id) error {
 	return f.err
 }
 
-func (f *fakeWorkspaceUsers) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.WorkspaceUser, error) {
+func (f *fakeWorkspaceUsers) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.WorkspaceUser, error) {
 	return f.list, f.err
 }
 
@@ -796,10 +758,7 @@ func (f *fakeIntentions) Delete(id db.Id) error {
 	return f.err
 }
 
-func (f *fakeIntentions) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.Intention, error) {
+func (f *fakeIntentions) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Intention, error) {
 	return f.list, f.err
 }
 
@@ -807,10 +766,7 @@ func (f *fakeIntentions) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.err
 }
 
-func (f *fakeIntentions) Match(
-	workspaceId db.Id,
-	source, destination, skill string,
-) (*db.Intention, error) {
+func (f *fakeIntentions) Match(workspaceId db.Id, source, destination, skill string) (*db.Intention, error) {
 	return f.match, f.err
 }
 
@@ -862,21 +818,11 @@ type fakeUsage struct {
 	err         error
 }
 
-func (f *fakeUsage) GetQuantityByPeriod(
-	workspaceId db.Id,
-	utype string,
-	pstart time.Time,
-) (int64, error) {
+func (f *fakeUsage) GetQuantityByPeriod(workspaceId db.Id, utype string, pstart time.Time) (int64, error) {
 	return f.quantities[utype], f.err
 }
 
-func (f *fakeUsage) IncrementByPeriod(
-	workspaceId db.Id,
-	utype string,
-	pstart, pend time.Time,
-	quantity int64,
-	unit string,
-) error {
+func (f *fakeUsage) IncrementByPeriod(workspaceId db.Id, utype string, pstart, pend time.Time, quantity int64, unit string) error {
 	f.incremented = append(f.incremented, quantity)
 
 	return f.err
@@ -913,10 +859,7 @@ func (f *fakeUserInvites) Delete(id db.Id) error {
 	return f.err
 }
 
-func (f *fakeUserInvites) ListByWorkspaceId(
-	workspaceId db.Id,
-	limit, offset int,
-) ([]*db.UserInvite, error) {
+func (f *fakeUserInvites) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.UserInvite, error) {
 	return f.list, f.err
 }
 
@@ -938,10 +881,7 @@ func (f *fakeUserInvites) MarkExpiredAsExpired() (int64, error) {
 	return f.expired, f.err
 }
 
-func (f *fakeUserInvites) CountPendingByEmailInWorkspace(
-	workspaceId db.Id,
-	email string,
-) (int64, error) {
+func (f *fakeUserInvites) CountPendingByEmailInWorkspace(workspaceId db.Id, email string) (int64, error) {
 	return f.pendingCount, f.err
 }
 
@@ -988,10 +928,7 @@ func enableBilling(t *testing.T) *stripe.Client {
 	return client
 }
 
-func newBillingModule(
-	workspace *db.Workspace,
-	subscription *db.Subscription,
-) (*Billing, *fakeSubscriptions, *fakeTokenPurchases) {
+func newBillingModule(workspace *db.Workspace, subscription *db.Subscription) (*Billing, *fakeSubscriptions, *fakeTokenPurchases) {
 	subscriptions := &fakeSubscriptions{subscription: subscription}
 	purchases := &fakeTokenPurchases{inserted: true}
 	billing := NewBilling(&fakeWorkspaces{workspace: workspace}, subscriptions, purchases, Usage{})
@@ -1007,12 +944,7 @@ func saveIntentionRequest(action string) *SaveIntentionRequest {
 	}
 }
 
-func newInviteModule(
-	invites *fakeUserInvites,
-	users *fakeUsers,
-	members *fakeWorkspaceUsers,
-	mailer *fakeMailer,
-) *Invite {
+func newInviteModule(invites *fakeUserInvites, users *fakeUsers, members *fakeWorkspaceUsers, mailer *fakeMailer) *Invite {
 	return NewInvite(
 		invites,
 		users,
@@ -1045,10 +977,6 @@ func newPerm(membership *db.WorkspaceUser) *Perm {
 	return perm
 }
 
-func newWorkspaceModule(
-	workspaces *fakeWorkspaces,
-	members *fakeWorkspaceUsers,
-	subscriptions *fakeSubscriptions,
-) *Workspace {
+func newWorkspaceModule(workspaces *fakeWorkspaces, members *fakeWorkspaceUsers, subscriptions *fakeSubscriptions) *Workspace {
 	return NewWorkspace(workspaces, members, subscriptions, &fakeUsers{})
 }

@@ -142,10 +142,7 @@ func (r *IntentionRepositoryPostgres) Delete(id Id) error {
 }
 
 // ListByWorkspaceId lists intentions in a workspace.
-func (r *IntentionRepositoryPostgres) ListByWorkspaceId(
-	workspaceId Id,
-	limit, offset int,
-) ([]*Intention, error) {
+func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Intention, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
 		FROM intentions
@@ -197,10 +194,7 @@ func (r *IntentionRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64,
 }
 
 // Match returns the intention the gateway should apply, preferring a row for the named skill.
-func (r *IntentionRepositoryPostgres) Match(
-	workspaceId Id,
-	source, destination, skill string,
-) (*Intention, error) {
+func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination, skill string) (*Intention, error) {
 	intention := &Intention{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at

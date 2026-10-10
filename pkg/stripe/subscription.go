@@ -11,10 +11,7 @@ import (
 )
 
 // GetSubscription loads a Stripe subscription by Id.
-func (c *Client) GetSubscription(
-	ctx context.Context,
-	subscriptionId string,
-) (*stripesdk.Subscription, error) {
+func (c *Client) GetSubscription(ctx context.Context, subscriptionId string) (*stripesdk.Subscription, error) {
 	subscription, err := c.api.V1Subscriptions.Retrieve(
 		ctx,
 		subscriptionId,
