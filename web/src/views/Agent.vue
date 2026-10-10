@@ -35,6 +35,7 @@
                 <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(agent.health)" aria-hidden="true" />
                 {{ $t(`agents_page.health_${agent.health}`) }}
               </span>
+              <StatusBreakdown :counts="agent.statusCounts" />
             </div>
             <p v-if="card.description" class="text-theme-textLight mt-2">{{ card.description }}</p>
           </div>

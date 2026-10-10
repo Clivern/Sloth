@@ -138,7 +138,7 @@ import { agent_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
-import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
+import { healthClass, healthDotClass, parseCard } from '@/lib/agent'
 import { formatRelative } from '@/utils/date'
 
 const { t } = useI18n()
@@ -155,15 +155,13 @@ const showRegisterModal = ref(false)
 
 const rows = computed(() => agents.value.map((agent) => {
   const card = parseCard(agent.card)
-  const instances = agent.instances || []
   return {
     id: agent.id,
     name: agent.name,
     version: agent.version,
     description: card.description,
     skillCount: card.skills.length,
-    statusCounts: countByStatus(instances),
-    instanceCount: instances.length,
+    statusCounts: agent.statusCounts,
     health: agent.health,
     updatedAt: agent.updatedAt,
   }
