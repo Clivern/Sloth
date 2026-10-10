@@ -140,66 +140,35 @@
         </div>
       </section>
 
-      <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div class="space-y-6 lg:col-span-2">
-          <div
-            v-if="showWhatsNew"
-            class="section overflow-hidden !p-0"
-          >
-            <div class="border-b border-theme-border px-6 py-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.whats_new_title') }}</h2>
-                    <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                      {{ $t('dashboard.mock_badge') }}
-                    </span>
-                  </div>
-                  <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.whats_new_subtitle') }}</p>
-                </div>
-                <button
-                  type="button"
-                  class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
-                  @click="dismissWhatsNew"
-                >
-                  {{ $t('dashboard.whats_new_dismiss') }}
-                </button>
+      <section v-if="showWhatsNew" class="section mb-8 overflow-hidden !p-0">
+        <div class="border-b border-theme-border px-6 py-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.whats_new_title') }}</h2>
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  {{ $t('dashboard.mock_badge') }}
+                </span>
               </div>
+              <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.whats_new_subtitle') }}</p>
             </div>
-            <div class="px-6 py-5">
-              <p class="text-xs font-medium uppercase tracking-wide text-theme-textLight">
-                {{ $t('dashboard.whats_new_tip_label') }}
-              </p>
-              <p class="mt-2 text-base font-medium text-theme-text">{{ $t('dashboard.whats_new_tip_title') }}</p>
-              <p class="mt-1 text-sm leading-relaxed text-theme-textLight">
-                {{ $t('dashboard.whats_new_tip_body') }}
-              </p>
-            </div>
+            <button
+              type="button"
+              class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
+              @click="dismissWhatsNew"
+            >
+              {{ $t('dashboard.whats_new_dismiss') }}
+            </button>
           </div>
         </div>
-
-        <div class="space-y-6">
-          <div class="section h-fit">
-            <h2 class="section-title">{{ $t('dashboard.workspace_info') }}</h2>
-            <dl class="space-y-0">
-              <div class="flex justify-between gap-4 py-3 border-b border-theme-border">
-                <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_name') }}</dt>
-                <dd class="text-sm font-medium text-theme-text text-right">{{ workspace?.name || '—' }}</dd>
-              </div>
-              <div class="flex justify-between gap-4 py-3 border-b border-theme-border">
-                <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_handle') }}</dt>
-                <dd class="text-sm font-medium text-theme-text text-right font-mono">{{ workspace?.handle || '—' }}</dd>
-              </div>
-              <div class="flex justify-between gap-4 py-3 border-b border-theme-border">
-                <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_role') }}</dt>
-                <dd class="text-sm font-medium text-theme-text capitalize text-right">{{ roleLabel }}</dd>
-              </div>
-              <div v-if="isSaaS()" class="flex justify-between gap-4 py-3 border-b border-theme-border">
-                <dt class="text-sm text-theme-textLight">{{ $t('dashboard.workspace_tokens') }}</dt>
-                <dd class="text-sm font-medium text-theme-text text-right">{{ tokenBalanceLabel }}</dd>
-              </div>
-            </dl>
-          </div>
+        <div class="px-6 py-5">
+          <p class="text-xs font-medium uppercase tracking-wide text-theme-textLight">
+            {{ $t('dashboard.whats_new_tip_label') }}
+          </p>
+          <p class="mt-2 text-base font-medium text-theme-text">{{ $t('dashboard.whats_new_tip_title') }}</p>
+          <p class="mt-1 text-sm leading-relaxed text-theme-textLight">
+            {{ $t('dashboard.whats_new_tip_body') }}
+          </p>
         </div>
       </section>
     </main>
@@ -207,15 +176,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  billing_api,
-  workspace_api,
-} from '@/api'
 import AppNav from '@/components/AppNav.vue'
 import { user } from '@/lib/auth'
-import { saveWorkspaceToStorage } from '@/utils/storage'
 import { useWorkspaceContext } from '@/lib/permission'
 import { isSaaS } from '@/lib/edition'
 
@@ -224,29 +188,19 @@ const { t } = useI18n()
 const WHATS_NEW_KEY = 'dashboard_whats_new_v1'
 const GETTING_STARTED_KEY = 'dashboard_getting_started_v1'
 
-const { currentWorkspace, canManage } = useWorkspaceContext()
-const workspace = ref({ ...currentWorkspace })
-const loading = ref(true)
-const tokenBalance = ref(null)
+const { canManage } = useWorkspaceContext()
 const showWhatsNew = ref(localStorage.getItem(WHATS_NEW_KEY) !== '1')
 const showGettingStarted = ref(localStorage.getItem(GETTING_STARTED_KEY) !== '1')
-
-function dismissGettingStarted() {
-  showGettingStarted.value = false
-  localStorage.setItem(GETTING_STARTED_KEY, '1')
-}
 
 function dismissWhatsNew() {
   showWhatsNew.value = false
   localStorage.setItem(WHATS_NEW_KEY, '1')
 }
 
-const tokenBalanceLabel = computed(() => {
-  if (tokenBalance.value == null) return loading.value ? '…' : '—'
-  return tokenBalance.value.toLocaleString()
-})
-
-const roleLabel = computed(() => workspace.value?.role || '—')
+function dismissGettingStarted() {
+  showGettingStarted.value = false
+  localStorage.setItem(GETTING_STARTED_KEY, '1')
+}
 
 const gettingStartedSteps = computed(() => [
   {
@@ -378,29 +332,4 @@ const recentActivity = computed(() => [
   },
 ])
 
-async function loadDashboard() {
-  loading.value = true
-
-  const tasks = [
-    workspace_api.get(currentWorkspace.id)
-      .then((res) => {
-        workspace.value = { ...currentWorkspace, ...res.data, role: res.data.role ?? currentWorkspace.role }
-        saveWorkspaceToStorage(workspace.value)
-      })
-      .catch(() => {}),
-  ]
-
-  if (canManage.value && isSaaS()) {
-    tasks.push(
-      billing_api.status(currentWorkspace.id)
-        .then((res) => { tokenBalance.value = res.data.aiTokensBalance || 0 })
-        .catch(() => {}),
-    )
-  }
-
-  await Promise.allSettled(tasks)
-  loading.value = false
-}
-
-onMounted(loadDashboard)
 </script>
