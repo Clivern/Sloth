@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -39,29 +38,22 @@ func (a *API) ListInstancesAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Instance.ListInstances(db.Id(wid), agentName, passing, limit, offset)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Msg("Failed to list instances")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_instance_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Msg("Failed to list instances")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_instance_request"),
+		})
 
 		return
 	}
@@ -104,38 +96,25 @@ func (a *API) GetInstanceAction(w http.ResponseWriter, r *http.Request) {
 
 	instance, err := a.Instance.GetInstance(db.Id(wid), agentName, instanceId)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInstanceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "instance_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Str("instance", instanceId).
-				Msg("Failed to get instance")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_instance_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+			{module.ErrInvalidInstanceId, http.StatusBadRequest, "invalid_instance_id"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Str("instance", instanceId).
+			Msg("Failed to get instance")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_instance_request"),
+		})
 
 		return
 	}
@@ -184,34 +163,24 @@ func (a *API) RegisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 
 	instance, created, err := a.Instance.RegisterInstance(db.Id(wid), agentName, instanceId, &req)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Str("instance", instanceId).
-				Msg("Failed to register instance")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_instance_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+			{module.ErrInvalidInstanceId, http.StatusBadRequest, "invalid_instance_id"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Str("instance", instanceId).
+			Msg("Failed to register instance")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_instance_request"),
+		})
 
 		return
 	}
@@ -253,38 +222,25 @@ func (a *API) DeregisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Instance.DeregisterInstance(db.Id(wid), agentName, instanceId)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrAgentNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "agent_not_found"),
-			})
-		case errors.Is(err, module.ErrInstanceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "instance_not_found"),
-			})
-		case errors.Is(err, module.ErrInvalidAgentName):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_agent_name"),
-			})
-		case errors.Is(err, module.ErrInvalidInstanceId):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_instance_id"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("workspaceId", wid).
-				Str("agent", agentName).
-				Str("instance", instanceId).
-				Msg("Failed to deregister instance")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_instance_request"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrAgentNotFound, http.StatusNotFound, "agent_not_found"},
+			{module.ErrInstanceNotFound, http.StatusNotFound, "instance_not_found"},
+			{module.ErrInvalidAgentName, http.StatusBadRequest, "invalid_agent_name"},
+			{module.ErrInvalidInstanceId, http.StatusBadRequest, "invalid_instance_id"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("workspaceId", wid).
+			Str("agent", agentName).
+			Str("instance", instanceId).
+			Msg("Failed to deregister instance")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_instance_request"),
+		})
 
 		return
 	}
