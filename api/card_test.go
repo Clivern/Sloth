@@ -38,7 +38,10 @@ func TestUnitAgentCardEndpoint(t *testing.T) {
 	}
 
 	router := chi.NewRouter()
-	router.Get("/api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json", api.GetAgentCardAction)
+	router.Get(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json",
+		api.GetAgentCardAction,
+	)
 
 	path := "/api/v1/workspaces/ws-1/agents/user-directory/.well-known/agent-card.json"
 
@@ -76,7 +79,14 @@ func TestUnitAgentCardEndpoint(t *testing.T) {
 
 	t.Run("returns 404 for unknown agent", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/missing/.well-known/agent-card.json", nil))
+		router.ServeHTTP(
+			w,
+			httptest.NewRequest(
+				http.MethodGet,
+				"/api/v1/workspaces/ws-1/agents/missing/.well-known/agent-card.json",
+				nil,
+			),
+		)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
