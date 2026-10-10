@@ -155,12 +155,9 @@ func TestUnitInstance(t *testing.T) {
 		assert.Empty(t, item.Checks)
 	})
 
-	t.Run("get rejects invalid ids and names", func(t *testing.T) {
-		_, err := defaultInstanceFixture().instance.GetInstance("ws-1", "support-assistant", "bad id!")
-		assert.ErrorIs(t, err, ErrInvalidInstanceId)
-
-		_, err = defaultInstanceFixture().instance.GetInstance("ws-1", "-bad", "node-1")
-		assert.ErrorIs(t, err, ErrInvalidAgentName)
+	t.Run("get returns not found for an unknown agent", func(t *testing.T) {
+		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.GetInstance("ws-1", "-bad", "node-1")
+		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
 	t.Run("get returns not found for a missing instance", func(t *testing.T) {

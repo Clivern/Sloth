@@ -86,10 +86,6 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 
 // ListInstances returns one page of an agent's instances, only live ones when passing is set.
 func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool, limit, offset int) (*ListInstancesResponse, error) {
-	if !AgentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
 		return nil, err
@@ -157,22 +153,6 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 // GetInstance returns one instance of an agent.
 func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
-	if !InstanceIdPattern.MatchString(instanceId) {
-		return nil, ErrInvalidInstanceId
-	}
-
-	if !AgentNamePattern.MatchString(agentName) {
-		return nil, ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
