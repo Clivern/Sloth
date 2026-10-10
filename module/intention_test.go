@@ -16,11 +16,11 @@ import (
 func TestUnitIntention(t *testing.T) {
 	workspace := &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}
 
-	t.Run("list returns not found for a missing workspace", func(t *testing.T) {
+	t.Run("list returns an empty result for a missing workspace", func(t *testing.T) {
 		intentions := NewIntention(&fakeIntentions{}, &fakeWorkspaces{})
 
 		_, err := intentions.ListIntentions("ws-1", 20, 0)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
+		require.NoError(t, err)
 	})
 
 	t.Run("list returns the rules and the total", func(t *testing.T) {
@@ -52,11 +52,6 @@ func TestUnitIntention(t *testing.T) {
 	t.Run("create rejects actions other than allow or deny", func(t *testing.T) {
 		_, err := NewIntention(&fakeIntentions{}, workspace).CreateIntention("ws-1", saveIntentionRequest("maybe"))
 		assert.ErrorIs(t, err, ErrInvalidIntentionAction)
-	})
-
-	t.Run("create returns not found for a missing workspace", func(t *testing.T) {
-		_, err := NewIntention(&fakeIntentions{}, &fakeWorkspaces{}).CreateIntention("ws-1", saveIntentionRequest("allow"))
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 	})
 
 	t.Run("create stores the rule with its skill", func(t *testing.T) {

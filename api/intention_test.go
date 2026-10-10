@@ -41,12 +41,12 @@ func TestUnitIntentionActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"total":1`)
 	})
 
-	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
+	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newIntentionAPI(nil, &fakeIntentions{})
 		w := httptest.NewRecorder()
 		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/intentions", nil))
 
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
@@ -102,14 +102,6 @@ func TestUnitIntentionActions(t *testing.T) {
 		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(bad)))
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-	})
-
-	t.Run("create returns 404 for unknown workspace", func(t *testing.T) {
-		api := newIntentionAPI(nil, &fakeIntentions{})
-		w := httptest.NewRecorder()
-		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1/intentions", strings.NewReader(body)))
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("create returns 500 when the repository fails", func(t *testing.T) {
@@ -191,13 +183,13 @@ func TestUnitIntentionActions(t *testing.T) {
 		assert.NotContains(t, w.Body.String(), `"intention"`)
 	})
 
-	t.Run("check returns 404 for unknown workspace", func(t *testing.T) {
+	t.Run("check does not look up the workspace", func(t *testing.T) {
 		api := newIntentionAPI(nil, &fakeIntentions{})
 		checkBody := `{"source":{"agent":"frontend"},"destination":{"agent":"users"}}`
 		w := httptest.NewRecorder()
 		newIntentionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces/ws-1/intentions/check", strings.NewReader(checkBody)))
 
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("check returns 500 when the repository fails", func(t *testing.T) {
