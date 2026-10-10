@@ -16,6 +16,44 @@
         </p>
       </header>
 
+      <section v-if="showGettingStarted" class="mb-8 overflow-hidden rounded-xl border border-theme-border bg-white shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-theme-border px-6 py-4">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.getting_started') }}</h2>
+            <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.getting_started_desc') }}</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
+            @click="dismissGettingStarted"
+          >
+            {{ $t('dashboard.getting_started_dismiss') }}
+          </button>
+        </div>
+
+        <ol class="grid grid-cols-1 gap-px bg-theme-border sm:grid-cols-2 lg:grid-cols-3">
+          <li v-for="(step, index) in gettingStartedSteps" :key="step.id" class="flex gap-4 bg-white px-6 py-5">
+            <span
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-theme-hover text-sm font-semibold text-theme-text"
+              aria-hidden="true"
+            >
+              {{ index + 1 }}
+            </span>
+            <span class="sr-only">{{ $t('dashboard.step_label', { number: index + 1 }) }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-theme-text">{{ step.title }}</p>
+              <p class="mt-0.5 text-sm leading-relaxed text-theme-textLight">{{ step.description }}</p>
+              <router-link
+                :to="step.to"
+                class="mt-2 inline-flex text-sm font-medium text-primary-800 hover:underline"
+              >
+                {{ step.action }}
+              </router-link>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <section class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="section overflow-hidden !p-0">
           <div class="border-b border-theme-border px-6 py-4">
@@ -184,12 +222,19 @@ import { isSaaS } from '@/lib/edition'
 const { t } = useI18n()
 
 const WHATS_NEW_KEY = 'dashboard_whats_new_v1'
+const GETTING_STARTED_KEY = 'dashboard_getting_started_v1'
 
 const { currentWorkspace, canManage } = useWorkspaceContext()
 const workspace = ref({ ...currentWorkspace })
 const loading = ref(true)
 const tokenBalance = ref(null)
 const showWhatsNew = ref(localStorage.getItem(WHATS_NEW_KEY) !== '1')
+const showGettingStarted = ref(localStorage.getItem(GETTING_STARTED_KEY) !== '1')
+
+function dismissGettingStarted() {
+  showGettingStarted.value = false
+  localStorage.setItem(GETTING_STARTED_KEY, '1')
+}
 
 function dismissWhatsNew() {
   showWhatsNew.value = false
@@ -202,6 +247,52 @@ const tokenBalanceLabel = computed(() => {
 })
 
 const roleLabel = computed(() => workspace.value?.role || '—')
+
+const gettingStartedSteps = computed(() => [
+  {
+    id: 'access_key',
+    title: t('dashboard.step_access_key'),
+    description: t('dashboard.step_access_key_desc'),
+    action: t('dashboard.step_access_key_link'),
+    to: '/settings',
+    requiresManage: true,
+  },
+  {
+    id: 'register_agent',
+    title: t('dashboard.step_register_agent'),
+    description: t('dashboard.step_register_agent_desc'),
+    action: t('dashboard.step_register_agent_link'),
+    to: '/agents',
+  },
+  {
+    id: 'register_instance',
+    title: t('dashboard.step_register_instance'),
+    description: t('dashboard.step_register_instance_desc'),
+    action: t('dashboard.step_register_instance_link'),
+    to: '/agents',
+  },
+  {
+    id: 'health_check',
+    title: t('dashboard.step_health_check'),
+    description: t('dashboard.step_health_check_desc'),
+    action: t('dashboard.step_health_check_link'),
+    to: '/agents',
+  },
+  {
+    id: 'intention',
+    title: t('dashboard.step_intention'),
+    description: t('dashboard.step_intention_desc'),
+    action: t('dashboard.step_intention_link'),
+    to: '/intentions',
+  },
+  {
+    id: 'traffic',
+    title: t('dashboard.step_traffic'),
+    description: t('dashboard.step_traffic_desc'),
+    action: t('dashboard.step_traffic_link'),
+    to: '/traffic',
+  },
+].filter((step) => !step.requiresManage || canManage.value))
 
 const attentionItems = computed(() => [
   {
