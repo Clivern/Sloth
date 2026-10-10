@@ -18,8 +18,14 @@ func TestUnitGatewayStubActions(t *testing.T) {
 	api := &API{}
 	router := chi.NewRouter()
 	router.Get("/api/v1/workspaces/{workspaceId}/catalog/skills", api.ListCatalogSkillsAction)
-	router.Get("/api/v1/workspaces/{workspaceId}/catalog/skills/{skill}/agents", api.ListCatalogSkillAgentsAction)
-	router.Get("/api/v1/workspaces/{workspaceId}/catalog/agents/{agentName}/card", api.GetCatalogAgentCardAction)
+	router.Get(
+		"/api/v1/workspaces/{workspaceId}/catalog/skills/{skill}/agents",
+		api.ListCatalogSkillAgentsAction,
+	)
+	router.Get(
+		"/api/v1/workspaces/{workspaceId}/catalog/agents/{agentName}/card",
+		api.GetCatalogAgentCardAction,
+	)
 	router.Get("/api/v1/workspaces/{workspaceId}/discover", api.DiscoverAgentsAction)
 	router.Post("/api/v1/workspaces/{workspaceId}/discover/resolve", api.ResolveDiscoverAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/watch/catalog", api.WatchCatalogAction)
@@ -29,12 +35,36 @@ func TestUnitGatewayStubActions(t *testing.T) {
 		method string
 		path   string
 	}{
-		{name: "list catalog skills", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/catalog/skills"},
-		{name: "list catalog skill agents", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/catalog/skills/lookup/agents"},
-		{name: "get catalog agent card", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/catalog/agents/user-directory/card"},
-		{name: "discover agents", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/discover"},
-		{name: "resolve discover", method: http.MethodPost, path: "/api/v1/workspaces/ws-1/discover/resolve"},
-		{name: "watch catalog", method: http.MethodGet, path: "/api/v1/workspaces/ws-1/watch/catalog"},
+		{
+			name:   "list catalog skills",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/catalog/skills",
+		},
+		{
+			name:   "list catalog skill agents",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/catalog/skills/lookup/agents",
+		},
+		{
+			name:   "get catalog agent card",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/catalog/agents/user-directory/card",
+		},
+		{
+			name:   "discover agents",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/discover",
+		},
+		{
+			name:   "resolve discover",
+			method: http.MethodPost,
+			path:   "/api/v1/workspaces/ws-1/discover/resolve",
+		},
+		{
+			name:   "watch catalog",
+			method: http.MethodGet,
+			path:   "/api/v1/workspaces/ws-1/watch/catalog",
+		},
 	}
 
 	for _, tc := range cases {
