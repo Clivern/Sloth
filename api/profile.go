@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -83,24 +82,14 @@ func (a *API) UpdateProfileAction(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := a.Profile.UpdateProfile(user.Id, &req)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrFailedUpdateProfile), errors.Is(err, module.ErrUserNotFound):
-			log.Error().
-				Err(err).
-				Str("userId", user.Id.String()).
-				Msg("Failed to update profile")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_update_profile"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Str("userId", user.Id.String()).
-				Msg("Failed to update profile")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_update_profile"),
-			})
-		}
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to update profile")
+
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_update_profile"),
+		})
 
 		return
 	}
