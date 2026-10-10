@@ -288,6 +288,33 @@
                 </tbody>
               </table>
             </div>
+
+            <div
+              v-if="instancesTotal > 0"
+              class="bg-white px-6 py-4 border-t border-theme-border flex items-center justify-between"
+            >
+              <div class="text-sm text-theme-textLight">
+                {{ $t('agents_page.showing', { from: instancesOffset + 1, to: Math.min(instancesOffset + instancesLimit, instancesTotal), total: instancesTotal }) }}
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="instancesOffset === 0"
+                  @click="goToInstancesPage(instancesOffset - instancesLimit)"
+                >
+                  {{ $t('agents_page.previous') }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  :disabled="instancesOffset + instancesLimit >= instancesTotal"
+                  @click="goToInstancesPage(instancesOffset + instancesLimit)"
+                >
+                  {{ $t('agents_page.next') }}
+                </button>
+              </div>
+            </div>
           </section>
         </div>
       </template>
@@ -463,6 +490,9 @@ const { currentWorkspace, canManage } = useWorkspaceContext()
 
 const agent = ref(null)
 const instances = ref([])
+const instancesLimit = 50
+const instancesOffset = ref(0)
+const instancesTotal = ref(0)
 const loading = ref(false)
 const loadingInstances = ref(false)
 const notFound = ref(false)
@@ -496,6 +526,7 @@ async function loadAgent() {
   errorMessage.value = null
   agent.value = null
   instances.value = []
+  instancesOffset.value = 0
   checks.value = []
 
   try {
@@ -517,8 +548,18 @@ async function loadInstances() {
   loadingInstances.value = true
 
   try {
-    const res = await agent_instance_api.list(currentWorkspace.id, agentName.value)
+    const res = await agent_instance_api.list(currentWorkspace.id, agentName.value, {
+      limit: instancesLimit,
+      offset: instancesOffset.value,
+    })
     instances.value = res.data.instances || []
+    instancesTotal.value = res.data._meta?.total || 0
+
+    // The page emptied after a deregister, so step back to the last page with rows
+    if (!instances.value.length && instancesOffset.value > 0) {
+      instancesOffset.value = Math.max(0, instancesOffset.value - instancesLimit)
+      await loadInstances()
+    }
   } catch (err) {
     errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_instances')
   } finally {
@@ -593,6 +634,12 @@ function describeCheck(check) {
   const port = check.port ? `:${check.port}` : ''
   const target = check.type === 'http' ? `${check.scheme}://…${port}${check.path}` : `tcp …${port}`
   return t('agents_page.check_describe_probe', { target, interval: check.interval, timeout: check.timeout })
+}
+
+function goToInstancesPage(newOffset) {
+  if (newOffset < 0 || newOffset >= instancesTotal.value) return
+  instancesOffset.value = newOffset
+  loadInstances()
 }
 
 function toggleInstance(id) {
