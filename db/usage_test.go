@@ -35,7 +35,10 @@ func TestIntegrationUsageRepository(t *testing.T) {
 	})
 
 	t.Run("increment period", func(t *testing.T) {
-		require.NoError(t, repo.IncrementByPeriod(workspace.Id, UsageTypeAITokens, start, end, 5, UsageUnitTokens))
+		require.NoError(
+			t,
+			repo.IncrementByPeriod(workspace.Id, UsageTypeAITokens, start, end, 5, UsageUnitTokens),
+		)
 		qty, err := repo.GetQuantityByPeriod(workspace.Id, UsageTypeAITokens, start)
 		require.NoError(t, err)
 		assert.Equal(t, int64(15), qty)
