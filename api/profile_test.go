@@ -35,7 +35,8 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("get returns the profile", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored})}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil), user))
+		newProfileRouter(api).
+			ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil), user))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"email":"ann@example.com"`)
@@ -45,7 +46,8 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("get returns 401 without a user", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored})}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil))
+		newProfileRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -53,7 +55,8 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("get returns 500 when the user is missing", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{})}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil), user))
+		newProfileRouter(api).
+			ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodGet, "/api/v1/action/profile", nil), user))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_get_profile")
@@ -62,7 +65,14 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("update returns 200 with the saved profile", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored})}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)), user))
+		newProfileRouter(api).
+			ServeHTTP(
+				w,
+				requestWithUser(
+					httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)),
+					user,
+				),
+			)
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"theme":"dark"`)
@@ -72,16 +82,32 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("update returns 400 for an unsupported language", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored})}
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(`{"language":"de","theme":"dark"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/action/profile",
+				strings.NewReader(`{"language":"de","theme":"dark"}`),
+			),
+			user,
+		)
 		newProfileRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
 	t.Run("update returns 500 when the repository fails", func(t *testing.T) {
-		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored, updateErr: errors.New("boom")})}
+		api := &API{
+			Profile: module.NewProfile(&fakeUsers{user: stored, updateErr: errors.New("boom")}),
+		}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)), user))
+		newProfileRouter(api).
+			ServeHTTP(
+				w,
+				requestWithUser(
+					httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)),
+					user,
+				),
+			)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_update_profile")
@@ -90,7 +116,8 @@ func TestUnitProfileActions(t *testing.T) {
 	t.Run("update returns 401 without a user", func(t *testing.T) {
 		api := &API{Profile: module.NewProfile(&fakeUsers{user: stored})}
 		w := httptest.NewRecorder()
-		newProfileRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)))
+		newProfileRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/action/profile", strings.NewReader(body)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
