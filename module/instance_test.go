@@ -16,20 +16,20 @@ import (
 
 func TestUnitInstance(t *testing.T) {
 	t.Run("list returns not found for a missing agent", func(t *testing.T) {
-		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "-bad", false, 50, 0)
+		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "-bad", 50, 0)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
-	t.Run("list returns only live instances when passing is set", func(t *testing.T) {
+	t.Run("list healthy returns only live instances", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
 		f.instances.live = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 
-		all, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		all, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Len(t, all.Instances, 2)
 
-		live, err := f.instance.ListInstances("ws-1", "support-assistant", true, 50, 0)
+		live, err := f.instance.ListHealthyInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		require.Len(t, live.Instances, 1)
 		assert.Equal(t, "node-1", live.Instances[0].InstanceId)
@@ -40,12 +40,12 @@ func TestUnitInstance(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}, {Id: "inst-3", InstanceId: "node-3"}}
 
-		first, err := f.instance.ListInstances("ws-1", "support-assistant", false, 2, 0)
+		first, err := f.instance.ListInstances("ws-1", "support-assistant", 2, 0)
 		require.NoError(t, err)
 		require.Len(t, first.Instances, 2)
 		assert.Equal(t, int64(3), first.Total)
 
-		last, err := f.instance.ListInstances("ws-1", "support-assistant", false, 2, 2)
+		last, err := f.instance.ListInstances("ws-1", "support-assistant", 2, 2)
 		require.NoError(t, err)
 		require.Len(t, last.Instances, 1)
 		assert.Equal(t, "node-3", last.Instances[0].InstanceId)
@@ -56,7 +56,7 @@ func TestUnitInstance(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusPassing, list.Instances[0].Status)
 		assert.Empty(t, list.Instances[0].Checks)
@@ -69,7 +69,7 @@ func TestUnitInstance(t *testing.T) {
 			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical},
 		}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[0].Status)
 	})
@@ -82,7 +82,7 @@ func TestUnitInstance(t *testing.T) {
 			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
 		}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusWarning, list.Instances[0].Status)
 		require.Len(t, list.Instances[0].Checks, 2)
@@ -100,7 +100,7 @@ func TestUnitInstance(t *testing.T) {
 			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical},
 		}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusUnknown, list.Instances[0].Status)
 		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[1].Status)
@@ -114,7 +114,7 @@ func TestUnitInstance(t *testing.T) {
 			{CheckId: "heartbeat", Name: "heartbeat", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expired},
 		}
 
-		list, err := f.instance.ListInstances("ws-1", "support-assistant", false, 50, 0)
+		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
 		require.NoError(t, err)
 		assert.Equal(t, db.AgentInstanceStatusCritical, list.Instances[0].Status)
 	})

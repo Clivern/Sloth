@@ -84,16 +84,54 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 	}
 }
 
-// ListInstances returns one page of an agent's instances, only live ones when passing is set.
-func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bool, limit, offset int) (*ListInstancesResponse, error) {
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
+// ListInstances returns one page of an agent's instances.
+func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, offset int) (*ListInstancesResponse, error) {
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
+	if agent == nil {
+		return nil, ErrAgentNotFound
 	}
 
+	total, err := i.InstanceRepository.CountByAgentId(agent.Id)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+	}
+
+	instances, err := i.InstanceRepository.ListPageByAgentId(agent.Id, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+	}
+
+	list := make([]*InstanceResponse, 0, len(instances))
+	for _, instance := range instances {
+		status, checks, err := i.GetHealth(instance.Id)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
+		}
+
+		item := &InstanceResponse{
+			Id:         instance.Id,
+			AgentId:    instance.AgentId,
+			InstanceId: instance.InstanceId,
+			Address:    instance.Address,
+			Port:       instance.Port,
+			Meta:       util.JSONRawFromString(instance.Meta),
+			Status:     status,
+			Checks:     checks,
+			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
+		}
+
+		list = append(list, item)
+	}
+
+	return &ListInstancesResponse{Instances: list, Total: total}, nil
+}
+
+// ListHealthyInstances returns one page of an agent's instances with no critical, unknown, or expired checks.
+func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, limit, offset int) (*ListInstancesResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
@@ -104,23 +142,12 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 	now := time.Now().UTC()
 
-	var instances []*db.AgentInstance
-	var total int64
-	if passing {
-		total, err = i.InstanceRepository.CountLiveByAgentId(agent.Id, now)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
-		}
-
-		instances, err = i.InstanceRepository.ListLivePageByAgentId(agent.Id, now, limit, offset)
-	} else {
-		total, err = i.InstanceRepository.CountByAgentId(agent.Id)
-		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
-		}
-
-		instances, err = i.InstanceRepository.ListPageByAgentId(agent.Id, limit, offset)
+	total, err := i.InstanceRepository.CountLiveByAgentId(agent.Id, now)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
+
+	instances, err := i.InstanceRepository.ListLivePageByAgentId(agent.Id, now, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}

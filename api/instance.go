@@ -36,7 +36,13 @@ func (a *API) ListInstancesAction(w http.ResponseWriter, r *http.Request) {
 	passing := r.URL.Query().Get("passing") == "true"
 	limit, offset := a.ParsePagination(r)
 
-	result, err := a.Instance.ListInstances(db.Id(wid), agentName, passing, limit, offset)
+	var result *module.ListInstancesResponse
+	var err error
+	if passing {
+		result, err = a.Instance.ListHealthyInstances(db.Id(wid), agentName, limit, offset)
+	} else {
+		result, err = a.Instance.ListInstances(db.Id(wid), agentName, limit, offset)
+	}
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
