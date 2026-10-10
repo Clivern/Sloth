@@ -31,7 +31,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("create returns 201 with the owner role", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -41,7 +44,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("create returns 400 for a name that is too short", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(`{"name":"ab"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(`{"name":"ab"}`)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -50,7 +56,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("create returns 401 without a user", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -58,7 +65,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("create returns 500 when the repository fails", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{createErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPost, "/api/v1/workspaces", strings.NewReader(body)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -78,7 +88,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("list returns 401 without a user", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces", nil))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -116,7 +127,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("get returns 401 without a user", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1", nil))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1", nil))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -133,7 +145,14 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("update returns 200 with the new name", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored, membership: owner})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(`{"name":"Platform Team"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(
+				http.MethodPut,
+				"/api/v1/workspaces/ws-1",
+				strings.NewReader(`{"name":"Platform Team"}`),
+			),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -142,7 +161,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("update returns 400 for a name that is too short", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(`{"name":"ab"}`)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(`{"name":"ab"}`)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -151,7 +173,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("update returns 404 for unknown workspace", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -160,7 +185,10 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("update returns 500 when the repository fails", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored, updateErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		req := requestWithUser(httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)), user)
+		req := requestWithUser(
+			httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)),
+			user,
+		)
 		newWorkspaceRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -169,7 +197,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("update returns 401 without a user", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)))
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -177,7 +206,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("delete returns 204", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
 
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
@@ -185,7 +215,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("delete returns 404 for unknown workspace", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -193,7 +224,8 @@ func TestUnitWorkspaceActions(t *testing.T) {
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored, deleteErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
+		newWorkspaceRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
