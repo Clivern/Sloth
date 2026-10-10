@@ -1,9 +1,102 @@
 import { computed } from 'vue'
 import { loadUserFromStorage, loadWorkspaceFromStorage } from '@/utils/storage'
 
-export const WORKSPACE_KEY_PERMISSIONS = [
-  { value: 'CAN_REGISTER_INSTANCE', labelKey: 'workspace_settings_page.perm_register_instance' },
+export const WORKSPACE_KEY_PERMISSION_GROUPS = [
+  {
+    labelKey: 'workspace_settings_page.perm_group_workspace',
+    permissions: [
+      { value: 'CAN_GET_WORKSPACE', labelKey: 'workspace_settings_page.perm_get_workspace' },
+      { value: 'CAN_UPDATE_WORKSPACE', labelKey: 'workspace_settings_page.perm_update_workspace' },
+      { value: 'CAN_DELETE_WORKSPACE', labelKey: 'workspace_settings_page.perm_delete_workspace' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_members',
+    permissions: [
+      { value: 'CAN_LIST_WORKSPACE_MEMBERS', labelKey: 'workspace_settings_page.perm_list_workspace_members' },
+      { value: 'CAN_UPDATE_MEMBER_ROLE', labelKey: 'workspace_settings_page.perm_update_member_role' },
+      { value: 'CAN_REMOVE_MEMBER', labelKey: 'workspace_settings_page.perm_remove_member' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_invites',
+    permissions: [
+      { value: 'CAN_LIST_WORKSPACE_INVITES', labelKey: 'workspace_settings_page.perm_list_workspace_invites' },
+      { value: 'CAN_GET_WORKSPACE_INVITE', labelKey: 'workspace_settings_page.perm_get_workspace_invite' },
+      { value: 'CAN_INVITE_MEMBER', labelKey: 'workspace_settings_page.perm_invite_member' },
+      { value: 'CAN_REMOVE_INVITE', labelKey: 'workspace_settings_page.perm_remove_invite' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_billing',
+    permissions: [
+      { value: 'CAN_GET_WORKSPACE_BILLING', labelKey: 'workspace_settings_page.perm_get_workspace_billing' },
+      { value: 'CAN_UPDATE_WORKSPACE_BILLING', labelKey: 'workspace_settings_page.perm_update_workspace_billing' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_access_keys',
+    permissions: [
+      { value: 'CAN_LIST_WORKSPACE_ACCESS_KEYS', labelKey: 'workspace_settings_page.perm_list_workspace_access_keys' },
+      { value: 'CAN_CREATE_WORKSPACE_ACCESS_KEY', labelKey: 'workspace_settings_page.perm_create_workspace_access_key' },
+      { value: 'CAN_GET_WORKSPACE_ACCESS_KEY', labelKey: 'workspace_settings_page.perm_get_workspace_access_key' },
+      { value: 'CAN_DELETE_WORKSPACE_ACCESS_KEY', labelKey: 'workspace_settings_page.perm_delete_workspace_access_key' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_audits',
+    permissions: [
+      { value: 'CAN_LIST_WORKSPACE_AUDITS', labelKey: 'workspace_settings_page.perm_list_workspace_audits' },
+      { value: 'CAN_GET_WORKSPACE_AUDIT', labelKey: 'workspace_settings_page.perm_get_workspace_audit' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_agents',
+    permissions: [
+      { value: 'CAN_LIST_AGENTS', labelKey: 'workspace_settings_page.perm_list_agents' },
+      { value: 'CAN_GET_AGENT', labelKey: 'workspace_settings_page.perm_get_agent' },
+      { value: 'CAN_UPSERT_AGENT', labelKey: 'workspace_settings_page.perm_upsert_agent' },
+      { value: 'CAN_DELETE_AGENT', labelKey: 'workspace_settings_page.perm_delete_agent' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_instances',
+    permissions: [
+      { value: 'CAN_LIST_INSTANCES', labelKey: 'workspace_settings_page.perm_list_instances' },
+      { value: 'CAN_GET_INSTANCE', labelKey: 'workspace_settings_page.perm_get_instance' },
+      { value: 'CAN_REGISTER_INSTANCE', labelKey: 'workspace_settings_page.perm_register_instance' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_intentions',
+    permissions: [
+      { value: 'CAN_LIST_INTENTIONS', labelKey: 'workspace_settings_page.perm_list_intentions' },
+      { value: 'CAN_GET_INTENTION', labelKey: 'workspace_settings_page.perm_get_intention' },
+      { value: 'CAN_CREATE_INTENTION', labelKey: 'workspace_settings_page.perm_create_intention' },
+      { value: 'CAN_UPDATE_INTENTION', labelKey: 'workspace_settings_page.perm_update_intention' },
+      { value: 'CAN_DELETE_INTENTION', labelKey: 'workspace_settings_page.perm_delete_intention' },
+      { value: 'CAN_CHECK_INTENTION', labelKey: 'workspace_settings_page.perm_check_intention' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_key_value',
+    permissions: [
+      { value: 'CAN_LIST_KEY_VALUE', labelKey: 'workspace_settings_page.perm_list_key_value' },
+      { value: 'CAN_GET_KEY_VALUE', labelKey: 'workspace_settings_page.perm_get_key_value' },
+      { value: 'CAN_PUT_KEY_VALUE', labelKey: 'workspace_settings_page.perm_put_key_value' },
+      { value: 'CAN_DELETE_KEY_VALUE', labelKey: 'workspace_settings_page.perm_delete_key_value' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_traffic',
+    permissions: [
+      { value: 'CAN_LIST_TRAFFIC', labelKey: 'workspace_settings_page.perm_list_traffic' },
+      { value: 'CAN_GET_TRAFFIC', labelKey: 'workspace_settings_page.perm_get_traffic' },
+    ],
+  },
 ]
+
+export const WORKSPACE_KEY_PERMISSIONS = WORKSPACE_KEY_PERMISSION_GROUPS.flatMap((group) => group.permissions)
 
 export const PLATFORM_ROLE_ADMIN = 'admin'
 export const PLATFORM_ROLE_REGULAR = 'regular'

@@ -134,21 +134,33 @@
 
               <div v-if="WORKSPACE_KEY_PERMISSIONS.length">
                 <p class="form-label mb-2">{{ $t('workspace_settings_page.permissions') }}</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
-                  <label
-                    v-for="perm in WORKSPACE_KEY_PERMISSIONS"
-                    :key="perm.value"
-                    class="flex items-center gap-1.5 rounded-md border border-theme-border bg-white px-2 py-1.5 text-xs text-theme-text cursor-pointer hover:bg-theme-hover/40 transition-colors has-[:checked]:border-primary-700 has-[:checked]:bg-primary-50/40"
+                <div class="space-y-3">
+                  <details
+                    v-for="group in WORKSPACE_KEY_PERMISSION_GROUPS"
+                    :key="group.labelKey"
+                    class="rounded-md border border-theme-border bg-white"
                   >
-                    <input
-                      v-model="selectedPermissions"
-                      type="checkbox"
-                      :value="perm.value"
-                      class="checkbox shrink-0 !size-3.5"
-                      :disabled="accessKeysLoading || creatingKey"
-                    >
-                    <span>{{ $t(perm.labelKey) }}</span>
-                  </label>
+                    <summary class="flex items-center justify-between cursor-pointer select-none px-2.5 py-2 text-xs font-medium text-theme-text">
+                      <span>{{ $t(group.labelKey) }}</span>
+                      <span class="text-theme-textLight">{{ countSelected(group) }}/{{ group.permissions.length }}</span>
+                    </summary>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 px-2.5 pb-2.5">
+                      <label
+                        v-for="perm in group.permissions"
+                        :key="perm.value"
+                        class="flex items-center gap-1.5 rounded-md border border-theme-border bg-white px-2 py-1.5 text-xs text-theme-text cursor-pointer hover:bg-theme-hover/40 transition-colors has-[:checked]:border-primary-700 has-[:checked]:bg-primary-50/40"
+                      >
+                        <input
+                          v-model="selectedPermissions"
+                          type="checkbox"
+                          :value="perm.value"
+                          class="checkbox shrink-0 !size-3.5"
+                          :disabled="accessKeysLoading || creatingKey"
+                        >
+                        <span>{{ $t(perm.labelKey) }}</span>
+                      </label>
+                    </div>
+                  </details>
                 </div>
               </div>
 
@@ -344,7 +356,7 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
 import { workspace_api, workspace_access_key_api } from '@/api'
 import { showFlash } from '@/lib/flash'
-import { WORKSPACE_KEY_PERMISSIONS, useWorkspaceContext } from '@/lib/permission'
+import { WORKSPACE_KEY_PERMISSION_GROUPS, WORKSPACE_KEY_PERMISSIONS, useWorkspaceContext } from '@/lib/permission'
 import { saveWorkspaceToStorage } from '@/utils/storage'
 
 const { t } = useI18n()
@@ -396,6 +408,10 @@ function formatDateTime(iso) {
   } catch {
     return iso
   }
+}
+
+function countSelected(group) {
+  return group.permissions.filter((perm) => selectedPermissions.value.includes(perm.value)).length
 }
 
 function getPermissionLabels(permissions) {
