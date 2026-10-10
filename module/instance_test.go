@@ -251,3 +251,68 @@ func TestUnitInstance(t *testing.T) {
 		assert.Equal(t, []db.Id{"inst-1"}, f.instances.deleted)
 	})
 }
+
+func TestUnitSyncChecks(t *testing.T) {
+	t.Run("creates missing copies with pull checks due now and ttl checks expiring later", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.agentChecks.list = []*db.AgentCheck{
+			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/healthz"}`},
+			{CheckId: "heartbeat", Name: "heartbeat", Type: db.HealthCheckTypeTTL, Definition: `{"ttl":30}`},
+		}
+
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		require.Len(t, f.healthChecks.created, 2)
+
+		httpCheck := f.healthChecks.created[0]
+		assert.Equal(t, db.HealthCheckStatusUnknown, httpCheck.Status)
+		assert.Equal(t, db.HealthCheckSourceAgent, httpCheck.Source)
+		assert.NotNil(t, httpCheck.NextRunAt)
+		assert.Nil(t, httpCheck.TTLExpiresAt)
+
+		ttlCheck := f.healthChecks.created[1]
+		assert.Equal(t, db.HealthCheckStatusUnknown, ttlCheck.Status)
+		assert.Nil(t, ttlCheck.NextRunAt)
+		require.NotNil(t, ttlCheck.TTLExpiresAt)
+		assert.WithinDuration(t, time.Now().Add(30*time.Second), *ttlCheck.TTLExpiresAt, 5*time.Second)
+	})
+
+	t.Run("updates an existing copy of the same type and keeps its status", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.agentChecks.list = []*db.AgentCheck{{CheckId: "http", Name: "health", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/v2"}`}}
+		existing := &db.HealthCheck{Id: "check-1", InstanceId: "inst-1", CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{existing}
+
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		assert.Empty(t, f.healthChecks.created)
+		assert.Empty(t, f.healthChecks.deleted)
+		require.Len(t, f.healthChecks.updated, 1)
+		assert.Equal(t, "health", existing.Name)
+		assert.Equal(t, `{"path":"/v2"}`, *existing.Definition)
+		assert.Equal(t, db.HealthCheckStatusPassing, existing.Status)
+		assert.NotNil(t, existing.NextRunAt)
+	})
+
+	t.Run("replaces a copy whose type changed", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.agentChecks.list = []*db.AgentCheck{{CheckId: "check", Name: "check", Type: db.HealthCheckTypeTCP, Definition: `{"port":5432}`}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Id: "check-1", CheckId: "check", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent}}
+
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		assert.Equal(t, []db.Id{"check-1"}, f.healthChecks.deleted)
+		require.Len(t, f.healthChecks.created, 1)
+		assert.Equal(t, db.HealthCheckTypeTCP, f.healthChecks.created[0].Type)
+		assert.Equal(t, db.HealthCheckStatusUnknown, f.healthChecks.created[0].Status)
+	})
+
+	t.Run("removes agent copies no template wants and keeps checks added by hand", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.agentChecks.list = []*db.AgentCheck{{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/healthz"}`}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{Id: "stale", CheckId: "old", Source: db.HealthCheckSourceAgent},
+			{Id: "manual", CheckId: "manual", Source: "manual"},
+		}
+
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		assert.Equal(t, []db.Id{"stale"}, f.healthChecks.deleted)
+	})
+}

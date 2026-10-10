@@ -294,14 +294,24 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	templateCheckIds := make(map[string]bool, len(templates))
-	for _, template := range templates {
-		templateCheckIds[template.CheckId] = true
+	current, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
+	}
 
-		existing, err := i.HealthCheckRepository.GetByInstanceAndCheckId(instanceId, template.CheckId)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-		}
+	// Both lists are loaded once. Check id is the key that joins a template to its copy.
+	templatesById := make(map[string]*db.AgentCheck, len(templates))
+	for _, template := range templates {
+		templatesById[template.CheckId] = template
+	}
+
+	existingById := make(map[string]*db.HealthCheck, len(current))
+	for _, check := range current {
+		existingById[check.CheckId] = check
+	}
+
+	for _, template := range templates {
+		existing := existingById[template.CheckId]
 
 		// A type change resets the check, since its old status no longer means anything.
 		if existing != nil && existing.Type != template.Type {
@@ -313,9 +323,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 			existing = nil
 		}
 
+		// http and tcp are pulled on a schedule. Anything else waits for a report within its TTL.
 		isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
 		stored := template.Definition
 		if existing != nil {
+			// Same type: keep status and output, and copy the template's name and definition.
 			existing.Name = template.Name
 			existing.Definition = &stored
 			existing.NextRunAt = nil
@@ -325,6 +337,7 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 
 			err = i.HealthCheckRepository.Update(existing)
 		} else {
+			// Missing, or just reset: start unknown until the first pull or report.
 			check := &db.HealthCheck{
 				InstanceId: instanceId,
 				CheckId:    template.CheckId,
@@ -354,14 +367,9 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 		}
 	}
 
-	// Remove copies of templates the agent no longer has.
-	current, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
-	}
-
+	// Agent copies with no remaining template are removed. Other sources are left alone.
 	for _, check := range current {
-		if check.Source == db.HealthCheckSourceAgent && !templateCheckIds[check.CheckId] {
+		if check.Source == db.HealthCheckSourceAgent && templatesById[check.CheckId] == nil {
 			err = i.HealthCheckRepository.Delete(check.Id)
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
