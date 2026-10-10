@@ -277,7 +277,7 @@
     "memory_kind_summary": "Summary",
     "memory_kind_fact": "Fact",
     "memory_kind_preference": "Preference",
-    "register": "Register agent",
+    "register": "Register Agent",
     "register_title": "Register agent",
     "register_desc": "Add an agent to this workspace by name with its A2A agent card.",
     "edit_card": "Edit card",
