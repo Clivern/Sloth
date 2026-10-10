@@ -4,7 +4,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -39,22 +38,20 @@ func (a *API) CreateUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	apiKey, err := a.APIKey.CreateAPIKey(&req, user)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrInvalidExpiresAt):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_expires_at_format"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("userId", user.Id.String()).
-				Msg("Failed to create API key")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_create_api_key"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrInvalidExpiresAt, http.StatusBadRequest, "invalid_expires_at_format"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to create API key")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_create_api_key"),
+		})
+		return
 	}
 
 	log.Info().
@@ -128,23 +125,21 @@ func (a *API) GetUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	k, err := a.APIKey.GetAPIKey(db.Id(apiKeyId), user)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAPIKeyNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "api_key_not_found"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("apiKeyId", apiKeyId).
-				Str("userId", user.Id.String()).
-				Msg("Failed to get API key")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_api_key"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAPIKeyNotFound, http.StatusNotFound, "api_key_not_found"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("apiKeyId", apiKeyId).
+			Str("userId", user.Id.String()).
+			Msg("Failed to get API key")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_api_key"),
+		})
+		return
 	}
 
 	a.WriteJSON(w, http.StatusOK, k)
@@ -175,23 +170,21 @@ func (a *API) DeleteUserAPIKeyAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.APIKey.DeleteAPIKey(db.Id(apiKeyId), user)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrAPIKeyNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "api_key_not_found"),
-			})
-			return
-		default:
-			log.Error().
-				Err(err).
-				Str("apiKeyId", apiKeyId).
-				Str("userId", user.Id.String()).
-				Msg("Failed to delete API key")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_delete_api_key"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrAPIKeyNotFound, http.StatusNotFound, "api_key_not_found"},
+		}) {
 			return
 		}
+
+		log.Error().
+			Err(err).
+			Str("apiKeyId", apiKeyId).
+			Str("userId", user.Id.String()).
+			Msg("Failed to delete API key")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_delete_api_key"),
+		})
+		return
 	}
 
 	log.Info().
