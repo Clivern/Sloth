@@ -97,7 +97,6 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
     "id": "invoice-extractor-3",
     "address": "10.0.12.41",
     "port": 8080,
-    "datacenter": "eu-west-1",
     "meta": { "model": "gpt-5", "region": "eu" }
   },
   "lease_ttl": "30s"
@@ -192,7 +191,6 @@ Resolve body:
   "skill": "invoice.extract",
   "strategy": "least_outstanding_tasks",
   "constraints": {
-    "datacenter": "eu-west-1",
     "capabilities": ["streaming"]
   }
 }
@@ -358,7 +356,6 @@ GET    /v1/status/leader
 GET    /v1/status/peers
 GET    /v1/health
 
-GET    /v1/workspaces/{workspace}/datacenters
 GET    /v1/workspaces/{workspace}/nodes
 GET    /v1/workspaces/{workspace}/metrics
 ```

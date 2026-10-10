@@ -211,7 +211,6 @@
                   <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.instance') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.address') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.datacenter') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.health') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.lease_expires') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.checks_title') }}</th>
@@ -223,7 +222,6 @@
                   <tr class="hover:bg-theme-hover">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ instance.instanceId }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ instance.address }}:{{ instance.port }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ instance.datacenter || '—' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                       <span
                         class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
@@ -258,7 +256,7 @@
                     </td>
                   </tr>
                   <tr v-if="expanded[instance.id]">
-                    <td :colspan="canManage ? 7 : 6" class="bg-theme-hover px-6 py-4">
+                    <td :colspan="canManage ? 6 : 5" class="bg-theme-hover px-6 py-4">
                       <ul class="space-y-3">
                         <li v-for="check in instance.checks" :key="check.checkId" class="grid gap-1 sm:grid-cols-[220px_110px_1fr]">
                           <div>

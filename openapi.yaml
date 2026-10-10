@@ -2389,9 +2389,6 @@ components:
           type: string
         port:
           type: integer
-        datacenter:
-          type: string
-          nullable: true
         meta:
           type: object
           additionalProperties: true
@@ -2447,9 +2444,6 @@ components:
           type: integer
           minimum: 1
           maximum: 65535
-        datacenter:
-          type: string
-          maxLength: 60
         meta:
           type: object
           additionalProperties: true
@@ -2584,9 +2578,6 @@ components:
           type: string
         port:
           type: integer
-        datacenter:
-          type: string
-          nullable: true
         meta:
           type: object
           additionalProperties: true

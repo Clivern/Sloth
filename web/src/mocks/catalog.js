@@ -12,8 +12,8 @@ export const catalogAgents = [
     outputModes: ['text/plain', 'application/json'],
     capabilities: ['streaming'],
     instances: [
-      { id: 'support-assistant-1', address: '10.0.12.20', port: 8080, datacenter: 'eu-west-1', status: 'passing' },
-      { id: 'support-assistant-2', address: '10.0.12.21', port: 8080, datacenter: 'eu-west-1', status: 'passing' },
+      { id: 'support-assistant-1', address: '10.0.12.20', port: 8080, status: 'passing' },
+      { id: 'support-assistant-2', address: '10.0.12.21', port: 8080, status: 'passing' },
     ],
   },
   {
@@ -29,7 +29,7 @@ export const catalogAgents = [
     outputModes: ['application/json'],
     capabilities: [],
     instances: [
-      { id: 'user-directory-1', address: '10.0.8.14', port: 8080, datacenter: 'eu-west-1', status: 'passing' },
+      { id: 'user-directory-1', address: '10.0.8.14', port: 8080, status: 'passing' },
     ],
   },
   {
@@ -45,7 +45,7 @@ export const catalogAgents = [
     outputModes: ['application/json'],
     capabilities: ['streaming'],
     instances: [
-      { id: 'invoice-extractor-3', address: '10.0.4.9', port: 8080, datacenter: 'eu-west-1', status: 'warning' },
+      { id: 'invoice-extractor-3', address: '10.0.4.9', port: 8080, status: 'warning' },
     ],
   },
 ]

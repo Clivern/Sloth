@@ -50,7 +50,6 @@ type AgentInstanceResponse struct {
 	InstanceId string          `json:"instanceId"`
 	Address    string          `json:"address"`
 	Port       int             `json:"port"`
-	Datacenter *string         `json:"datacenter,omitempty"`
 	Meta       json.RawMessage `json:"meta,omitempty"`
 	Status     string          `json:"status"`
 	CreatedAt  string          `json:"createdAt"`
@@ -171,7 +170,6 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 				InstanceId: instance.InstanceId,
 				Address:    instance.Address,
 				Port:       instance.Port,
-				Datacenter: instance.Datacenter,
 				Meta:       util.JSONRawFromString(instance.Meta),
 				Status:     status,
 				CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
@@ -275,7 +273,6 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
-			Datacenter: instance.Datacenter,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),
@@ -428,7 +425,6 @@ func (a *Agent) UpsertAgent(
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
-			Datacenter: instance.Datacenter,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			CreatedAt:  instance.CreatedAt.UTC().Format(time.RFC3339),

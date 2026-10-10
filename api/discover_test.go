@@ -64,13 +64,6 @@ func TestUnitResolveDiscoverAction(t *testing.T) {
 		// expect: the passing instance with the fewest outstanding tasks first
 	})
 
-	t.Run("datacenter constraint limits candidates", func(t *testing.T) {
-		t.Skip(discoverNotImplemented)
-
-		// POST /discover/resolve {"skill":"invoice.extract","constraints":{"datacenter":"eu-west-1"}}
-		// expect: only instances in eu-west-1
-	})
-
 	t.Run("capabilities constraint requires every listed capability", func(t *testing.T) {
 		t.Skip(discoverNotImplemented)
 

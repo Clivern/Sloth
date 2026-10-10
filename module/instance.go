@@ -40,11 +40,10 @@ type Instance struct {
 
 // RegisterInstanceRequest is the body for registering or updating an instance.
 type RegisterInstanceRequest struct {
-	Address    string          `json:"address" validate:"required,max=255" label:"Address"`
-	Port       int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
-	Datacenter *string         `json:"datacenter" validate:"omitempty,max=60" label:"Datacenter"`
-	Meta       json.RawMessage `json:"meta" label:"Meta"`
-	LeaseTTL   int             `json:"leaseTtl" validate:"omitempty,min=5,max=86400" label:"Lease TTL"`
+	Address  string          `json:"address" validate:"required,max=255" label:"Address"`
+	Port     int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
+	Meta     json.RawMessage `json:"meta" label:"Meta"`
+	LeaseTTL int             `json:"leaseTtl" validate:"omitempty,min=5,max=86400" label:"Lease TTL"`
 }
 
 // HealthCheckResponse is one health check on an instance.
@@ -66,7 +65,6 @@ type InstanceResponse struct {
 	InstanceId     string                 `json:"instanceId"`
 	Address        string                 `json:"address"`
 	Port           int                    `json:"port"`
-	Datacenter     *string                `json:"datacenter,omitempty"`
 	Meta           json.RawMessage        `json:"meta,omitempty"`
 	Status         string                 `json:"status"`
 	LeaseExpiresAt *time.Time             `json:"leaseExpiresAt,omitempty"`
@@ -166,7 +164,6 @@ func (i *Instance) ListInstances(
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
-			Datacenter: instance.Datacenter,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     db.AgentInstanceStatusPassing,
 			Checks:     make([]*HealthCheckResponse, 0, len(checks)),
@@ -267,7 +264,6 @@ func (i *Instance) GetInstance(
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     db.AgentInstanceStatusPassing,
 		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
@@ -358,7 +354,6 @@ func (i *Instance) RegisterInstance(
 
 	instance.Address = req.Address
 	instance.Port = req.Port
-	instance.Datacenter = req.Datacenter
 	instance.Meta = nil
 	if len(req.Meta) > 0 {
 		meta := string(req.Meta)
@@ -512,7 +507,6 @@ func (i *Instance) RegisterInstance(
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     db.AgentInstanceStatusPassing,
 		Checks:     make([]*HealthCheckResponse, 0, len(checks)),
@@ -628,7 +622,6 @@ func (i *Instance) RenewInstance(
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
-		Datacenter: instance.Datacenter,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     db.AgentInstanceStatusPassing,
 		Checks:     make([]*HealthCheckResponse, 0, len(checks)),

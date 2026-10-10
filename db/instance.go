@@ -22,7 +22,6 @@ type AgentInstance struct {
 	InstanceId string
 	Address    string
 	Port       int
-	Datacenter *string
 	Meta       *string
 	Status     string
 	CreatedAt  time.Time
@@ -91,15 +90,14 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 
 	return r.db.QueryRow(
 		`INSERT INTO agent_instances
-		(id, agent_id, instance_id, address, port, datacenter, meta, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+		(id, agent_id, instance_id, address, port, meta, status)
+		VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
 		RETURNING created_at, updated_at`,
 		instance.Id.String(),
 		instance.AgentId.String(),
 		instance.InstanceId,
 		instance.Address,
 		instance.Port,
-		instance.Datacenter,
 		instance.Meta,
 		instance.Status,
 	).Scan(&instance.CreatedAt, &instance.UpdatedAt)
@@ -109,7 +107,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE id = $1`,
 		id.String(),
@@ -119,7 +117,6 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 		&instance.InstanceId,
 		&instance.Address,
 		&instance.Port,
-		&instance.Datacenter,
 		&instance.Meta,
 		&instance.Status,
 		&instance.CreatedAt,
@@ -139,7 +136,7 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(
 ) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1 AND instance_id = $2`,
 		agentId.String(),
@@ -150,7 +147,6 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(
 		&instance.InstanceId,
 		&instance.Address,
 		&instance.Port,
-		&instance.Datacenter,
 		&instance.Meta,
 		&instance.Status,
 		&instance.CreatedAt,
@@ -167,11 +163,10 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(
 func (r *AgentInstanceRepositoryPostgres) Update(instance *AgentInstance) error {
 	_, err := r.db.Exec(
 		`UPDATE agent_instances
-		SET address = $1, port = $2, datacenter = $3, meta = $4::jsonb, status = $5, updated_at = $6
-		WHERE id = $7`,
+		SET address = $1, port = $2, meta = $3::jsonb, status = $4, updated_at = $5
+		WHERE id = $6`,
 		instance.Address,
 		instance.Port,
-		instance.Datacenter,
 		instance.Meta,
 		instance.Status,
 		time.Now().UTC(),
@@ -191,7 +186,7 @@ func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 // ListByAgentId lists instances for an agent.
 func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id`,
@@ -212,7 +207,6 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
-			&instance.Datacenter,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,
@@ -234,7 +228,7 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 	now time.Time,
 ) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, datacenter, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
 		FROM agent_instances
 		WHERE agent_id = $1
 			AND EXISTS (
@@ -273,7 +267,6 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
-			&instance.Datacenter,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,

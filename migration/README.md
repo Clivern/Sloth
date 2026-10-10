@@ -274,7 +274,6 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 | `instance_id` | VARCHAR(100) | no |  |  |
 | `address` | VARCHAR(255) | no |  |  |
 | `port` | INTEGER | no |  |  |
-| `datacenter` | VARCHAR(60) | yes |  |  |
 | `meta` | JSONB | yes |  |  |
 | `status` | VARCHAR(20) | no | `'passing'` |  |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |

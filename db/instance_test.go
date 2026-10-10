@@ -48,8 +48,6 @@ func TestIntegrationAgentInstanceRepository(t *testing.T) {
 		instance.Address = "10.0.12.42"
 		instance.Port = 9090
 		instance.Status = AgentInstanceStatusWarning
-		dc := "eu-west-1"
-		instance.Datacenter = &dc
 		require.NoError(t, repo.Update(instance))
 
 		got, err := repo.GetById(instance.Id)
@@ -57,8 +55,6 @@ func TestIntegrationAgentInstanceRepository(t *testing.T) {
 		assert.Equal(t, "10.0.12.42", got.Address)
 		assert.Equal(t, 9090, got.Port)
 		assert.Equal(t, AgentInstanceStatusWarning, got.Status)
-		require.NotNil(t, got.Datacenter)
-		assert.Equal(t, "eu-west-1", *got.Datacenter)
 
 		list, err := repo.ListByAgentId(agent.Id)
 		require.NoError(t, err)
