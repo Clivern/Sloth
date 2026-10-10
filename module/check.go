@@ -143,7 +143,7 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offs
 
 // UpsertAgentCheck creates or replaces a check template and applies it to every instance.
 func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, req *UpsertAgentCheckRequest) (*AgentCheckResponse, bool, error) {
-	if !instanceIdPattern.MatchString(checkId) {
+	if !InstanceIdPattern.MatchString(checkId) {
 		return nil, false, ErrInvalidCheckId
 	}
 

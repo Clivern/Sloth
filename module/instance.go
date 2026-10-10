@@ -23,7 +23,8 @@ var (
 	ErrFailedDeregisterInstance = errors.New("failed deregister instance")
 )
 
-var instanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
+// InstanceIdPattern is the regex pattern for instance IDs.
+var InstanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 
 // Instance is the module for agent instance registration and health.
 type Instance struct {
@@ -190,7 +191,7 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, passing bo
 
 // GetInstance returns one instance of an agent.
 func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
-	if !instanceIdPattern.MatchString(instanceId) {
+	if !InstanceIdPattern.MatchString(instanceId) {
 		return nil, ErrInvalidInstanceId
 	}
 
@@ -279,7 +280,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
 func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest) (*InstanceResponse, bool, error) {
-	if !instanceIdPattern.MatchString(instanceId) {
+	if !InstanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
 
@@ -473,7 +474,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 // DeregisterInstance removes an instance and its health checks.
 func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
-	if !instanceIdPattern.MatchString(instanceId) {
+	if !InstanceIdPattern.MatchString(instanceId) {
 		return ErrInvalidInstanceId
 	}
 
