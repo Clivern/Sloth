@@ -41,7 +41,7 @@ A token is scoped to one workspace. Cross-workspace calls fail closed (`404`, no
 
 ## 2. Control plane — catalog
 
-Agents publish an A2A **Agent Card**. The registry stores the card plus runtime metadata (address, lease, health).
+Agents publish an A2A **Agent Card**. The registry stores the card plus runtime metadata (address, checks, health).
 
 ```
 PUT    /v1/workspaces/{workspace}/catalog/agents/{agent}
@@ -98,8 +98,7 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
     "address": "10.0.12.41",
     "port": 8080,
     "meta": { "model": "gpt-5", "region": "eu" }
-  },
-  "lease_ttl": "30s"
+  }
 }
 ```
 
@@ -107,7 +106,7 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
 
 ---
 
-## 3. Control plane — self-register and leases
+## 3. Control plane — self-register
 
 Workers talk to a local or cluster agent endpoint, not the full catalog UI.
 
@@ -118,7 +117,6 @@ PUT    /v1/workspaces/{workspace}/agent/deregister/{agent}
 PUT    /v1/workspaces/{workspace}/agent/instances/{instance}
 DELETE /v1/workspaces/{workspace}/agent/instances/{instance}
 
-PUT    /v1/workspaces/{workspace}/agent/instances/{instance}/renew
 GET    /v1/workspaces/{workspace}/agent/instances/{instance}
 
 POST   /v1/workspaces/{workspace}/sessions
@@ -127,7 +125,7 @@ PUT    /v1/workspaces/{workspace}/sessions/{session}/renew
 DELETE /v1/workspaces/{workspace}/sessions/{session}
 ```
 
-Registration is lease-based. Miss the TTL and the instance is marked critical, then dropped from discovery.
+Registration creates no checks. An instance is passing until one of its checks is critical, or a TTL check runs out. Define a TTL heartbeat check if you want the agent to prove it is alive.
 
 ---
 
@@ -150,12 +148,11 @@ PUT /v1/workspaces/{workspace}/agents/support-assistant/checks/http
 { "type": "http", "path": "/healthz", "interval": 10, "timeout": 2 }
 ```
 
-An instance's status is the worst status across its checks: any critical check, or an expired lease or TTL check, makes it critical and drops it from discovery. Warning instances stay in discovery.
+An instance's status is the worst status across its checks: any critical check, or an expired TTL check, makes it critical and drops it from discovery. An instance with no checks is passing. Warning instances stay in discovery.
 
 Check types:
 
-- **Lease** — built in. Every instance has one; renew extends it.
-- **TTL heartbeat** (`ttl`) — the instance reports pass, warn or fail before the TTL runs out.
+- **TTL heartbeat** — the instance reports pass, warn or fail before the TTL runs out. Use any check ID, such as `heartbeat`.
 - **HTTP** (`http`) — Cognit requests `path` on the instance; 2xx is passing, 429 is warning, anything else is critical.
 - **TCP** (`tcp`) — Cognit opens a connection to the instance address and port.
 
@@ -399,10 +396,9 @@ Content-Type: application/json
 Thin slice that is already a useful A2A core:
 
 1. `PUT/GET/DELETE /v1/workspaces/{workspace}/catalog/agents/{agent}`
-2. `PUT .../agent/instances/{instance}/renew` (TTL)
-3. `GET .../discover?skill=`
-4. `GET .../agents/{agent}/.well-known/agent-card.json`
-5. `POST .../a2a/agents/{agent}/message:send` and `GET .../tasks/{id}`
+2. `GET .../discover?skill=`
+3. `GET .../agents/{agent}/.well-known/agent-card.json`
+4. `POST .../a2a/agents/{agent}/message:send` and `GET .../tasks/{id}`
 6. Intentions `check` on the gateway
 
 KV, watches, saved queries, and skill-addressed routing come after that.

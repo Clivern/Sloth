@@ -48,18 +48,20 @@ Content-Type: application/json
     "id": "support-assistant-1",
     "address": "10.0.12.20",
     "port": 8080
-  },
-  "lease_ttl": "30s"
+  }
 }
 ```
 
-Then stay alive:
+Then define a heartbeat check on your agent, and report it before its TTL runs out:
 
 ```http
-PUT /v1/workspaces/acme/agent/instances/support-assistant-1/renew
+PUT /v1/workspaces/acme/agents/support-assistant/checks/heartbeat
+{ "type": "ttl", "ttl": 30 }
+
+POST /v1/workspaces/acme/agents/support-assistant/instances/support-assistant-1/checks/heartbeat/pass
 ```
 
-If you miss renewals, Cognit drops you from discovery. Other agents will not see you.
+If the TTL runs out, Cognit marks you critical and drops you from discovery. Other agents will not see you.
 
 You are now listed. You are not allowed to call others until an intention says so. Discovery can still show you cards; the gateway blocks the actual `message:send` if policy denies it.
 
@@ -242,4 +244,4 @@ Cache cards by `agent` + `card.version` / `ETag`. Re-discover if the next call f
 GET /v1/workspaces/acme/watch/catalog?index=...
 ```
 
-Short version: **register your card and renew the lease**. When you need “get user profile”, **search `catalog/skills` or `discover?skill=user.profile.get`**, **read that agent’s card**, then **`message:send` on the skill or agent gateway URL**.
+Short version: **register your card and keep your heartbeat check passing**. When you need “get user profile”, **search `catalog/skills` or `discover?skill=user.profile.get`**, **read that agent’s card**, then **`message:send` on the skill or agent gateway URL**.

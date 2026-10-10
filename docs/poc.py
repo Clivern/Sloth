@@ -43,7 +43,6 @@ store = {
             "port": 8080,
             "health": "passing",
         },
-        "lease_ttl": "30s",
     },
     "billing": {
         "card": {
@@ -96,7 +95,6 @@ store = {
             "port": 8080,
             "health": "passing",
         },
-        "lease_ttl": "30s",
     },
 }
 

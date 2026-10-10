@@ -1068,7 +1068,7 @@ paths:
           in: query
           schema:
             type: boolean
-          description: When true, return only instances with a live lease.
+          description: When true, return only instances with no critical or expired checks.
       responses:
         "200":
           description: OK
@@ -1115,7 +1115,7 @@ paths:
           $ref: "#/components/responses/InternalError"
     put:
       tags: [Instances]
-      summary: Register or update instance and start lease
+      summary: Register or update instance
       description: |
         Accepts workspace access keys (`X-Access-Key`) without a user session.
         The agent card must exist before registering an instance.
@@ -1179,41 +1179,13 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/renew:
-    put:
-      tags: [Instances]
-      summary: Renew instance lease
-      security:
-        - sessionCookie: []
-        - userApiKey: []
-        - workspaceAccessKey: []
-      parameters:
-        - $ref: "#/components/parameters/workspaceId"
-        - $ref: "#/components/parameters/agentName"
-        - $ref: "#/components/parameters/instanceId"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Instance"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
   /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}/checks/{checkId}/pass:
     post:
       tags: [Health checks]
       summary: Report a TTL check passing
       description: |
         Sets the check to `passing` and restarts its TTL. Only TTL checks copied from an
-        agent check template can be reported; the lease is extended with renew instead.
+        agent check template can be reported.
       security:
         - sessionCookie: []
         - userApiKey: []
@@ -1253,7 +1225,7 @@ paths:
       summary: Report a TTL check warning
       description: |
         Sets the check to `warning` and restarts its TTL. Only TTL checks copied from an
-        agent check template can be reported; the lease is extended with renew instead.
+        agent check template can be reported.
       security:
         - sessionCookie: []
         - userApiKey: []
@@ -1293,7 +1265,7 @@ paths:
       summary: Report a TTL check critical
       description: |
         Sets the check to `critical` and restarts its TTL. Only TTL checks copied from an
-        agent check template can be reported; the lease is extended with renew instead.
+        agent check template can be reported.
       security:
         - sessionCookie: []
         - userApiKey: []
@@ -1783,7 +1755,6 @@ components:
       schema:
         type: string
         pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'
-      description: The check id `ttl` is reserved for the instance lease.
     apiKeyId:
       name: apiKeyId
       in: path
@@ -2447,11 +2418,6 @@ components:
         meta:
           type: object
           additionalProperties: true
-        leaseTtl:
-          type: integer
-          minimum: 5
-          maximum: 86400
-          description: Lease length in seconds; default 30
 
     HealthCheck:
       type: object
@@ -2465,8 +2431,8 @@ components:
           enum: [ttl, http, tcp]
         source:
           type: string
-          enum: [lease, agent]
-          description: "`lease` is the instance lease; `agent` is copied from an agent check template."
+          enum: [agent]
+          description: "`agent` is copied from an agent check template."
         status:
           type: string
           enum: [passing, warning, critical]
@@ -2583,10 +2549,6 @@ components:
           additionalProperties: true
         status:
           type: string
-        leaseExpiresAt:
-          type: string
-          format: date-time
-          nullable: true
         checks:
           type: array
           items:
