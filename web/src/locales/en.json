@@ -311,7 +311,7 @@
     "delete_agent_confirm": "Delete \"{name}\" and all its registered instances? This cannot be undone.",
     "type_to_confirm": "Type {name} to confirm",
     "skills_count": "No skills | 1 skill | {count} skills",
-    "checks_title": "Health checks",
+    "checks_title": "Health Checks",
     "checks_desc": "Checks every instance of this agent runs. An instance is as healthy as its worst check.",
     "checks_failing": "{failing} of {total} not passing",
     "loading_checks": "Loading health checks…",
