@@ -474,22 +474,6 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 // DeregisterInstance removes an instance and its health checks.
 func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
-	if !InstanceIdPattern.MatchString(instanceId) {
-		return ErrInvalidInstanceId
-	}
-
-	if !AgentNamePattern.MatchString(agentName) {
-		return ErrInvalidAgentName
-	}
-
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
