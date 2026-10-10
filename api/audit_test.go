@@ -42,7 +42,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("list returns events with pagination meta", func(t *testing.T) {
 		api := newAPI(workspace, &fakeAuditEvents{events: []*db.AuditEvent{stored}, total: 1})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits?limit=5&offset=0", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits?limit=5&offset=0", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"action":"agent.upsert"`)
@@ -52,7 +53,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeAuditEvents{})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "workspace_not_found")
@@ -61,7 +63,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeAuditEvents{listErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_list_audits")
@@ -78,7 +81,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("get returns one event", func(t *testing.T) {
 		api := newAPI(workspace, &fakeAuditEvents{event: stored})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"id":"event-1"`)
@@ -89,7 +93,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 		other.WorkspaceId = "ws-2"
 		api := newAPI(workspace, &fakeAuditEvents{event: &other})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 		assert.Contains(t, w.Body.String(), "audit_event_not_found")
@@ -98,7 +103,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("get returns 404 for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeAuditEvents{event: stored})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
@@ -106,7 +112,8 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeAuditEvents{getErr: errors.New("boom")})
 		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
+		newRouter(api).
+			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits/event-1", nil))
 
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 		assert.Contains(t, w.Body.String(), "failed_get_audit")
