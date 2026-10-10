@@ -29,23 +29,19 @@ func (a *API) GetBillingStatusAction(w http.ResponseWriter, r *http.Request) {
 
 	status, err := a.Billing.GetBillingStatus(db.Id(workspaceId))
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrBillingSubscriptionNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_subscription_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Msg("Failed to get billing status")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_billing_status"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Msg("Failed to get billing status")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_billing_status"),
+		})
 
 		return
 	}
@@ -65,23 +61,19 @@ func (a *API) GetBillingUsageAction(w http.ResponseWriter, r *http.Request) {
 		UsageRepository:         a.Usage,
 	})
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrBillingSubscriptionNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_subscription_not_found"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Msg("Failed to get billing usage")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_get_billing_usage"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Msg("Failed to get billing usage")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_get_billing_usage"),
+		})
 
 		return
 	}
@@ -122,31 +114,21 @@ func (a *API) CreateBillingCheckoutAction(w http.ResponseWriter, r *http.Request
 		fmt.Sprintf("%s/billing?checkout=cancel", viper.GetString("app.url")),
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrBillingSubscriptionNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_subscription_not_found"),
-			})
-		case errors.Is(err, stripe.ErrInvalidAmount):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "invalid_billing_amount"),
-			})
-		case errors.Is(err, stripe.ErrBillingDisabled):
-			a.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-				"errorMessage": locale.TR(r, "stripe_billing_not_configured"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Msg("Failed to create billing checkout session")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_create_billing_checkout_session"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+			{stripe.ErrInvalidAmount, http.StatusBadRequest, "invalid_billing_amount"},
+			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, "stripe_billing_not_configured"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Msg("Failed to create billing checkout session")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_create_billing_checkout_session"),
+		})
 
 		return
 	}
@@ -167,31 +149,21 @@ func (a *API) CreateBillingPortalAction(w http.ResponseWriter, r *http.Request) 
 		fmt.Sprintf("%s/billing", viper.GetString("app.url")),
 	)
 	if err != nil {
-		switch {
-		case errors.Is(err, module.ErrWorkspaceNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_not_found"),
-			})
-		case errors.Is(err, module.ErrBillingPortalUnavailable):
-			a.WriteJSON(w, http.StatusBadRequest, map[string]any{
-				"errorMessage": locale.TR(r, "stripe_billing_available_after_purchase"),
-			})
-		case errors.Is(err, module.ErrBillingSubscriptionNotFound):
-			a.WriteJSON(w, http.StatusNotFound, map[string]any{
-				"errorMessage": locale.TR(r, "workspace_subscription_not_found"),
-			})
-		case errors.Is(err, stripe.ErrBillingDisabled):
-			a.WriteJSON(w, http.StatusServiceUnavailable, map[string]any{
-				"errorMessage": locale.TR(r, "stripe_billing_not_configured"),
-			})
-		default:
-			log.Error().
-				Err(err).
-				Msg("Failed to create billing portal session")
-			a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
-				"errorMessage": locale.TR(r, "failed_create_billing_portal_session"),
-			})
+		if a.WriteError(w, r, err, []ErrorMapping{
+			{module.ErrWorkspaceNotFound, http.StatusNotFound, "workspace_not_found"},
+			{module.ErrBillingPortalUnavailable, http.StatusBadRequest, "stripe_billing_available_after_purchase"},
+			{module.ErrBillingSubscriptionNotFound, http.StatusNotFound, "workspace_subscription_not_found"},
+			{stripe.ErrBillingDisabled, http.StatusServiceUnavailable, "stripe_billing_not_configured"},
+		}) {
+			return
 		}
+
+		log.Error().
+			Err(err).
+			Msg("Failed to create billing portal session")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_create_billing_portal_session"),
+		})
 
 		return
 	}
