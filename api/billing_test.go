@@ -140,32 +140,12 @@ func TestUnitBillingActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "stripe_billing_not_configured")
 	})
 
-	t.Run("checkout returns 404 for unknown workspace", func(t *testing.T) {
-		api := newAPI(nil, &fakeSubscriptionRecords{})
-		w := httptest.NewRecorder()
-		req := requestWithUser(
-			httptest.NewRequest(http.MethodPost, base+"/checkout", strings.NewReader(checkoutBody)),
-			user,
-		)
-		newRouter(api).ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-	})
-
 	t.Run("portal returns 503 when stripe billing is not configured", func(t *testing.T) {
 		api := newAPI(workspace, &fakeSubscriptionRecords{subscription: subscription})
 		w := httptest.NewRecorder()
 		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, base+"/portal", nil))
 
 		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
-	})
-
-	t.Run("portal returns 404 for unknown workspace", func(t *testing.T) {
-		api := newAPI(nil, &fakeSubscriptionRecords{})
-		w := httptest.NewRecorder()
-		newRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodPost, base+"/portal", nil))
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("webhook returns 503 when stripe billing is not configured", func(t *testing.T) {

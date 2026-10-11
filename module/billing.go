@@ -116,13 +116,6 @@ func (b *Billing) GetBillingStatus(workspaceId db.Id) (*BillingStatusResponse, e
 
 // GetBillingUsage returns usage and limits for a workspace.
 func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*BillingUsageResponse, error) {
-	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
@@ -151,13 +144,6 @@ func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*B
 
 // CreateCheckoutSession starts Stripe Checkout for an AI token purchase.
 func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, user *db.User, req *BillingCheckoutRequest, successURL string, cancelURL string) (*BillingSessionResponse, error) {
-	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	client, err := stripe.New()
 	if err != nil {
@@ -195,13 +181,6 @@ func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, 
 
 // CreatePortalSession opens Stripe's customer portal.
 func (b *Billing) CreatePortalSession(ctx context.Context, workspaceId db.Id, returnURL string) (*BillingSessionResponse, error) {
-	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	client, err := stripe.New()
 	if err != nil {

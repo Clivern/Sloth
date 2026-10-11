@@ -121,20 +121,6 @@ func TestUnitBilling(t *testing.T) {
 		},
 	)
 
-	t.Run("checkout returns not found for a missing workspace", func(t *testing.T) {
-		billing, _, _ := newBillingModule(nil, nil)
-
-		_, err := billing.CreateCheckoutSession(
-			context.Background(),
-			"ws-1",
-			&db.User{Email: "ada@example.com"},
-			&BillingCheckoutRequest{AmountCents: 1000},
-			"ok",
-			"cancel",
-		)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-	})
-
 	t.Run("checkout rejects amounts below the minimum purchase", func(t *testing.T) {
 		enableBilling(t)
 		billing, _, _ := newBillingModule(workspace, &db.Subscription{Id: "sub-1"})
@@ -178,14 +164,6 @@ func TestUnitBilling(t *testing.T) {
 
 		_, err := billing.CreatePortalSession(context.Background(), "ws-1", "return")
 		assert.ErrorIs(t, err, ErrBillingPortalUnavailable)
-	})
-
-	t.Run("portal returns not found for a missing workspace", func(t *testing.T) {
-		enableBilling(t)
-		billing, _, _ := newBillingModule(nil, nil)
-
-		_, err := billing.CreatePortalSession(context.Background(), "ws-1", "return")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 	})
 
 	t.Run("webhook reports billing as disabled when stripe is not configured", func(t *testing.T) {
