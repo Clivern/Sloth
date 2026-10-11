@@ -100,17 +100,12 @@ func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListI
 
 	list := make([]*IntentionResponse, 0, len(intentions))
 	for _, item := range intentions {
-		skill := ""
-		if item.Skill != nil {
-			skill = *item.Skill
-		}
-
 		list = append(list, &IntentionResponse{
 			Id:          item.Id,
 			WorkspaceId: item.WorkspaceId,
 			Source:      item.SourceAgent,
 			Destination: item.DestinationAgent,
-			Skill:       skill,
+			Skill:       lo.FromPtr(item.Skill),
 			Action:      item.Action,
 			CreatedAt:   item.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt:   item.UpdatedAt.UTC().Format(time.RFC3339),
@@ -130,17 +125,12 @@ func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResp
 		return nil, ErrIntentionNotFound
 	}
 
-	skill := ""
-	if intention.Skill != nil {
-		skill = *intention.Skill
-	}
-
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
 		Source:      intention.SourceAgent,
 		Destination: intention.DestinationAgent,
-		Skill:       skill,
+		Skill:       lo.FromPtr(intention.Skill),
 		Action:      intention.Action,
 		CreatedAt:   intention.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   intention.UpdatedAt.UTC().Format(time.RFC3339),
@@ -171,17 +161,12 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateIntention, err)
 	}
 
-	storedSkill := ""
-	if intention.Skill != nil {
-		storedSkill = *intention.Skill
-	}
-
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
 		Source:      intention.SourceAgent,
 		Destination: intention.DestinationAgent,
-		Skill:       storedSkill,
+		Skill:       lo.FromPtr(intention.Skill),
 		Action:      intention.Action,
 		CreatedAt:   intention.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   intention.UpdatedAt.UTC().Format(time.RFC3339),
@@ -222,17 +207,12 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 		return nil, fmt.Errorf("%w: %v", ErrFailedUpdateIntention, err)
 	}
 
-	storedSkill := ""
-	if intention.Skill != nil {
-		storedSkill = *intention.Skill
-	}
-
 	return &IntentionResponse{
 		Id:          intention.Id,
 		WorkspaceId: intention.WorkspaceId,
 		Source:      intention.SourceAgent,
 		Destination: intention.DestinationAgent,
-		Skill:       storedSkill,
+		Skill:       lo.FromPtr(intention.Skill),
 		Action:      intention.Action,
 		CreatedAt:   intention.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   intention.UpdatedAt.UTC().Format(time.RFC3339),
@@ -272,11 +252,6 @@ func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest
 		return &CheckIntentionResponse{Action: db.IntentionActionDeny}, nil
 	}
 
-	skill := ""
-	if intention.Skill != nil {
-		skill = *intention.Skill
-	}
-
 	return &CheckIntentionResponse{
 		Action: intention.Action,
 		Intention: &IntentionResponse{
@@ -284,7 +259,7 @@ func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest
 			WorkspaceId: intention.WorkspaceId,
 			Source:      intention.SourceAgent,
 			Destination: intention.DestinationAgent,
-			Skill:       skill,
+			Skill:       lo.FromPtr(intention.Skill),
 			Action:      intention.Action,
 			CreatedAt:   intention.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt:   intention.UpdatedAt.UTC().Format(time.RFC3339),
