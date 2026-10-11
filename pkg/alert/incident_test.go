@@ -21,16 +21,18 @@ func TestUnitIncident(t *testing.T) {
 	})
 
 	t.Run("Send posts a firing alert with bearer auth", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "Bearer secret", r.Header.Get("Authorization"))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "Bearer secret", r.Header.Get("Authorization"))
 
-			body, _ := io.ReadAll(r.Body)
-			assert.Contains(t, string(body), `"status":"firing"`)
-			assert.Contains(t, string(body), `"title":"Database down"`)
-			assert.Contains(t, string(body), `"deduplication_key":"db-1"`)
-			assert.Contains(t, string(body), `"severity":"critical"`)
-			w.Write([]byte(`{}`))
-		}))
+				body, _ := io.ReadAll(r.Body)
+				assert.Contains(t, string(body), `"status":"firing"`)
+				assert.Contains(t, string(body), `"title":"Database down"`)
+				assert.Contains(t, string(body), `"deduplication_key":"db-1"`)
+				assert.Contains(t, string(body), `"severity":"critical"`)
+				w.Write([]byte(`{}`))
+			}),
+		)
 		defer server.Close()
 
 		client := NewIncident(IncidentConfig{Token: "secret", AlertSourceConfigID: "01ABC"})
@@ -46,10 +48,12 @@ func TestUnitIncident(t *testing.T) {
 	})
 
 	t.Run("Send returns an error on a rejected event", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, `{}`)
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{}`)
+			}),
+		)
 		defer server.Close()
 
 		client := NewIncident(IncidentConfig{Token: "bad", AlertSourceConfigID: "01ABC"})
