@@ -212,12 +212,6 @@ func (a *API) DeleteWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	err := a.Workspace.DeleteWorkspace(db.Id(wid))
 	if err != nil {
-		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
-		}) {
-			return
-		}
-
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).

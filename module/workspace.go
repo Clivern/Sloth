@@ -244,13 +244,6 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 
 // DeleteWorkspace deletes a workspace.
 func (w *Workspace) DeleteWorkspace(workspaceId db.Id) error {
-	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
 
 	return w.WorkspaceRepository.Delete(workspaceId)
 }

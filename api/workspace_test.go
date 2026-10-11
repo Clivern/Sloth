@@ -212,15 +212,6 @@ func TestUnitWorkspaceActions(t *testing.T) {
 		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
-	t.Run("delete returns 404 for unknown workspace", func(t *testing.T) {
-		api := newWorkspaceAPI(&fakeWorkspaceRecords{})
-		w := httptest.NewRecorder()
-		newWorkspaceRouter(api).
-			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1", nil))
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-	})
-
 	t.Run("delete returns 500 when the repository fails", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored, deleteErr: errors.New("boom")})
 		w := httptest.NewRecorder()

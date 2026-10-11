@@ -97,12 +97,6 @@ func TestUnitWorkspace(t *testing.T) {
 		assert.Equal(t, db.UserRoleOwner, response.Role)
 	})
 
-	t.Run("delete returns not found for a missing workspace", func(t *testing.T) {
-		err := newWorkspaceModule(&fakeWorkspaces{}, &fakeWorkspaceUsers{}, &fakeSubscriptions{}).
-			DeleteWorkspace("ws-1")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-	})
-
 	t.Run("delete removes the workspace", func(t *testing.T) {
 		workspaces := &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}
 
