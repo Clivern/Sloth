@@ -9,6 +9,8 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/util"
+
+	"github.com/samber/lo"
 )
 
 var (
@@ -138,13 +140,9 @@ func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorks
 
 	resp := make([]*WorkspaceResponse, 0, len(workspaces))
 	for _, workspace := range workspaces {
-		role := ""
 		membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 		if err != nil {
 			return nil, err
-		}
-		if membership != nil {
-			role = membership.Role
 		}
 
 		count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
@@ -157,9 +155,13 @@ func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorks
 			Name:         workspace.Name,
 			Handle:       workspace.Handle,
 			MembersCount: count,
-			Role:         role,
-			CreatedAt:    workspace.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:    workspace.UpdatedAt.UTC().Format(time.RFC3339),
+			Role: lo.TernaryF(
+				membership != nil,
+				func() string { return membership.Role },
+				func() string { return "" },
+			),
+			CreatedAt: workspace.CreatedAt.UTC().Format(time.RFC3339),
+			UpdatedAt: workspace.UpdatedAt.UTC().Format(time.RFC3339),
 		})
 	}
 
@@ -176,13 +178,9 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 		return nil, ErrWorkspaceNotFound
 	}
 
-	role := ""
 	membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 	if err != nil {
 		return nil, err
-	}
-	if membership != nil {
-		role = membership.Role
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
@@ -195,9 +193,13 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 		Name:         workspace.Name,
 		Handle:       workspace.Handle,
 		MembersCount: count,
-		Role:         role,
-		CreatedAt:    workspace.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:    workspace.UpdatedAt.UTC().Format(time.RFC3339),
+		Role: lo.TernaryF(
+			membership != nil,
+			func() string { return membership.Role },
+			func() string { return "" },
+		),
+		CreatedAt: workspace.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt: workspace.UpdatedAt.UTC().Format(time.RFC3339),
 	}, nil
 }
 
@@ -217,13 +219,9 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 		return nil, err
 	}
 
-	role := ""
 	membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 	if err != nil {
 		return nil, err
-	}
-	if membership != nil {
-		role = membership.Role
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
@@ -236,9 +234,13 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 		Name:         workspace.Name,
 		Handle:       workspace.Handle,
 		MembersCount: count,
-		Role:         role,
-		CreatedAt:    workspace.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:    workspace.UpdatedAt.UTC().Format(time.RFC3339),
+		Role: lo.TernaryF(
+			membership != nil,
+			func() string { return membership.Role },
+			func() string { return "" },
+		),
+		CreatedAt: workspace.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt: workspace.UpdatedAt.UTC().Format(time.RFC3339),
 	}, nil
 }
 
