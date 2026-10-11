@@ -9,7 +9,7 @@
         aria-labelledby="agent-card-modal-title"
         @click.self="close"
       >
-        <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
           <h2 id="agent-card-modal-title" class="text-lg font-semibold text-theme-text">
             {{ isEdit ? $t('agents_page.edit_card_title') : $t('agents_page.register_title') }}
           </h2>
@@ -43,6 +43,7 @@
                   id="agent-card-version"
                   v-model="form.version"
                   type="text"
+                  required
                   maxlength="40"
                   class="input-field font-mono"
                   placeholder="1.0.0"
@@ -51,21 +52,22 @@
                 />
                 <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.version_hint') }}</p>
               </div>
-            </div>
-
-            <div>
-              <label for="agent-card-json" class="form-label">{{ $t('agents_page.card_json') }}</label>
-              <textarea
-                id="agent-card-json"
-                v-model="form.card"
-                rows="14"
-                required
-                spellcheck="false"
-                class="input-field font-mono text-xs leading-5"
-                :placeholder="AGENT_CARD_EXAMPLE"
-                :disabled="saving"
-              />
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.card_json_hint') }}</p>
+              <div>
+                <label for="agent-card-path" class="form-label">{{ $t('agents_page.card_path') }}</label>
+                <input
+                  id="agent-card-path"
+                  v-model="form.cardPath"
+                  type="text"
+                  maxlength="255"
+                  pattern="/.*"
+                  :title="$t('agents_page.card_path_hint')"
+                  class="input-field font-mono"
+                  :placeholder="AGENT_CARD_PATH"
+                  autocomplete="off"
+                  :disabled="saving"
+                />
+                <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.card_path_hint') }}</p>
+              </div>
             </div>
 
             <div class="flex gap-3 justify-end">
@@ -75,7 +77,7 @@
               <button
                 type="submit"
                 class="btn-primary"
-                :disabled="saving || !form.name.trim() || !form.card.trim()"
+                :disabled="saving"
               >
                 {{ saving ? $t('agents_page.saving') : (isEdit ? $t('common.save') : $t('agents_page.register')) }}
               </button>
@@ -91,7 +93,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { agent_api } from '@/api'
-import { AGENT_CARD_EXAMPLE, AGENT_NAME_PATTERN } from '@/lib/agent'
+import { AGENT_CARD_PATH, AGENT_NAME_PATTERN } from '@/lib/agent'
 
 const props = defineProps({
   open: {
@@ -118,7 +120,7 @@ const error = ref(null)
 const form = reactive({
   name: '',
   version: '',
-  card: '',
+  cardPath: '',
 })
 
 watch(() => props.open, (open) => {
@@ -126,7 +128,7 @@ watch(() => props.open, (open) => {
   error.value = null
   form.name = props.agent?.name || ''
   form.version = props.agent?.version || ''
-  form.card = props.agent ? JSON.stringify(props.agent.card ?? {}, null, 2) : ''
+  form.cardPath = props.agent?.cardPath || ''
 })
 
 function close() {
@@ -151,21 +153,15 @@ async function submit() {
     return
   }
 
-  let card
-  try {
-    card = JSON.parse(form.card)
-  } catch {
-    error.value = t('agents_page.invalid_card_json')
-    return
-  }
-  if (!card || typeof card !== 'object' || Array.isArray(card)) {
-    error.value = t('agents_page.invalid_card_json')
+  const version = form.version.trim()
+  if (!version) {
+    error.value = t('agents_page.version_required')
     return
   }
 
-  const version = form.version.trim()
-  if (!version && !card.version) {
-    error.value = t('agents_page.version_required')
+  const cardPath = form.cardPath.trim()
+  if (cardPath && !cardPath.startsWith('/')) {
+    error.value = t('agents_page.invalid_card_path')
     return
   }
 
@@ -179,7 +175,7 @@ async function submit() {
       return
     }
 
-    const payload = version ? { card, version } : { card }
+    const payload = cardPath ? { version, cardPath } : { version }
     const res = await agent_api.upsert(props.workspaceId, name, payload)
     emit('saved', res.data)
   } catch (err) {

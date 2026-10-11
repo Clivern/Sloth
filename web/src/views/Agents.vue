@@ -66,6 +66,12 @@
                     {{ agent.name }}
                   </router-link>
                   <p v-if="agent.description" class="mt-0.5 text-sm text-theme-textLight">{{ agent.description }}</p>
+                  <span
+                    v-if="agent.cardPending"
+                    class="mt-1 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+                  >
+                    {{ $t('agents_page.card_pending') }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ agent.version }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
@@ -160,6 +166,7 @@ const rows = computed(() => agents.value.map((agent) => {
     name: agent.name,
     version: agent.version,
     description: card.description,
+    cardPending: !agent.card,
     skillCount: card.skills.length,
     statusCounts: agent.statusCounts,
     health: agent.health,

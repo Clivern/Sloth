@@ -321,7 +321,17 @@
                 <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.card') }}</h2>
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_desc') }}</p>
               </div>
-              <dl class="space-y-4 px-5 py-4 text-sm">
+              <div v-if="!agent.card" class="px-5 py-4 text-sm">
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                  {{ $t('agents_page.card_pending') }}
+                </span>
+                <p class="mt-2 text-theme-textLight">{{ $t('agents_page.card_pending_desc') }}</p>
+                <dl class="mt-4">
+                  <dt class="text-theme-textLight">{{ $t('agents_page.card_path') }}</dt>
+                  <dd class="mt-1"><code class="break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text">{{ agent.cardPath }}</code></dd>
+                </dl>
+              </div>
+              <dl v-if="agent.card" class="space-y-4 px-5 py-4 text-sm">
                 <div v-if="card.url">
                   <dt class="text-theme-textLight">{{ $t('agents_page.gateway_url') }}</dt>
                   <dd class="mt-1 flex items-start gap-2">
@@ -362,6 +372,10 @@
                     <span v-if="!card.capabilities.length" class="text-theme-textLight">—</span>
                   </dd>
                 </div>
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.card_path') }}</dt>
+                  <dd class="mt-1"><code class="break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text">{{ agent.cardPath }}</code></dd>
+                </div>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <dt class="text-theme-textLight">{{ $t('agents_page.updated') }}</dt>
@@ -373,7 +387,7 @@
                   </div>
                 </div>
               </dl>
-              <details class="border-t border-theme-border">
+              <details v-if="agent.card" class="border-t border-theme-border">
                 <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-theme-text hover:bg-theme-hover">
                   {{ $t('agents_page.raw_card') }}
                 </summary>

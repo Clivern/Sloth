@@ -1,18 +1,8 @@
 // Mirrors the server-side agent and instance name pattern.
 export const AGENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/
 
-export const AGENT_CARD_EXAMPLE = JSON.stringify({
-  name: 'support-assistant',
-  description: 'Answers support questions and delegates to specialist agents.',
-  version: '1.0.0',
-  url: 'https://agents.example.com/support-assistant',
-  skills: [
-    { id: 'support.answer', name: 'Answer support question', tags: ['support'] },
-  ],
-  defaultInputModes: ['text/plain'],
-  defaultOutputModes: ['text/plain', 'application/json'],
-  capabilities: { streaming: true },
-}, null, 2)
+// Where instances serve their A2A card unless the agent sets another path.
+export const AGENT_CARD_PATH = '/.well-known/agent-card.json'
 
 export function healthClass(health) {
   return {
