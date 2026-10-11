@@ -4,6 +4,8 @@ app:
   port: ${COGNIT_SERVER_PORT:-8000}
   url: ${COGNIT_SERVER_URL:-http://localhost}
   timeout: ${COGNIT_SERVER_TIMEOUT:-50}
+  # Comma-separated CIDRs of reverse proxies allowed to set X-Forwarded-For; defaults to the Docker networks nginx runs on
+  trusted_proxies: ${COGNIT_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16}
 
   encryption:
     key: ${COGNIT_ENCRYPTION_KEY:-}

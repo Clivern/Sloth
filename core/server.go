@@ -37,6 +37,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 	r.Use(cmid.Timeout(
 		time.Duration(viper.GetInt("app.timeout")) * time.Second,
 	))
+	r.Use(middleware.ClientIP(viper.GetString("app.trusted_proxies")))
 	r.Use(middleware.RequestId)
 	r.Use(middleware.AppContext)
 	r.Use(middleware.PrometheusMiddleware)

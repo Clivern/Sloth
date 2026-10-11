@@ -4,6 +4,8 @@ app:
   port: ${COGNIT_SERVER_PORT:-8000}
   url: ${COGNIT_SERVER_URL:-http://127.0.0.1:8000}
   timeout: ${COGNIT_SERVER_TIMEOUT:-50}
+  # Comma-separated CIDRs of reverse proxies allowed to set X-Forwarded-For; empty means use the TCP peer
+  trusted_proxies: ${COGNIT_TRUSTED_PROXIES:-}
 
   encryption:
     key: ${COGNIT_ENCRYPTION_KEY:-}
