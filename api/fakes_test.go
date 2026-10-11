@@ -913,6 +913,7 @@ func newIdentityRouter(api *API) *chi.Mux {
 		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/identities/{identityId}",
 		api.DeleteIdentityAction,
 	)
+	router.Post("/api/v1/public/oauth/token", api.IssueIdentityTokenAction)
 	return router
 }
 

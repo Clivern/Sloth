@@ -4,6 +4,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/clivern/cognit/db"
@@ -216,4 +217,45 @@ func (a *API) DeleteIdentityAction(w http.ResponseWriter, r *http.Request) {
 		Msg("Agent identity deleted")
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// IssueIdentityTokenAction exchanges client credentials for an access token (OAuth 2.0 client credentials grant).
+func (a *API) IssueIdentityTokenAction(w http.ResponseWriter, r *http.Request) {
+	if r.PostFormValue("grant_type") != "client_credentials" {
+		a.WriteJSON(w, http.StatusBadRequest, map[string]any{
+			"error":        "unsupported_grant_type",
+			"errorMessage": locale.TR(r, "unsupported_grant_type"),
+		})
+		return
+	}
+
+	clientId, clientSecret, ok := r.BasicAuth()
+	if !ok {
+		clientId = r.PostFormValue("client_id")
+		clientSecret = r.PostFormValue("client_secret")
+	}
+
+	token, err := a.Identity.IssueToken(clientId, clientSecret)
+	if err != nil {
+		if errors.Is(err, module.ErrInvalidClient) {
+			a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
+				"error":        "invalid_client",
+				"errorMessage": locale.TR(r, "invalid_client"),
+			})
+			return
+		}
+
+		log.Error().
+			Err(err).
+			Str("clientId", clientId).
+			Msg("Failed to issue identity token")
+		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
+			"errorMessage": locale.TR(r, "failed_identity_request"),
+		})
+
+		return
+	}
+
+	w.Header().Set("Cache-Control", "no-store")
+	a.WriteJSON(w, http.StatusOK, token)
 }
