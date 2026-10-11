@@ -500,3 +500,6 @@ msgstr "Trop de requêtes. Veuillez réessayer plus tard."
 
 msgid "workspace_owner_protected"
 msgstr "Le propriétaire de l’espace de travail ne peut pas être modifié ni retiré."
+
+msgid "route_not_found"
+msgstr "Route introuvable."

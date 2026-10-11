@@ -13,14 +13,17 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/clivern/cognit/api"
 	"github.com/clivern/cognit/conf"
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/locale"
 	"github.com/clivern/cognit/middleware"
 	"github.com/clivern/cognit/module"
+	"github.com/clivern/cognit/pkg/util"
 
 	"github.com/go-chi/chi/v5"
 	cmid "github.com/go-chi/chi/v5/middleware"
@@ -211,6 +214,13 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 
 	r.Handle("/assets/*", http.StripPrefix("/", http.FileServer(http.FS(dist)))) // static frontend assets
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {                    // SPA fallback — serve index.html
+		if strings.HasPrefix(r.URL.Path, "/api/") { // an unknown API route is a JSON 404, never the dashboard
+			util.WriteJSON(w, http.StatusNotFound, map[string]any{
+				"errorMessage": locale.TR(r, "route_not_found"),
+			})
+			return
+		}
+
 		indexFile, err := dist.Open("index.html")
 		if err != nil {
 			http.Error(w, "Not Found", http.StatusNotFound)
