@@ -15,15 +15,17 @@ import (
 
 func TestUnitPagerDuty(t *testing.T) {
 	t.Run("Send triggers an incident", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			assert.Contains(t, string(body), `"routing_key":"rk"`)
-			assert.Contains(t, string(body), `"event_action":"trigger"`)
-			assert.Contains(t, string(body), `"dedup_key":"db-1"`)
-			assert.Contains(t, string(body), `"severity":"critical"`)
-			assert.Contains(t, string(body), `"message":"down"`)
-			w.Write([]byte(`{"status":"success"}`))
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				assert.Contains(t, string(body), `"routing_key":"rk"`)
+				assert.Contains(t, string(body), `"event_action":"trigger"`)
+				assert.Contains(t, string(body), `"dedup_key":"db-1"`)
+				assert.Contains(t, string(body), `"severity":"critical"`)
+				assert.Contains(t, string(body), `"message":"down"`)
+				w.Write([]byte(`{"status":"success"}`))
+			}),
+		)
 		defer server.Close()
 
 		client := NewPagerDuty(PagerDutyConfig{RoutingKey: "rk"})
@@ -40,11 +42,13 @@ func TestUnitPagerDuty(t *testing.T) {
 	})
 
 	t.Run("Send resolves an incident", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			assert.Contains(t, string(body), `"event_action":"resolve"`)
-			w.Write([]byte(`{"status":"success"}`))
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				assert.Contains(t, string(body), `"event_action":"resolve"`)
+				w.Write([]byte(`{"status":"success"}`))
+			}),
+		)
 		defer server.Close()
 
 		client := NewPagerDuty(PagerDutyConfig{RoutingKey: "rk"})
@@ -55,10 +59,12 @@ func TestUnitPagerDuty(t *testing.T) {
 	})
 
 	t.Run("Send returns an error on a rejected event", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"message":"Invalid routing key"}`))
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(`{"message":"Invalid routing key"}`))
+			}),
+		)
 		defer server.Close()
 
 		client := NewPagerDuty(PagerDutyConfig{RoutingKey: "bad"})
