@@ -111,3 +111,38 @@ Feature: Workspace key-value store
     When that key PUTs it with value "hacked"
     Then the response is 403
     And the value is still "hello"
+
+  # ---------------------------------------------------------------------------
+  # More on keys and expiry
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: A key may be up to 200 characters, not more
+    When the user PUTs a key of exactly 200 characters under "spec/<runId>/" with value "x"
+    Then the response is 200
+    When the user PUTs a key of 201 characters
+    Then the response is 400
+
+  @readonly
+  Scenario: "." and ".." are not key segments
+    When the user PUTs kv/spec/<runId>/./x with value "x", sending the path as is
+    Then the response is 400 or 404
+    When the user PUTs kv/spec/<runId>/../x with value "x", sending the path as is
+    Then the response is 400 or 404
+
+  @mutates
+  Scenario: A key whose expiry has already passed is gone at once
+    When the user PUTs kv/spec/<runId>/stale with value "x" and expiresAt one hour ago
+    Then the response is 200 or 400
+    And reading it returns 404
+
+  @mutates
+  Scenario: Writing a key without an expiry clears an old one
+    Given kv/spec/<runId>/temp expires one hour from now
+    When the user PUTs it again with value "y" and no expiresAt
+    Then reading it returns value "y" and no expiresAt
+
+  @mutates
+  Scenario: Values keep their whitespace and newlines
+    When the user PUTs kv/spec/<runId>/multi with value "  line one\nline two  "
+    Then reading it returns exactly "  line one\nline two  "

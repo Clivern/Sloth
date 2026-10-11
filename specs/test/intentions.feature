@@ -112,3 +112,31 @@ Feature: Intentions
     Then the response is 200
     When that key PUTs intentions with source "a", destination "b" and action "allow"
     Then the response is 403
+
+  # ---------------------------------------------------------------------------
+  # More validation and listing
+  # ---------------------------------------------------------------------------
+
+  @readonly
+  Scenario: A skill may be at most 120 characters
+    When the user PUTs a rule with a 121-character destination skill
+    Then the response is 400
+
+  @mutates
+  Scenario: Updating a rule follows the same rules as creating one
+    Given a rule allowing "spec-<runId>-a" to call "spec-<runId>-b"
+    When the user PUTs it with action "maybe"
+    Then the response is 400
+    And reading it still returns action "allow"
+
+  @readonly
+  Scenario: Updating an unknown rule returns not found
+    When the user PUTs intentions/<a random UUID> with a valid rule
+    Then the response is 404
+
+  @mutates
+  Scenario: The rule list pages
+    Given three rules exist in the run's workspace
+    When the user lists intentions with limit 2
+    Then exactly 2 come back
+    And _meta.total is 3

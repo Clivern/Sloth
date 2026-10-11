@@ -90,3 +90,48 @@ Feature: API conventions
     When the user GETs /api/v1/spec-<runId>-no-such-route
     Then the response is 404
     And the Content-Type is application/json
+
+  # ---------------------------------------------------------------------------
+  # Headers, methods and bodies
+  # ---------------------------------------------------------------------------
+
+  @readonly
+  Scenario: Every response carries a request id
+    When the user GETs /api/v1/me
+    Then the X-Request-ID header is a UUID
+
+  @readonly
+  Scenario: A request id sent by the client is echoed back
+    When the user GETs /api/v1/me with X-Request-ID "spec-<runId>-trace"
+    Then the X-Request-ID header is "spec-<runId>-trace"
+
+  @readonly
+  Scenario: API responses are JSON, errors included
+    When the user GETs /api/v1/me
+    Then the Content-Type is application/json
+    When the user GETs agents/spec-<runId>-missing in the run's workspace
+    Then the Content-Type is application/json
+
+  @readonly
+  Scenario: A known route called with the wrong method is 405, not the dashboard
+    When the user sends PATCH to /api/v1/me
+    Then the response is 405
+    And the body is not the dashboard HTML
+
+  @readonly
+  Scenario: A body over 10 MB is refused without a server error
+    When the user PUTs kv/spec/<runId>/huge with a JSON body of 11 MB
+    Then the response is 400 or 413
+    And reading kv/spec/<runId>/huge returns 404
+
+  @readonly
+  Scenario: An offset past the end returns an empty page with the real total
+    When the user GETs /api/v1/workspaces?offset=10000
+    Then the response is 200
+    And workspaces is empty
+    And _meta.total equals the total from /api/v1/workspaces
+
+  @mutates
+  Scenario: Text comes back exactly as it was sent
+    When the user PUTs kv/spec/<runId>/text with value "héllo \"wörld\" <script>alert(1)</script> ✓"
+    Then reading it returns exactly that value
