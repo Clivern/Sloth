@@ -10,16 +10,14 @@ import (
 )
 
 const (
-	AgentProtectionTypeAPIKey            = "api_key"
-	AgentProtectionTypeBasicAuth         = "basic_auth"
-	AgentProtectionTypeClientCredentials = "client_credentials"
+	AgentProtectionTypeAPIKey    = "api_key"
+	AgentProtectionTypeBasicAuth = "basic_auth"
 )
 
 // AgentProtection is a single row in the agent_protection table.
 type AgentProtection struct {
 	Id        Id
 	AgentId   Id
-	Name      string
 	Type      string
 	Config    string
 	IsActive  bool
@@ -31,11 +29,9 @@ type AgentProtection struct {
 type AgentProtectionRepository interface {
 	Create(protection *AgentProtection) error
 	GetById(id Id) (*AgentProtection, error)
-	GetByAgentAndName(agentId Id, name string) (*AgentProtection, error)
+	GetByAgentId(agentId Id) (*AgentProtection, error)
 	Update(protection *AgentProtection) error
 	Delete(id Id) error
-	ListByAgentId(agentId Id) ([]*AgentProtection, error)
-	ListActiveByAgentId(agentId Id) ([]*AgentProtection, error)
 }
 
 type AgentProtectionRepositoryPostgres struct {
@@ -73,7 +69,7 @@ func NewAgentProtectionRepository(db *sql.DB) AgentProtectionRepository {
 	return &AgentProtectionRepositoryPostgres{db: db}
 }
 
-// Create inserts an agent protection row. TODO: remove if not used in future.
+// Create inserts an agent protection row.
 func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) error {
 	id, err := NewId()
 	if err != nil {
@@ -83,30 +79,28 @@ func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) 
 	protection.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_protection (id, agent_id, name, type, config, is_active)
-		VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+		`INSERT INTO agent_protection (id, agent_id, type, config, is_active)
+		VALUES ($1, $2, $3, $4::jsonb, $5)
 		RETURNING created_at, updated_at`,
 		protection.Id.String(),
 		protection.AgentId.String(),
-		protection.Name,
 		protection.Type,
 		protection.Config,
 		protection.IsActive,
 	).Scan(&protection.CreatedAt, &protection.UpdatedAt)
 }
 
-// GetById returns an agent protection by id. TODO: remove if not used in future.
+// GetById returns an agent protection by id.
 func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, error) {
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
+		`SELECT id, agent_id, type, config, is_active, created_at, updated_at
 		FROM agent_protection
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
 		&protection.Id,
 		&protection.AgentId,
-		&protection.Name,
 		&protection.Type,
 		&protection.Config,
 		&protection.IsActive,
@@ -120,19 +114,17 @@ func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, er
 	return protection, err
 }
 
-// GetByAgentAndName returns an agent protection by agent and name. TODO: remove if not used in future.
-func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name string) (*AgentProtection, error) {
+// GetByAgentId returns the protection of an agent.
+func (r *AgentProtectionRepositoryPostgres) GetByAgentId(agentId Id) (*AgentProtection, error) {
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
+		`SELECT id, agent_id, type, config, is_active, created_at, updated_at
 		FROM agent_protection
-		WHERE agent_id = $1 AND name = $2`,
+		WHERE agent_id = $1`,
 		agentId.String(),
-		name,
 	).Scan(
 		&protection.Id,
 		&protection.AgentId,
-		&protection.Name,
 		&protection.Type,
 		&protection.Config,
 		&protection.IsActive,
@@ -146,104 +138,30 @@ func (r *AgentProtectionRepositoryPostgres) GetByAgentAndName(agentId Id, name s
 	return protection, err
 }
 
-// Update updates an agent protection row. TODO: remove if not used in future.
+// Update updates an agent protection row.
 func (r *AgentProtectionRepositoryPostgres) Update(protection *AgentProtection) error {
+	now := time.Now().UTC()
 	_, err := r.db.Exec(
 		`UPDATE agent_protection
-		SET name = $1, type = $2, config = $3::jsonb, is_active = $4, updated_at = $5
-		WHERE id = $6`,
-		protection.Name,
+		SET type = $1, config = $2::jsonb, is_active = $3, updated_at = $4
+		WHERE id = $5`,
 		protection.Type,
 		protection.Config,
 		protection.IsActive,
-		time.Now().UTC(),
+		now,
 		protection.Id.String(),
 	)
+
+	protection.UpdatedAt = now
 
 	return err
 }
 
-// Delete removes an agent protection row. TODO: remove if not used in future.
+// Delete removes an agent protection row.
 func (r *AgentProtectionRepositoryPostgres) Delete(id Id) error {
 	_, err := r.db.Exec(`DELETE FROM agent_protection WHERE id = $1`, id.String())
 
 	return err
-}
-
-// ListByAgentId lists the protection rows of an agent. TODO: remove if not used in future.
-func (r *AgentProtectionRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentProtection, error) {
-	rows, err := r.db.Query(
-		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_protection
-		WHERE agent_id = $1
-		ORDER BY name`,
-		agentId.String(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var list []*AgentProtection
-	for rows.Next() {
-		protection := &AgentProtection{}
-		err := rows.Scan(
-			&protection.Id,
-			&protection.AgentId,
-			&protection.Name,
-			&protection.Type,
-			&protection.Config,
-			&protection.IsActive,
-			&protection.CreatedAt,
-			&protection.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, protection)
-	}
-
-	return list, rows.Err()
-}
-
-// ListActiveByAgentId lists the active protection rows of an agent. TODO: remove if not used in future.
-func (r *AgentProtectionRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentProtection, error) {
-	rows, err := r.db.Query(
-		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_protection
-		WHERE agent_id = $1 AND is_active = TRUE
-		ORDER BY name`,
-		agentId.String(),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var list []*AgentProtection
-	for rows.Next() {
-		protection := &AgentProtection{}
-		err := rows.Scan(
-			&protection.Id,
-			&protection.AgentId,
-			&protection.Name,
-			&protection.Type,
-			&protection.Config,
-			&protection.IsActive,
-			&protection.CreatedAt,
-			&protection.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, protection)
-	}
-
-	return list, rows.Err()
 }
 
 // NewAgentProtectionTokenRepository returns the repository for agent_protection_tokens.

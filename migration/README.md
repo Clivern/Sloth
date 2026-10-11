@@ -362,16 +362,14 @@ Change feed for `GET /watch/catalog`. Uses a `BIGSERIAL` id instead of a UUID so
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
 | `id` | UUID | no |  | primary key |
-| `agent_id` | UUID | no |  | → `agents.id` (cascade) |
-| `name` | VARCHAR(100) | no |  |  |
-| `type` | VARCHAR(30) | no |  |  |
+| `agent_id` | UUID | no |  | → `agents.id` (cascade), one protection per agent |
+| `type` | VARCHAR(30) | no |  | `api_key` or `basic_auth` |
 | `config` | JSONB | no |  |  |
 | `is_active` | BOOLEAN | no | `TRUE` |  |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |
 | `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
 
-- Unique: `(agent_id, name)`
-- Index: `idx_agent_protection_agent_id` on `(agent_id)`
+- Unique: `(agent_id)`
 
 ### `agent_protection_tokens`
 
@@ -638,7 +636,7 @@ erDiagram
     agents ||--o{ agent_instances : runs
     agents ||--o{ agent_checks : defines
     agents ||--o{ agent_identity : has
-    agents ||--o{ agent_protection : has
+    agents ||--o| agent_protection : has
     agent_protection ||--o{ agent_protection_tokens : issues
     agents ||--o{ agent_skills : has
     agent_instances ||--o{ agent_instances_meta : has
