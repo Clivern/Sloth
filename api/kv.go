@@ -28,13 +28,6 @@ func (a *API) ListKeyValueAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.KeyValue.ListKeyValue(db.Id(wid), r.URL.Query().Get("prefix"))
 	if err != nil {
-		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
-		}) {
-			return
-		}
-
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
@@ -75,9 +68,7 @@ func (a *API) GetKeyValueAction(w http.ResponseWriter, r *http.Request) {
 	item, err := a.KeyValue.GetKeyValue(db.Id(wid), key)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrKeyValueNotFound, http.StatusNotFound, locale.TR(r, "kv_not_found")},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
 		}) {
 			return
 		}
@@ -178,9 +169,7 @@ func (a *API) DeleteKeyValueAction(w http.ResponseWriter, r *http.Request) {
 	err := a.KeyValue.DeleteKeyValue(db.Id(wid), key)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrKeyValueNotFound, http.StatusNotFound, locale.TR(r, "kv_not_found")},
-			{module.ErrInvalidKeyValueKey, http.StatusBadRequest, locale.TR(r, "invalid_kv_key")},
 		}) {
 			return
 		}

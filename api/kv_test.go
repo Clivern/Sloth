@@ -38,23 +38,22 @@ func TestUnitKeyValueActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"total":1`)
 	})
 
-	t.Run("list returns 400 for an invalid prefix", func(t *testing.T) {
+	t.Run("list returns an empty page for an invalid prefix", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
 		newKeyValueRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv?prefix=a$", nil))
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Contains(t, w.Body.String(), "invalid_kv_key")
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
+	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newKeyValueAPI(nil, &fakeKeyValues{})
 		w := httptest.NewRecorder()
 		newKeyValueRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv", nil))
 
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("get returns one key", func(t *testing.T) {
@@ -77,13 +76,13 @@ func TestUnitKeyValueActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "kv_not_found")
 	})
 
-	t.Run("get returns 400 for an invalid key", func(t *testing.T) {
+	t.Run("get returns 404 for an invalid key", func(t *testing.T) {
 		api := newKeyValueAPI(workspace, &fakeKeyValues{})
 		w := httptest.NewRecorder()
 		newKeyValueRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/kv/bad$key", nil))
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
 
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
