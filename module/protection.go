@@ -99,11 +99,7 @@ func (p *Protection) GetProtection(workspaceId db.Id, agentName string) (*Protec
 }
 
 // SaveProtection sets or replaces the protection of an agent; a generated secret is returned once.
-func (p *Protection) SaveProtection(
-	workspaceId db.Id,
-	agentName string,
-	req *SaveProtectionRequest,
-) (*ProtectionResponse, error) {
+func (p *Protection) SaveProtection(workspaceId db.Id, agentName string, req *SaveProtectionRequest) (*ProtectionResponse, error) {
 	if (req.Type == db.AgentProtectionTypeBasicAuth) == (req.Username == "") {
 		return nil, ErrInvalidProtectionConfig
 	}
@@ -163,11 +159,7 @@ func (p *Protection) SaveProtection(
 }
 
 // UpdateProtectionStatus turns the protection of an agent on or off.
-func (p *Protection) UpdateProtectionStatus(
-	workspaceId db.Id,
-	agentName string,
-	req *UpdateProtectionStatusRequest,
-) (*ProtectionResponse, error) {
+func (p *Protection) UpdateProtectionStatus(workspaceId db.Id, agentName string, req *UpdateProtectionStatusRequest) (*ProtectionResponse, error) {
 	agent, err := p.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, err

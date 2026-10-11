@@ -99,11 +99,7 @@ func (i *Identity) ListIdentities(workspaceId db.Id, agentName string) ([]*Ident
 }
 
 // CreateIdentity issues a new identity for an agent; the raw secret is returned once.
-func (i *Identity) CreateIdentity(
-	workspaceId db.Id,
-	agentName string,
-	req *CreateIdentityRequest,
-) (*IdentityResponse, error) {
+func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *CreateIdentityRequest) (*IdentityResponse, error) {
 	if (req.Type == db.AgentIdentityTypeBasicAuth) == (req.Username == "") {
 		return nil, ErrInvalidIdentityConfig
 	}
@@ -159,12 +155,7 @@ func (i *Identity) CreateIdentity(
 }
 
 // UpdateIdentity renames an agent identity or turns it on or off.
-func (i *Identity) UpdateIdentity(
-	workspaceId db.Id,
-	agentName string,
-	id db.Id,
-	req *UpdateIdentityRequest,
-) (*IdentityResponse, error) {
+func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id, req *UpdateIdentityRequest) (*IdentityResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, err
