@@ -31,19 +31,27 @@ func TestUnitKeyValue(t *testing.T) {
 		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 	})
 
-	t.Run("list escapes the LIKE underscore in the prefix and returns the items", func(t *testing.T) {
-		items := &fakeWorkspaceKeyValues{items: []*db.WorkspaceKeyValue{{Id: "kv-1", Key: "app/a", Value: "1"}}}
-		kv := NewKeyValue(items, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+	t.Run(
+		"list escapes the LIKE underscore in the prefix and returns the items",
+		func(t *testing.T) {
+			items := &fakeWorkspaceKeyValues{
+				items: []*db.WorkspaceKeyValue{{Id: "kv-1", Key: "app/a", Value: "1"}},
+			}
+			kv := NewKeyValue(items, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
 
-		result, err := kv.ListKeyValue("ws-1", "a_b")
-		require.NoError(t, err)
-		assert.Equal(t, []string{`a\_b`}, items.prefixes)
-		assert.Equal(t, int64(1), result.Total)
-		assert.Equal(t, "app/a", result.Items[0].Key)
-	})
+			result, err := kv.ListKeyValue("ws-1", "a_b")
+			require.NoError(t, err)
+			assert.Equal(t, []string{`a\_b`}, items.prefixes)
+			assert.Equal(t, int64(1), result.Total)
+			assert.Equal(t, "app/a", result.Items[0].Key)
+		},
+	)
 
 	t.Run("list wraps the repository error", func(t *testing.T) {
-		kv := NewKeyValue(&fakeWorkspaceKeyValues{err: errTest}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		kv := NewKeyValue(
+			&fakeWorkspaceKeyValues{err: errTest},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := kv.ListKeyValue("ws-1", "app/")
 		assert.ErrorIs(t, err, ErrFailedListKeyValue)
@@ -61,8 +69,17 @@ func TestUnitKeyValue(t *testing.T) {
 
 	t.Run("get returns the item with its expiry", func(t *testing.T) {
 		expiresAt := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-		item := &db.WorkspaceKeyValue{Id: "kv-1", WorkspaceId: "ws-1", Key: "app/theme", Value: "dark", ExpiresAt: &expiresAt}
-		kv := NewKeyValue(&fakeWorkspaceKeyValues{item: item}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		item := &db.WorkspaceKeyValue{
+			Id:          "kv-1",
+			WorkspaceId: "ws-1",
+			Key:         "app/theme",
+			Value:       "dark",
+			ExpiresAt:   &expiresAt,
+		}
+		kv := NewKeyValue(
+			&fakeWorkspaceKeyValues{item: item},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		response, err := kv.GetKeyValue("ws-1", "app/theme")
 		require.NoError(t, err)
@@ -74,10 +91,12 @@ func TestUnitKeyValue(t *testing.T) {
 	t.Run("put rejects invalid keys and invalid expiry", func(t *testing.T) {
 		workspace := &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}
 
-		_, err := NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).PutKeyValue("ws-1", "app/../x", &PutKeyValueRequest{Value: "v"})
+		_, err := NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).
+			PutKeyValue("ws-1", "app/../x", &PutKeyValueRequest{Value: "v"})
 		assert.ErrorIs(t, err, ErrInvalidKeyValueKey)
 
-		_, err = NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).PutKeyValue("ws-1", "app/x", &PutKeyValueRequest{Value: "v", ExpiresAt: "tomorrow"})
+		_, err = NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).
+			PutKeyValue("ws-1", "app/x", &PutKeyValueRequest{Value: "v", ExpiresAt: "tomorrow"})
 		assert.ErrorIs(t, err, ErrInvalidExpiresAt)
 	})
 
@@ -85,7 +104,11 @@ func TestUnitKeyValue(t *testing.T) {
 		store := &fakeWorkspaceKeyValues{}
 		kv := NewKeyValue(store, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
 
-		response, err := kv.PutKeyValue("ws-1", "app/theme", &PutKeyValueRequest{Value: "dark", ExpiresAt: "2026-06-01T00:00:00Z"})
+		response, err := kv.PutKeyValue(
+			"ws-1",
+			"app/theme",
+			&PutKeyValueRequest{Value: "dark", ExpiresAt: "2026-06-01T00:00:00Z"},
+		)
 		require.NoError(t, err)
 		require.Len(t, store.upserted, 1)
 		assert.Equal(t, "app/theme", store.upserted[0].Key)
@@ -95,7 +118,10 @@ func TestUnitKeyValue(t *testing.T) {
 	})
 
 	t.Run("put wraps the repository error", func(t *testing.T) {
-		kv := NewKeyValue(&fakeWorkspaceKeyValues{err: errTest}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		kv := NewKeyValue(
+			&fakeWorkspaceKeyValues{err: errTest},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := kv.PutKeyValue("ws-1", "app/theme", &PutKeyValueRequest{Value: "dark"})
 		assert.ErrorIs(t, err, ErrFailedPutKeyValue)
