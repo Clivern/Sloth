@@ -37,7 +37,9 @@ func TestUnitProfile(t *testing.T) {
 	})
 
 	t.Run("update keeps the name when the request leaves it empty", func(t *testing.T) {
-		users := &fakeUsers{user: &db.User{Id: "user-1", Name: "Ada", Language: "en", Theme: "default"}}
+		users := &fakeUsers{
+			user: &db.User{Id: "user-1", Name: "Ada", Language: "en", Theme: "default"},
+		}
 		profile := NewProfile(users)
 
 		user, err := profile.UpdateProfile("user-1", &UpdateProfileRequest{Language: "fr", Theme: "dark"})
@@ -51,16 +53,21 @@ func TestUnitProfile(t *testing.T) {
 	t.Run("update changes the name when one is given", func(t *testing.T) {
 		profile := NewProfile(&fakeUsers{user: &db.User{Id: "user-1", Name: "Ada"}})
 
-		user, err := profile.UpdateProfile("user-1", &UpdateProfileRequest{Name: "Grace", Language: "en", Theme: "blue"})
+		user, err := profile.UpdateProfile(
+			"user-1",
+			&UpdateProfileRequest{Name: "Grace", Language: "en", Theme: "blue"},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, "Grace", user.Name)
 	})
 
 	t.Run("update returns not found and wraps repository errors", func(t *testing.T) {
-		_, err := NewProfile(&fakeUsers{}).UpdateProfile("user-1", &UpdateProfileRequest{Language: "en", Theme: "blue"})
+		_, err := NewProfile(&fakeUsers{}).
+			UpdateProfile("user-1", &UpdateProfileRequest{Language: "en", Theme: "blue"})
 		assert.ErrorIs(t, err, ErrUserNotFound)
 
-		_, err = NewProfile(&fakeUsers{user: &db.User{Id: "user-1"}, err: errors.New("boom")}).UpdateProfile("user-1", &UpdateProfileRequest{Language: "en", Theme: "blue"})
+		_, err = NewProfile(&fakeUsers{user: &db.User{Id: "user-1"}, err: errors.New("boom")}).
+			UpdateProfile("user-1", &UpdateProfileRequest{Language: "en", Theme: "blue"})
 		assert.ErrorIs(t, err, ErrFailedUpdateProfile)
 	})
 }
