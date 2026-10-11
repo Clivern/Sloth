@@ -18,10 +18,12 @@ import (
 
 func TestUnitProbe(t *testing.T) {
 	t.Run("HTTP passing on 2xx", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "/health", r.URL.Path)
-			w.WriteHeader(http.StatusOK)
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "/health", r.URL.Path)
+				w.WriteHeader(http.StatusOK)
+			}),
+		)
 		defer server.Close()
 
 		result := HTTP(context.Background(), HTTPTarget{URL: server.URL + "/health"})
@@ -29,9 +31,11 @@ func TestUnitProbe(t *testing.T) {
 	})
 
 	t.Run("HTTP critical on 5xx", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			}),
+		)
 		defer server.Close()
 
 		result := HTTP(context.Background(), HTTPTarget{URL: server.URL})
@@ -41,7 +45,13 @@ func TestUnitProbe(t *testing.T) {
 
 	t.Run("HTTP critical when unreachable", func(t *testing.T) {
 		host, port := closedPort(t)
-		result := HTTP(context.Background(), HTTPTarget{URL: "http://" + net.JoinHostPort(host, strconv.Itoa(port)), Timeout: time.Second})
+		result := HTTP(
+			context.Background(),
+			HTTPTarget{
+				URL:     "http://" + net.JoinHostPort(host, strconv.Itoa(port)),
+				Timeout: time.Second,
+			},
+		)
 		assert.Equal(t, Critical, result.Status)
 	})
 
@@ -72,7 +82,13 @@ func TestUnitProbe(t *testing.T) {
 	})
 
 	t.Run("Output is capped", func(t *testing.T) {
-		result := HTTP(context.Background(), HTTPTarget{URL: "http://" + strings.Repeat("a", MaxOutput+10) + ".invalid/", Timeout: time.Second})
+		result := HTTP(
+			context.Background(),
+			HTTPTarget{
+				URL:     "http://" + strings.Repeat("a", MaxOutput+10) + ".invalid/",
+				Timeout: time.Second,
+			},
+		)
 		assert.Equal(t, Critical, result.Status)
 		assert.LessOrEqual(t, len(result.Output), MaxOutput)
 	})
