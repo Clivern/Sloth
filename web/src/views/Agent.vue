@@ -482,6 +482,9 @@
                 <p v-if="newIdentity.username" class="text-sm text-amber-900">
                   {{ $t('agents_page.identity_username') }}: <code class="font-mono">{{ newIdentity.username }}</code>
                 </p>
+                <p v-if="newIdentity.type === 'client_credentials'" class="text-sm text-amber-900">
+                  {{ $t('agents_page.identity_client_id') }}: <code class="font-mono break-all">{{ newIdentity.id }}</code>
+                </p>
                 <div class="flex flex-wrap items-center gap-2">
                   <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
                   <button type="button" class="btn-secondary shrink-0" @click="copySecret">
@@ -512,6 +515,7 @@
                       <p class="mt-0.5 text-xs text-theme-textLight">
                         {{ $t(`agents_page.identity_type_${identity.type}`) }}
                         <span v-if="identity.username" class="font-mono">· {{ identity.username }}</span>
+                        <span v-if="identity.tokenTtl">· {{ $t('agents_page.identity_token_ttl_value', { seconds: identity.tokenTtl }) }}</span>
                         · {{ formatRelative(identity.createdAt) }}
                       </p>
                     </div>

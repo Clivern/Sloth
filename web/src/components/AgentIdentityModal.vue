@@ -41,6 +41,7 @@
               <select id="identity-type" v-model="form.type" class="input-field" :disabled="saving">
                 <option value="api_key">{{ $t('agents_page.identity_type_api_key') }}</option>
                 <option value="basic_auth">{{ $t('agents_page.identity_type_basic_auth') }}</option>
+                <option value="client_credentials">{{ $t('agents_page.identity_type_client_credentials') }}</option>
               </select>
               <p class="mt-1 text-xs text-theme-textLight">{{ $t(`agents_page.identity_type_${form.type}_hint`) }}</p>
             </div>
@@ -58,6 +59,21 @@
                 autocomplete="off"
                 :disabled="saving"
               />
+            </div>
+
+            <div v-if="form.type === 'client_credentials'">
+              <label for="identity-token-ttl" class="form-label">{{ $t('agents_page.identity_token_ttl') }}</label>
+              <input
+                id="identity-token-ttl"
+                v-model.number="form.tokenTtl"
+                type="number"
+                min="60"
+                max="86400"
+                required
+                class="input-field"
+                :disabled="saving"
+              />
+              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.identity_token_ttl_hint') }}</p>
             </div>
 
             <div class="flex gap-3 justify-end">
@@ -104,6 +120,7 @@ const form = reactive({
   name: '',
   type: 'api_key',
   username: '',
+  tokenTtl: 300,
 })
 
 watch(() => props.open, (open) => {
@@ -112,6 +129,7 @@ watch(() => props.open, (open) => {
   form.name = ''
   form.type = 'api_key'
   form.username = props.agentName
+  form.tokenTtl = 300
 })
 
 function close() {
@@ -125,6 +143,7 @@ async function submit() {
 
   const body = { name: form.name.trim(), type: form.type }
   if (form.type === 'basic_auth') body.username = form.username.trim()
+  if (form.type === 'client_credentials') body.tokenTtl = form.tokenTtl
 
   try {
     const res = await agent_identity_api.create(props.workspaceId, props.agentName, body)
