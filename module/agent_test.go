@@ -35,25 +35,39 @@ func TestUnitAgent(t *testing.T) {
 		require.Len(t, result.Agents, 1)
 		assert.Equal(t, db.AgentInstanceStatusUnknown, result.Agents[0].Health)
 		assert.NotEmpty(t, result.Agents[0].UpdatedAt)
-		assert.Equal(t, map[string]int{db.AgentInstanceStatusPassing: 0, db.AgentInstanceStatusWarning: 0, db.AgentInstanceStatusUnknown: 0, db.AgentInstanceStatusCritical: 0}, result.Agents[0].StatusCounts)
+		assert.Equal(t, map[string]int{
+			db.AgentInstanceStatusPassing:  0,
+			db.AgentInstanceStatusWarning:  0,
+			db.AgentInstanceStatusUnknown:  0,
+			db.AgentInstanceStatusCritical: 0,
+		}, result.Agents[0].StatusCounts)
 	})
 
-	t.Run("list reports passing health when an instance has no failing checks", func(t *testing.T) {
-		f := defaultAgentFixture()
-		f.agents.list = []*db.Agent{f.agents.agent}
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
+	t.Run(
+		"list reports passing health when an instance has no failing checks",
+		func(t *testing.T) {
+			f := defaultAgentFixture()
+			f.agents.list = []*db.Agent{f.agents.agent}
+			f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 
-		result, err := f.agent.ListAgents("ws-1", 20, 0)
-		require.NoError(t, err)
-		assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Health)
-		assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusPassing])
-	})
+			result, err := f.agent.ListAgents("ws-1", 20, 0)
+			require.NoError(t, err)
+			assert.Equal(t, db.AgentInstanceStatusPassing, result.Agents[0].Health)
+			assert.Equal(t, 1, result.Agents[0].StatusCounts[db.AgentInstanceStatusPassing])
+		},
+	)
 
 	t.Run("list marks an instance with a critical check as critical", func(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{
+				Type:   db.HealthCheckTypeHTTP,
+				Source: db.HealthCheckSourceAgent,
+				Status: db.HealthCheckStatusCritical,
+			},
+		}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -65,7 +79,13 @@ func TestUnitAgent(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}, {Id: "inst-2"}}
-		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning}}
+		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{
+			{
+				Type:   db.HealthCheckTypeHTTP,
+				Source: db.HealthCheckSourceAgent,
+				Status: db.HealthCheckStatusWarning,
+			},
+		}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -78,7 +98,13 @@ func TestUnitAgent(t *testing.T) {
 		f := defaultAgentFixture()
 		f.agents.list = []*db.Agent{f.agents.agent}
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{
+				Type:   db.HealthCheckTypeHTTP,
+				Source: db.HealthCheckSourceAgent,
+				Status: db.HealthCheckStatusUnknown,
+			},
+		}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -91,7 +117,14 @@ func TestUnitAgent(t *testing.T) {
 		f.agents.list = []*db.Agent{f.agents.agent}
 		expired := time.Now().Add(-time.Minute)
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expired}}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{
+				Type:         db.HealthCheckTypeTTL,
+				Source:       db.HealthCheckSourceAgent,
+				Status:       db.HealthCheckStatusPassing,
+				TTLExpiresAt: &expired,
+			},
+		}
 
 		result, err := f.agent.ListAgents("ws-1", 20, 0)
 		require.NoError(t, err)
@@ -107,9 +140,24 @@ func TestUnitAgent(t *testing.T) {
 
 	t.Run("get health status returns agent health and status counts", func(t *testing.T) {
 		f := defaultAgentFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning}}
-		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{{Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical}}
+		f.instances.list = []*db.AgentInstance{
+			{Id: "inst-1", InstanceId: "node-1"},
+			{Id: "inst-2", InstanceId: "node-2"},
+		}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{
+				Type:   db.HealthCheckTypeHTTP,
+				Source: db.HealthCheckSourceAgent,
+				Status: db.HealthCheckStatusWarning,
+			},
+		}
+		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{
+			{
+				Type:   db.HealthCheckTypeHTTP,
+				Source: db.HealthCheckSourceAgent,
+				Status: db.HealthCheckStatusCritical,
+			},
+		}
 
 		health, counts, err := f.agent.GetHealthStatus("agent-1")
 		require.NoError(t, err)
@@ -127,7 +175,9 @@ func TestUnitAgent(t *testing.T) {
 
 	t.Run("get returns the agent with its status breakdown", func(t *testing.T) {
 		f := defaultAgentFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080}}
+		f.instances.list = []*db.AgentInstance{
+			{Id: "inst-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080},
+		}
 
 		response, err := f.agent.GetAgent("ws-1", "support-assistant")
 		require.NoError(t, err)
@@ -154,29 +204,49 @@ func TestUnitAgent(t *testing.T) {
 		_, _, err := f.agent.UpsertAgent("ws-1", "support-assistant", nil)
 		assert.ErrorIs(t, err, ErrInvalidAgentCard)
 
-		_, _, err = f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Card: json.RawMessage(`[1,2]`)})
+		_, _, err = f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Card: json.RawMessage(`[1,2]`)},
+		)
 		assert.ErrorIs(t, err, ErrInvalidAgentCard)
 
-		_, _, err = f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Card: json.RawMessage(`{"version":`)})
+		_, _, err = f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Card: json.RawMessage(`{"version":`)},
+		)
 		assert.ErrorIs(t, err, ErrInvalidAgentCard)
 	})
 
 	t.Run("upsert requires a version in the request or the card", func(t *testing.T) {
 		f := defaultAgentFixture()
 
-		_, _, err := f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Card: json.RawMessage(`{"name":"Support"}`)})
+		_, _, err := f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Card: json.RawMessage(`{"name":"Support"}`)},
+		)
 		assert.ErrorIs(t, err, ErrAgentVersionRequired)
 
-		_, _, err = f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Card: json.RawMessage(`{}`), Version: strings.Repeat("v", 41)})
+		_, _, err = f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Card: json.RawMessage(`{}`), Version: strings.Repeat("v", 41)},
+		)
 		assert.ErrorIs(t, err, ErrAgentVersionRequired)
 	})
 
 	t.Run("upsert creates a new agent with a card checksum", func(t *testing.T) {
 		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
 
-		response, created, err := f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{
-			Card: json.RawMessage(`{"name":  "Support", "version":"2.1.0"}`),
-		})
+		response, created, err := f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{
+				Card: json.RawMessage(`{"name":  "Support", "version":"2.1.0"}`),
+			},
+		)
 		require.NoError(t, err)
 		assert.True(t, created)
 		require.Len(t, f.agents.created, 1)
