@@ -259,6 +259,96 @@
           <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
               <div>
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.identities_title') }}</h2>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.identities_desc') }}</p>
+              </div>
+              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="identityModalOpen = true">
+                {{ $t('agents_page.identity_add') }}
+              </button>
+            </div>
+
+            <div v-if="newIdentity" class="border-b border-amber-200 bg-amber-50 px-6 py-4 space-y-2">
+              <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.identity_secret_title', { name: newIdentity.name }) }}</p>
+              <p v-if="newIdentity.username" class="text-sm text-amber-900">
+                {{ $t('agents_page.identity_username') }}: <code class="font-mono">{{ newIdentity.username }}</code>
+              </p>
+              <div class="flex flex-wrap items-center gap-2">
+                <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
+                <button type="button" class="btn-secondary shrink-0" @click="copySecret">
+                  {{ secretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                </button>
+              </div>
+              <button
+                type="button"
+                class="text-sm text-amber-800 hover:text-amber-900 font-medium"
+                @click="newIdentity = null; secretCopied = false"
+              >
+                {{ $t('common.close') }}
+              </button>
+            </div>
+
+            <div v-if="loadingIdentities && identities.length === 0" class="p-8 text-center text-sm text-theme-textLight">
+              {{ $t('agents_page.loading_identities') }}
+            </div>
+            <div v-else-if="identities.length === 0" class="p-8 text-center">
+              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_identities') }}</p>
+              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_identities_hint') }}</p>
+            </div>
+            <div v-else class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-theme-border">
+                <thead class="bg-theme-hover">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.name') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_type') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_status') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_created') }}</th>
+                    <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-theme-border">
+                  <tr v-for="identity in identities" :key="identity.id" class="hover:bg-theme-hover">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ identity.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
+                      {{ $t(`agents_page.identity_type_${identity.type}`) }}
+                      <span v-if="identity.username" class="text-theme-textLight font-mono">· {{ identity.username }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                        :class="identity.isActive ? 'bg-green-50 text-green-700' : 'bg-theme-hover text-theme-textLight'"
+                      >
+                        {{ identity.isActive ? $t('agents_page.identity_active') : $t('agents_page.identity_inactive') }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ formatRelative(identity.createdAt) }}</td>
+                    <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <span class="inline-flex items-center gap-3">
+                        <button
+                          type="button"
+                          class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                          :disabled="togglingIdentity === identity.id"
+                          @click="toggleIdentity(identity)"
+                        >
+                          {{ identity.isActive ? $t('agents_page.identity_disable') : $t('agents_page.identity_enable') }}
+                        </button>
+                        <button
+                          type="button"
+                          class="text-red-600 hover:text-red-700 hover:underline"
+                          @click="askDeleteIdentity(identity)"
+                        >
+                          {{ $t('agents_page.identity_revoke') }}
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
+              <div>
                 <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.instances') }}</h2>
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.instances_desc') }}</p>
               </div>
@@ -413,6 +503,15 @@
       @saved="onProtectionSaved"
     />
 
+    <AgentIdentityModal
+      v-if="agent"
+      :open="identityModalOpen"
+      :workspace-id="currentWorkspace.id"
+      :agent-name="agent.name"
+      @close="identityModalOpen = false"
+      @saved="onIdentitySaved"
+    />
+
     <AgentCardModal
       v-if="agent"
       :open="showEditModal"
@@ -539,6 +638,44 @@
     <Teleport to="body">
       <Transition name="modal">
         <div
+          v-show="identityDeleteTarget"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-identity-title"
+          @click.self="closeDeleteIdentity"
+        >
+          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
+            <h2 id="delete-identity-title" class="text-lg font-semibold text-theme-text">
+              {{ $t('agents_page.identity_delete_title') }}
+            </h2>
+            <div v-if="identityDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+              {{ identityDeleteError }}
+            </div>
+            <p class="mt-2 text-sm text-theme-textLight">
+              {{ $t('agents_page.identity_delete_confirm', { name: identityDeleteTarget?.name }) }}
+            </p>
+            <div class="mt-6 flex gap-3 justify-end">
+              <button type="button" class="btn-secondary" :disabled="identityDeleting" @click="closeDeleteIdentity">
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                :disabled="identityDeleting"
+                @click="confirmDeleteIdentity"
+              >
+                {{ identityDeleting ? $t('agents_page.deleting') : $t('agents_page.identity_revoke') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
           v-show="showDeleteModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
           role="dialog"
@@ -598,8 +735,9 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
 import AgentCardModal from '@/components/AgentCardModal.vue'
 import AgentCheckModal from '@/components/AgentCheckModal.vue'
+import AgentIdentityModal from '@/components/AgentIdentityModal.vue'
 import AgentProtectionModal from '@/components/AgentProtectionModal.vue'
-import { agent_api, agent_check_api, agent_instance_api, agent_protection_api } from '@/api'
+import { agent_api, agent_check_api, agent_identity_api, agent_instance_api, agent_protection_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'
 import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
@@ -642,6 +780,16 @@ const protectionDeleteOpen = ref(false)
 const protectionDeleting = ref(false)
 const protectionDeleteError = ref(null)
 
+const identities = ref([])
+const loadingIdentities = ref(false)
+const identityModalOpen = ref(false)
+const newIdentity = ref(null)
+const secretCopied = ref(false)
+const togglingIdentity = ref(null)
+const identityDeleteTarget = ref(null)
+const identityDeleting = ref(false)
+const identityDeleteError = ref(null)
+
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const deleteConfirmName = ref('')
@@ -662,11 +810,13 @@ async function loadAgent() {
   checks.value = []
   protection.value = null
   newProtectionSecret.value = null
+  identities.value = []
+  newIdentity.value = null
 
   try {
     const res = await agent_api.get(currentWorkspace.id, agentName.value)
     agent.value = res.data
-    await Promise.all([loadChecks(), loadProtection(), loadInstances()])
+    await Promise.all([loadChecks(), loadProtection(), loadIdentities(), loadInstances()])
   } catch (err) {
     if (err.response?.status === 404) {
       notFound.value = true
@@ -780,6 +930,76 @@ async function confirmDeleteProtection() {
     protectionDeleteError.value = err.response?.data?.errorMessage || t('agents_page.protection_failed_delete')
   } finally {
     protectionDeleting.value = false
+  }
+}
+
+async function loadIdentities() {
+  loadingIdentities.value = true
+
+  try {
+    const res = await agent_identity_api.list(currentWorkspace.id, agentName.value)
+    identities.value = res.data.identities || []
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_identities')
+  } finally {
+    loadingIdentities.value = false
+  }
+}
+
+async function onIdentitySaved(identity) {
+  identityModalOpen.value = false
+  newIdentity.value = identity
+  secretCopied.value = false
+  await loadIdentities()
+}
+
+function copySecret() {
+  navigator.clipboard.writeText(newIdentity.value.secret).then(() => {
+    secretCopied.value = true
+    setTimeout(() => { secretCopied.value = false }, 2000)
+  })
+}
+
+async function toggleIdentity(identity) {
+  togglingIdentity.value = identity.id
+
+  try {
+    const res = await agent_identity_api.update(currentWorkspace.id, agentName.value, identity.id, {
+      name: identity.name,
+      isActive: !identity.isActive,
+    })
+    Object.assign(identity, res.data)
+    showFlash(t('common.saved'))
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.identity_failed_save')
+  } finally {
+    togglingIdentity.value = null
+  }
+}
+
+function askDeleteIdentity(identity) {
+  identityDeleteTarget.value = identity
+  identityDeleteError.value = null
+}
+
+function closeDeleteIdentity() {
+  identityDeleteTarget.value = null
+}
+
+async function confirmDeleteIdentity() {
+  identityDeleting.value = true
+  identityDeleteError.value = null
+
+  try {
+    await agent_identity_api.delete(currentWorkspace.id, agentName.value, identityDeleteTarget.value.id)
+    if (newIdentity.value?.id === identityDeleteTarget.value.id) newIdentity.value = null
+    identityDeleteTarget.value = null
+    showFlash(t('common.deleted'))
+    await loadIdentities()
+  } catch (err) {
+    identityDeleteError.value = err.response?.data?.errorMessage || t('agents_page.identity_failed_delete')
+  } finally {
+    identityDeleting.value = false
   }
 }
 
