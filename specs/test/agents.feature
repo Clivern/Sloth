@@ -1,9 +1,11 @@
 Feature: Agents
 
-  An agent is registered in a workspace by name with its A2A card. The registry
-  keeps the card, but it points every interface URL at Cognit's own gateway so
-  callers always go through it. Clients fetch the card and cache it by ETag,
-  so the checksum must change exactly when the card does.
+  An agent is registered in a workspace by name and version. Its A2A card is
+  not sent on registration: the first instance to register serves it at the
+  agent's card path, and Cognit fetches and stores it, pointing every
+  interface URL at its own gateway so callers always go through it. Clients
+  fetch the card and cache it by ETag, so the checksum must change exactly
+  when the card does.
 
   Routes (shapes in openapi.yaml):
     GET    /api/v1/workspaces/{workspaceId}/agents
@@ -11,66 +13,132 @@ Feature: Agents
     GET    /api/v1/workspaces/{workspaceId}/agents/{agentName}
     DELETE /api/v1/workspaces/{workspaceId}/agents/{agentName}
     GET    /api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json
+    PUT    /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}
 
-  A minimal card is: {"name": "<agent name>", "version": "1.0.0",
-  "supportedInterfaces": [{"url": "http://127.0.0.1:9000", "protocolBinding": "JSONRPC"}]}
+  A card server is a local HTTP server the runner starts on 127.0.0.1 that
+  answers GET <path> with a card. A minimal card is: {"name": "<agent name>",
+  "version": "1.0.0", "supportedInterfaces": [{"url": "http://127.0.0.1:9000",
+  "protocolBinding": "JSONRPC"}]}. "The agent has its card" means a card
+  server serves the minimal card at /.well-known/agent-card.json and instance
+  "i-1" registered with its address and port.
 
   Background:
     Given the run's workspace exists
-    And a minimal card for "spec-<runId>-echo" with version "1.0.0"
 
   # ---------------------------------------------------------------------------
   # Registering
   # ---------------------------------------------------------------------------
 
   @mutates @smoke
-  Scenario: Registering a new agent creates it
-    When the user PUTs {"card": <the card>} to agents/spec-<runId>-echo
+  Scenario: Registering a new agent creates it without a card
+    When the user PUTs {"version": "1.0.0"} to agents/spec-<runId>-echo
     Then the response is 201
-    And name is "spec-<runId>-echo", version is "1.0.0" and cardChecksum is not empty
+    And name is "spec-<runId>-echo" and version is "1.0.0"
+    And card is null and cardChecksum is ""
+    And cardPath is "/.well-known/agent-card.json"
 
   @mutates
-  Scenario: Registering the same name again replaces the card
-    Given the agent "spec-<runId>-echo" is registered
-    When the user PUTs the card again with version "1.1.0"
+  Scenario: A custom card path is kept
+    When the user PUTs {"version": "1.0.0", "cardPath": "/a2a/agent.json"} to agents/spec-<runId>-echo
+    Then the response is 201
+    And cardPath is "/a2a/agent.json"
+
+  @readonly
+  Scenario: A card path must start with a slash
+    When the user PUTs {"version": "1.0.0", "cardPath": "agent.json"} to agents/spec-<runId>-echo
+    Then the response is 400
+    And reading agents/spec-<runId>-echo returns 404
+
+  @mutates
+  Scenario: Registering the same name again updates the version
+    Given the agent "spec-<runId>-echo" is registered with version "1.0.0"
+    When the user PUTs {"version": "1.1.0"} to agents/spec-<runId>-echo
     Then the response is 200
     And reading the agent returns version "1.1.0"
     And the agents list holds "spec-<runId>-echo" once
 
-  @mutates
-  Scenario: The card's interface URLs are rewritten to the gateway
-    When the user registers "spec-<runId>-echo"
-    Then every card.supportedInterfaces[].url ends with
-      "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
-    And none of them is "http://127.0.0.1:9000"
-
-  @mutates
-  Scenario: A top-level version wins over the card's version
-    When the user PUTs {"card": <the card>, "version": "2.0.0"}
-    Then version is "2.0.0"
-
-  @mutates
-  Scenario: Without a top-level version, the card's version is used
-    When the user PUTs {"card": <the card>} with no top-level version
-    Then version is "1.0.0"
-
   @readonly
-  Scenario: An agent needs a version from somewhere
-    When the user PUTs a card with no version and no top-level version
-    Then the response is 400
-
-  @readonly
-  Scenario: A request without a card is rejected
+  Scenario: A request without a version is rejected
     When the user PUTs agents/spec-<runId>-echo with body {}
     Then the response is 400
     And reading agents/spec-<runId>-echo returns 404
 
   @readonly
   Scenario: Agent names must start with a letter or digit and use only letters, digits, dot, dash and underscore
-    When the user PUTs the card to agents/-spec-<runId>
+    When the user PUTs {"version": "1.0.0"} to agents/-spec-<runId>
     Then the response is 400
-    When the user PUTs the card to agents/spec-<runId>%20echo
+    When the user PUTs {"version": "1.0.0"} to agents/spec-<runId>%20echo
     Then the response is 400
+
+  # ---------------------------------------------------------------------------
+  # Fetching the card
+  # ---------------------------------------------------------------------------
+
+  @mutates @smoke
+  Scenario: The first instance to register supplies the card
+    Given the agent "spec-<runId>-echo" is registered
+    And a card server serving the minimal card at /.well-known/agent-card.json
+    When instance "i-1" registers with the card server's address and port
+    Then the response is 201
+    And reading the agent returns card.name "spec-<runId>-echo" and a non-empty cardChecksum
+
+  @mutates
+  Scenario: The card is fetched from the agent's card path
+    Given the agent "spec-<runId>-echo" is registered with cardPath "/a2a/agent.json"
+    And a card server serving the minimal card at /a2a/agent.json and 404 everywhere else
+    When instance "i-1" registers with the card server's address and port
+    Then reading the agent returns a card
+
+  @mutates
+  Scenario: The fetched card's interface URLs are rewritten to the gateway
+    Given the agent "spec-<runId>-echo" has its card
+    When the user GETs the agent
+    Then every card.supportedInterfaces[].url ends with
+      "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+    And none of them is "http://127.0.0.1:9000"
+
+  @mutates
+  Scenario: A fetched card's own url field is rewritten to the gateway too
+    Given the agent "spec-<runId>-echo" is registered
+    And a card server serving a card that also has "url": "http://127.0.0.1:9000"
+    When instance "i-1" registers with the card server's address and port
+    Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+
+  @mutates
+  Scenario: An instance still registers when its card cannot be fetched
+    Given the agent "spec-<runId>-echo" is registered
+    When instance "i-1" registers with address "127.0.0.1" and a port nothing listens on
+    Then the response is 201
+    And reading the agent returns card null
+
+  @mutates
+  Scenario: A later instance supplies the card when the first one could not
+    Given the agent "spec-<runId>-echo" is registered
+    And instance "i-1" registered with a port nothing listens on
+    And a card server serving the minimal card at /.well-known/agent-card.json
+    When instance "i-2" registers with the card server's address and port
+    Then reading the agent returns a card
+
+  @mutates
+  Scenario: Once stored, the card is not replaced by later instances
+    Given the agent "spec-<runId>-echo" has its card and its cardChecksum is remembered
+    And a second card server serving a card with "description": "changed"
+    When instance "i-2" registers with the second card server's address and port
+    Then reading the agent returns the remembered cardChecksum
+
+  @mutates
+  Scenario: Changing the version clears the card until the next instance registers
+    Given the agent "spec-<runId>-echo" has its card
+    When the user PUTs {"version": "1.1.0"} to agents/spec-<runId>-echo
+    Then card is null
+    When instance "i-1" registers again with the card server's address and port
+    Then reading the agent returns a card
+
+  @mutates
+  Scenario: Re-registering with the same version and card path keeps the card
+    Given the agent "spec-<runId>-echo" has its card and its cardChecksum is remembered
+    When the user PUTs {"version": "1.0.0"} to agents/spec-<runId>-echo
+    Then cardChecksum is the remembered one
 
   # ---------------------------------------------------------------------------
   # Reading
@@ -94,8 +162,15 @@ Feature: Agents
   # ---------------------------------------------------------------------------
 
   @mutates
-  Scenario: The well-known card is the stored card with an ETag
+  Scenario: The well-known card is not found until it has been fetched
     Given the agent "spec-<runId>-echo" is registered
+    When the user GETs agents/spec-<runId>-echo/.well-known/agent-card.json
+    Then the response is 404
+    And there is no ETag header
+
+  @mutates
+  Scenario: The well-known card is the stored card with an ETag
+    Given the agent "spec-<runId>-echo" has its card
     When the user GETs agents/spec-<runId>-echo/.well-known/agent-card.json
     Then the response is 200
     And the body equals the card from reading the agent
@@ -104,15 +179,16 @@ Feature: Agents
 
   @mutates
   Scenario: A client with the current ETag gets 304
-    Given the agent "spec-<runId>-echo" is registered
+    Given the agent "spec-<runId>-echo" has its card
     When the user GETs the well-known card with If-None-Match set to its ETag
     Then the response is 304 with no body
 
   @mutates
   Scenario: Changing the card changes the ETag
-    Given the agent "spec-<runId>-echo" is registered and its ETag is remembered
-    When the user registers it again with version "1.1.0"
-    And GETs the well-known card with If-None-Match set to the old ETag
+    Given the agent "spec-<runId>-echo" has its card and its ETag is remembered
+    When the user PUTs {"version": "1.1.0"} to agents/spec-<runId>-echo
+    And a card server serves a card with "description": "changed" and instance "i-1" registers with it
+    And the user GETs the well-known card with If-None-Match set to the old ETag
     Then the response is 200
     And the ETag differs from the remembered one
 
@@ -138,7 +214,7 @@ Feature: Agents
     Given an access key with only CAN_LIST_AGENTS and CAN_GET_AGENT
     When that key lists the workspace's agents
     Then the response is 200
-    When that key PUTs the card to agents/spec-<runId>-echo
+    When that key PUTs {"version": "1.0.0"} to agents/spec-<runId>-echo
     Then the response is 403
 
   # ---------------------------------------------------------------------------
@@ -165,18 +241,8 @@ Feature: Agents
 
   @readonly
   Scenario: A version may be at most 40 characters
-    When the user PUTs the card with a top-level version of 41 characters
+    When the user PUTs a version of 41 characters to agents/spec-<runId>-echo
     Then the response is 400
-
-  @readonly
-  Scenario: A card must be a JSON object
-    When the user PUTs {"card": "hello"} to agents/spec-<runId>-echo
-    Then the response is 400
-
-  @mutates
-  Scenario: A card's own url field is rewritten to the gateway too
-    When the user PUTs a card that also has "url": "http://127.0.0.1:9000"
-    Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
 
   @mutates
   Scenario: Deleting an agent takes its checks, identities and protection with it
