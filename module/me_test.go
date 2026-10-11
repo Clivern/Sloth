@@ -31,7 +31,11 @@ func TestUnitMe(t *testing.T) {
 	})
 
 	t.Run("api key returns not found when the owner is gone", func(t *testing.T) {
-		me := NewMe(&fakeAPIKeys{item: &db.APIKey{Id: "key-1", UserId: "user-1"}}, &fakeUsers{}, &fakeAccessKeys{})
+		me := NewMe(
+			&fakeAPIKeys{item: &db.APIKey{Id: "key-1", UserId: "user-1"}},
+			&fakeUsers{},
+			&fakeAccessKeys{},
+		)
 
 		_, err := me.GetByAPIKey("key")
 		assert.ErrorIs(t, err, ErrAPIKeyNotFound)
@@ -40,8 +44,17 @@ func TestUnitMe(t *testing.T) {
 	t.Run("api key returns the owner and key metadata", func(t *testing.T) {
 		expiresAt := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
 		me := NewMe(
-			&fakeAPIKeys{item: &db.APIKey{Id: "key-1", Name: "ci", UserId: "user-1", ExpiresAt: &expiresAt}},
-			&fakeUsers{user: &db.User{Id: "user-1", Email: "ada@example.com", Name: "Ada", Role: "regular"}},
+			&fakeAPIKeys{
+				item: &db.APIKey{Id: "key-1", Name: "ci", UserId: "user-1", ExpiresAt: &expiresAt},
+			},
+			&fakeUsers{
+				user: &db.User{
+					Id:    "user-1",
+					Email: "ada@example.com",
+					Name:  "Ada",
+					Role:  "regular",
+				},
+			},
 			&fakeAccessKeys{},
 		)
 
@@ -84,7 +97,11 @@ func TestUnitMe(t *testing.T) {
 	})
 
 	t.Run("access key returns an error for corrupt metadata", func(t *testing.T) {
-		me := NewMe(&fakeAPIKeys{}, &fakeUsers{}, &fakeAccessKeys{item: &db.AccessKey{Id: "access-1", Meta: new(`not json`)}})
+		me := NewMe(
+			&fakeAPIKeys{},
+			&fakeUsers{},
+			&fakeAccessKeys{item: &db.AccessKey{Id: "access-1", Meta: new(`not json`)}},
+		)
 
 		_, err := me.GetByAccessKey("key")
 		assert.Error(t, err)
