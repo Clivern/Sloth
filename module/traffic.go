@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+
+	"github.com/samber/lo"
 )
 
 var (
@@ -67,10 +69,7 @@ func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTraffi
 
 	list := make([]*TrafficCallResponse, 0, len(calls))
 	for _, call := range calls {
-		taskId := ""
-		if call.TaskId != nil {
-			taskId = *call.TaskId
-		}
+		taskId := lo.FromPtr(call.TaskId)
 
 		list = append(list, &TrafficCallResponse{
 			Id:                  call.Id,
@@ -101,10 +100,7 @@ func (t *Traffic) GetTraffic(workspaceId, trafficId db.Id) (*TrafficCallResponse
 		return nil, ErrTrafficNotFound
 	}
 
-	taskId := ""
-	if call.TaskId != nil {
-		taskId = *call.TaskId
-	}
+	taskId := lo.FromPtr(call.TaskId)
 
 	return &TrafficCallResponse{
 		Id:                  call.Id,
