@@ -123,6 +123,7 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, locale.TR(r, "workspace_member_not_found")},
+			{module.ErrWorkspaceOwnerProtected, http.StatusConflict, locale.TR(r, "workspace_owner_protected")},
 		}) {
 			return
 		}
@@ -182,6 +183,7 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, locale.TR(r, "workspace_member_not_found")},
+			{module.ErrWorkspaceOwnerProtected, http.StatusConflict, locale.TR(r, "workspace_owner_protected")},
 		}) {
 			return
 		}

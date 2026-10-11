@@ -497,3 +497,6 @@ msgstr "Échec de la requête de protection d'agent."
 
 msgid "too_many_requests"
 msgstr "Trop de requêtes. Veuillez réessayer plus tard."
+
+msgid "workspace_owner_protected"
+msgstr "Le propriétaire de l’espace de travail ne peut pas être modifié ni retiré."

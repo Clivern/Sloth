@@ -93,6 +93,26 @@ func TestUnitWorkspaceMember(t *testing.T) {
 		assert.Equal(t, "Ada", response.Name)
 	})
 
+	t.Run("update role refuses to change the owner", func(t *testing.T) {
+		members := &fakeWorkspaceUsers{
+			membership: &db.WorkspaceUser{Id: "m-1", UserId: "user-1", Role: db.UserRoleOwner},
+		}
+
+		_, err := newWorkspaceModule(workspace, members, &fakeSubscriptions{}).
+			UpdateWorkspaceMemberRole("ws-1", "user-1", db.UserRoleAdmin)
+		assert.ErrorIs(t, err, ErrWorkspaceOwnerProtected)
+		assert.Empty(t, members.updated)
+	})
+
+	t.Run("delete refuses to remove the owner", func(t *testing.T) {
+		members := &fakeWorkspaceUsers{membership: &db.WorkspaceUser{Id: "m-1", Role: db.UserRoleOwner}}
+
+		err := newWorkspaceModule(workspace, members, &fakeSubscriptions{}).
+			DeleteWorkspaceMember("ws-1", "user-1")
+		assert.ErrorIs(t, err, ErrWorkspaceOwnerProtected)
+		assert.Empty(t, members.deleted)
+	})
+
 	t.Run("delete returns not found for a missing member", func(t *testing.T) {
 		err := newWorkspaceModule(workspace, &fakeWorkspaceUsers{}, &fakeSubscriptions{}).
 			DeleteWorkspaceMember("ws-1", "user-1")

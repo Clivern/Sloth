@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	ErrWorkspaceNotFound     = errors.New("workspace not found")
-	ErrWorkspaceUserNotFound = errors.New("workspace user not found")
-	ErrWorkspaceAccessDenied = errors.New("workspace access denied")
-	ErrWorkspaceCheckAccess  = errors.New("failed check workspace access")
+	ErrWorkspaceNotFound       = errors.New("workspace not found")
+	ErrWorkspaceUserNotFound   = errors.New("workspace user not found")
+	ErrWorkspaceOwnerProtected = errors.New("workspace owner cannot be changed or removed")
+	ErrWorkspaceAccessDenied   = errors.New("workspace access denied")
+	ErrWorkspaceCheckAccess    = errors.New("failed check workspace access")
 )
 
 // Workspace is the module for workspace CRUD and members.

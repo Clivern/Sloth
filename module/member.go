@@ -103,6 +103,9 @@ func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role st
 	if m == nil {
 		return nil, ErrWorkspaceUserNotFound
 	}
+	if m.Role == db.UserRoleOwner {
+		return nil, ErrWorkspaceOwnerProtected
+	}
 
 	m.Role = role
 
@@ -140,6 +143,9 @@ func (w *Workspace) DeleteWorkspaceMember(workspaceId, userId db.Id) error {
 	}
 	if m == nil {
 		return ErrWorkspaceUserNotFound
+	}
+	if m.Role == db.UserRoleOwner {
+		return ErrWorkspaceOwnerProtected
 	}
 
 	return w.WorkspaceUserRepository.Delete(m.Id)

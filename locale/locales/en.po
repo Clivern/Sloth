@@ -509,3 +509,6 @@ msgstr "Failed to complete the agent protection request."
 
 msgid "too_many_requests"
 msgstr "Too many requests. Please try again later."
+
+msgid "workspace_owner_protected"
+msgstr "The workspace owner cannot be changed or removed."
