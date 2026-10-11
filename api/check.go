@@ -121,6 +121,14 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("checkId", checkId).
+		Str("type", check.Type).
+		Bool("created", created).
+		Msg("Agent check saved")
+
 	a.WriteJSON(w, lo.Ternary(created, http.StatusCreated, http.StatusOK), check)
 }
 
@@ -155,6 +163,7 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 			Err(err).
 			Str("workspaceId", wid).
 			Str("agent", agentName).
+			Str("checkId", chi.URLParam(r, "checkId")).
 			Msg("Failed to delete agent check")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_check_request"),
@@ -162,6 +171,12 @@ func (a *API) DeleteAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Info().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("checkId", chi.URLParam(r, "checkId")).
+		Msg("Agent check deleted")
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -216,6 +231,8 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 			Err(err).
 			Str("workspaceId", wid).
 			Str("agent", agentName).
+			Str("instanceId", chi.URLParam(r, "instanceId")).
+			Str("checkId", chi.URLParam(r, "checkId")).
 			Msg("Failed to report check")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_check_request"),
@@ -223,6 +240,14 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Debug().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("instanceId", chi.URLParam(r, "instanceId")).
+		Str("checkId", check.CheckId).
+		Str("status", check.Status).
+		Msg("Check reported")
 
 	a.WriteJSON(w, http.StatusOK, check)
 }
@@ -277,6 +302,8 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 			Err(err).
 			Str("workspaceId", wid).
 			Str("agent", agentName).
+			Str("instanceId", chi.URLParam(r, "instanceId")).
+			Str("checkId", chi.URLParam(r, "checkId")).
 			Msg("Failed to report check")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_check_request"),
@@ -284,6 +311,14 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Debug().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("instanceId", chi.URLParam(r, "instanceId")).
+		Str("checkId", check.CheckId).
+		Str("status", check.Status).
+		Msg("Check reported")
 
 	a.WriteJSON(w, http.StatusOK, check)
 }
@@ -338,6 +373,8 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 			Err(err).
 			Str("workspaceId", wid).
 			Str("agent", agentName).
+			Str("instanceId", chi.URLParam(r, "instanceId")).
+			Str("checkId", chi.URLParam(r, "checkId")).
 			Msg("Failed to report check")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_check_request"),
@@ -345,6 +382,14 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Debug().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("instanceId", chi.URLParam(r, "instanceId")).
+		Str("checkId", check.CheckId).
+		Str("status", check.Status).
+		Msg("Check reported")
 
 	a.WriteJSON(w, http.StatusOK, check)
 }

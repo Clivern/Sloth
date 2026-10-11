@@ -16,6 +16,8 @@ import (
 	"github.com/clivern/cognit/module"
 	"github.com/clivern/cognit/pkg/broker"
 	"github.com/clivern/cognit/pkg/probe"
+
+	"github.com/rs/zerolog/log"
 )
 
 // HandleHealthCheck probes one health check job and records the result and next run time.
@@ -49,6 +51,14 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 	default:
 		return fmt.Errorf("unsupported health check type: %s", job.Type)
 	}
+
+	log.Debug().
+		Str("checkId", job.CheckId).
+		Str("type", job.Type).
+		Str("address", job.Address).
+		Int("port", job.Port).
+		Str("status", result.Status).
+		Msg("Health check probed")
 
 	return h.checks.Record(
 		db.Id(job.CheckId),

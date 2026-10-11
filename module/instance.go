@@ -14,6 +14,7 @@ import (
 	"github.com/clivern/cognit/locale"
 	"github.com/clivern/cognit/pkg/util"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -323,6 +324,13 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
 
+			log.Info().
+				Str("instanceId", instanceId.String()).
+				Str("checkId", template.CheckId).
+				Str("fromType", existing.Type).
+				Str("toType", template.Type).
+				Msg("Instance check reset after type change")
+
 			existing = nil
 		}
 
@@ -378,6 +386,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
+
+			log.Info().
+				Str("instanceId", instanceId.String()).
+				Str("checkId", check.CheckId).
+				Msg("Orphaned instance check removed")
 		}
 	}
 

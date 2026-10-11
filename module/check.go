@@ -11,6 +11,8 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/locale"
+
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -264,6 +266,13 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lan
 		if err != nil {
 			return err
 		}
+
+		log.Info().
+			Str("instanceId", instanceId.String()).
+			Str("checkId", template.CheckId).
+			Str("fromType", existing.Type).
+			Str("toType", template.Type).
+			Msg("Instance check reset after type change")
 
 		existing = nil
 	}
