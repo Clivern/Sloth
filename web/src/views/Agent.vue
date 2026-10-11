@@ -815,7 +815,7 @@ const { currentWorkspace, canManage } = useWorkspaceContext()
 
 const agent = ref(null)
 const instances = ref([])
-const instancesLimit = 50
+const instancesLimit = 20
 const instancesOffset = ref(0)
 const instancesTotal = ref(0)
 const loading = ref(false)
