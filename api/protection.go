@@ -158,6 +158,13 @@ func (a *API) UpdateProtectionStatusAction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	log.Info().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("protectionId", protection.Id.String()).
+		Bool("isActive", protection.IsActive).
+		Msg("Agent protection status updated")
+
 	a.WriteJSON(w, http.StatusOK, protection)
 }
 
