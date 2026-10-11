@@ -265,6 +265,40 @@ func (f *fakeAgentChecks) ListByAgentId(agentId db.Id) ([]*db.AgentCheck, error)
 	return f.list, f.listErr
 }
 
+type fakeAgentIdentities struct {
+	db.AgentIdentityRepository
+	identity  *db.AgentIdentity
+	byName    *db.AgentIdentity
+	list      []*db.AgentIdentity
+	listErr   error
+	createErr error
+}
+
+func (f *fakeAgentIdentities) GetById(id db.Id) (*db.AgentIdentity, error) {
+	return f.identity, nil
+}
+
+func (f *fakeAgentIdentities) GetByAgentAndName(agentId db.Id, name string) (*db.AgentIdentity, error) {
+	return f.byName, nil
+}
+
+func (f *fakeAgentIdentities) Create(identity *db.AgentIdentity) error {
+	identity.Id = "identity-1"
+	return f.createErr
+}
+
+func (f *fakeAgentIdentities) Update(identity *db.AgentIdentity) error {
+	return nil
+}
+
+func (f *fakeAgentIdentities) Delete(id db.Id) error {
+	return nil
+}
+
+func (f *fakeAgentIdentities) ListByAgentId(agentId db.Id) ([]*db.AgentIdentity, error) {
+	return f.list, f.listErr
+}
+
 type fakeAgentProtections struct {
 	db.AgentProtectionRepository
 	protection *db.AgentProtection
@@ -853,6 +887,21 @@ func (f *fakeSubscriptionRecords) Create(subscription *db.Subscription) error {
 
 func requestWithUser(r *http.Request, user *db.User) *http.Request {
 	return r.WithContext(middleware.WithUserContext(r.Context(), user))
+}
+
+func newIdentityRouter(api *API) *chi.Mux {
+	router := chi.NewRouter()
+	router.Get("/api/v1/workspaces/{workspaceId}/agents/{agentName}/identities", api.ListIdentitiesAction)
+	router.Post("/api/v1/workspaces/{workspaceId}/agents/{agentName}/identities", api.CreateIdentityAction)
+	router.Put(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/identities/{identityId}",
+		api.UpdateIdentityAction,
+	)
+	router.Delete(
+		"/api/v1/workspaces/{workspaceId}/agents/{agentName}/identities/{identityId}",
+		api.DeleteIdentityAction,
+	)
+	return router
 }
 
 func newProtectionRouter(api *API) *chi.Mux {
