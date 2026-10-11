@@ -50,16 +50,6 @@ func TestUnitWorkspaceAuditActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"total":1`)
 	})
 
-	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
-		api := newAPI(nil, &fakeAuditEvents{})
-		w := httptest.NewRecorder()
-		newRouter(api).
-			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/audits", nil))
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		assert.Contains(t, w.Body.String(), "workspace_not_found")
-	})
-
 	t.Run("list returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(workspace, &fakeAuditEvents{listErr: errors.New("boom")})
 		w := httptest.NewRecorder()

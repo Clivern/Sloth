@@ -87,13 +87,6 @@ func (a *Audit) GetAuditEvent(workspaceId, auditId db.Id) (*AuditEventResponse, 
 
 // ListAuditEvents returns paginated audit events for a workspace.
 func (a *Audit) ListAuditEvents(workspaceId db.Id, limit, offset int) (*ListAuditEventsResponse, error) {
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	total, err := a.AuditRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
