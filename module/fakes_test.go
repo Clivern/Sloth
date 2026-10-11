@@ -147,6 +147,34 @@ func (f *fakeAgentChecks) CountByAgentId(agentId db.Id) (int64, error) {
 	return f.total, nil
 }
 
+type fakeAgentProtections struct {
+	db.AgentProtectionRepository
+	protection *db.AgentProtection
+	created    []*db.AgentProtection
+	updated    []*db.AgentProtection
+	deleted    []db.Id
+}
+
+func (f *fakeAgentProtections) GetByAgentId(agentId db.Id) (*db.AgentProtection, error) {
+	return f.protection, nil
+}
+
+func (f *fakeAgentProtections) Create(protection *db.AgentProtection) error {
+	protection.Id = "protection-1"
+	f.created = append(f.created, protection)
+	return nil
+}
+
+func (f *fakeAgentProtections) Update(protection *db.AgentProtection) error {
+	f.updated = append(f.updated, protection)
+	return nil
+}
+
+func (f *fakeAgentProtections) Delete(id db.Id) error {
+	f.deleted = append(f.deleted, id)
+	return nil
+}
+
 type fakeInstances struct {
 	db.AgentInstanceRepository
 	list     []*db.AgentInstance
@@ -421,6 +449,23 @@ func newCheckFixture(agent *db.Agent) *checkFixture {
 
 func defaultCheckFixture() *checkFixture {
 	return newCheckFixture(&db.Agent{Id: "agent-1", Name: "support-assistant"})
+}
+
+type protectionFixture struct {
+	protection  *Protection
+	protections *fakeAgentProtections
+}
+
+// newProtectionFixture wires a Protection module to in-memory fakes; a nil agent simulates a missing one.
+func newProtectionFixture(agent *db.Agent) *protectionFixture {
+	f := &protectionFixture{protections: &fakeAgentProtections{}}
+	f.protection = NewProtection(&fakeAgents{agent: agent}, f.protections)
+
+	return f
+}
+
+func defaultProtectionFixture() *protectionFixture {
+	return newProtectionFixture(&db.Agent{Id: "agent-1", Name: "support-assistant"})
 }
 
 type agentFixture struct {
