@@ -17,7 +17,7 @@ Give the agent a server URL, a user API key (sent as `X-API-Key`), the files to 
 - **Routes** come from each feature's description and `openapi.yaml`. A path like `agents/x` is relative to `/api/v1/workspaces/{ws}/`.
 - **Then steps are exact.** Status, fields and values must all match. "No X field" means the key is absent. If a step is ambiguous, mark the scenario `unclear`.
 - **Scenarios are independent.** Background runs before each one.
-- **Rate limits.** The token route and setup are limited per IP, so run the `@slow` rate-limit scenario last.
+- **Rate limits.** The token route and setup are limited per IP, so run the `@slow` rate-limit scenarios last.
 - **No secrets** in the report. Use `<redacted>`.
 
 ## Report

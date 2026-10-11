@@ -16,6 +16,7 @@ Feature: Public routes
     GET  /api/v1/public/_metrics
 
   Note: do not follow redirects in this file; check the 302 and its Location.
+  Setup is rate limited to 5 requests a minute per client IP.
 
   # ---------------------------------------------------------------------------
   # Probes
@@ -54,6 +55,13 @@ Feature: Public routes
   Scenario: Setup rejects an invalid email before checking anything else
     When a request with no credentials POSTs setup with platformEmail "not-an-email"
     Then the response is 400
+
+  @readonly @slow
+  Scenario: Setup is rate limited
+    Given a minute has passed since the last setup request from this IP
+    When a request with no credentials POSTs setup 6 times in a row with platformEmail "not-an-email"
+    Then the first 5 responses are 400
+    And the 6th response is 429 with an errorMessage and a Retry-After header
 
   # ---------------------------------------------------------------------------
   # Logout

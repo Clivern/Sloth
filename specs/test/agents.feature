@@ -105,6 +105,30 @@ Feature: Agents
     Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
 
   @mutates
+  Scenario: A card without supportedInterfaces gets one pointing at the gateway
+    Given the agent "spec-<runId>-echo" is registered
+    And a card server serving {"name": "spec-<runId>-echo", "version": "1.0.0"}
+    When instance "i-1" registers with the card server's address and port
+    Then card.supportedInterfaces has 1 entry
+    And its url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+
+  @mutates
+  Scenario: A card that is not a JSON object is not stored
+    Given the agent "spec-<runId>-echo" is registered
+    And a card server serving ["not", "an", "object"]
+    When instance "i-1" registers with the card server's address and port
+    Then the response is 201
+    And reading the agent returns card null
+
+  @mutates
+  Scenario: A card larger than 1 MiB is not stored
+    Given the agent "spec-<runId>-echo" is registered
+    And a card server serving the minimal card padded with a "description" of 1048576 characters
+    When instance "i-1" registers with the card server's address and port
+    Then the response is 201
+    And reading the agent returns card null
+
+  @mutates
   Scenario: An instance still registers when its card cannot be fetched
     Given the agent "spec-<runId>-echo" is registered
     When instance "i-1" registers with address "127.0.0.1" and a port nothing listens on
@@ -133,6 +157,14 @@ Feature: Agents
     Then card is null
     When instance "i-1" registers again with the card server's address and port
     Then reading the agent returns a card
+
+  @mutates
+  Scenario: Changing the card path clears the card
+    Given the agent "spec-<runId>-echo" has its card
+    When the user PUTs {"version": "1.0.0", "cardPath": "/a2a/agent.json"} to agents/spec-<runId>-echo
+    Then the response is 200
+    And card is null and cardChecksum is ""
+    And cardPath is "/a2a/agent.json"
 
   @mutates
   Scenario: Re-registering with the same version and card path keeps the card
@@ -166,7 +198,14 @@ Feature: Agents
     Given the agent "spec-<runId>-echo" is registered
     When the user GETs agents/spec-<runId>-echo/.well-known/agent-card.json
     Then the response is 404
+    And errorMessage is "The agent card has not been fetched from an instance yet."
     And there is no ETag header
+
+  @readonly
+  Scenario: The well-known card of an agent that does not exist is not found
+    When the user GETs agents/spec-<runId>-missing/.well-known/agent-card.json
+    Then the response is 404
+    And errorMessage is "Agent not found."
 
   @mutates
   Scenario: The well-known card is the stored card with an ETag
