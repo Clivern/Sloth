@@ -111,7 +111,7 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 	return &ListAgentsResponse{Agents: list, Total: total}, nil
 }
 
-// GetAgent returns one agent by name.// GetAgent returns one agent by name.
+// GetAgent returns one agent by name.
 func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error) {
 	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
