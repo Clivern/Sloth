@@ -27,13 +27,18 @@ func TestUnitPermission(t *testing.T) {
 	})
 
 	t.Run("a non member gets no permissions", func(t *testing.T) {
-		allowed, err := newPerm(nil).WithUser(&db.User{Id: "user-1"}).WithWorkspace(workspace).Can(CanGetWorkspace)
+		allowed, err := newPerm(nil).
+			WithUser(&db.User{Id: "user-1"}).
+			WithWorkspace(workspace).
+			Can(CanGetWorkspace)
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
 
 	t.Run("a regular member can read but not change the workspace", func(t *testing.T) {
-		perm := newPerm(&db.WorkspaceUser{Role: db.UserRoleRegular}).WithUser(&db.User{Id: "user-1"}).WithWorkspace(workspace)
+		perm := newPerm(&db.WorkspaceUser{Role: db.UserRoleRegular}).
+			WithUser(&db.User{Id: "user-1"}).
+			WithWorkspace(workspace)
 
 		canRead, err := perm.Can(CanGetWorkspace)
 		require.NoError(t, err)
@@ -46,14 +51,20 @@ func TestUnitPermission(t *testing.T) {
 
 	t.Run("an admin or owner can manage agents", func(t *testing.T) {
 		for _, role := range []string{db.UserRoleAdmin, db.UserRoleOwner} {
-			allowed, err := newPerm(&db.WorkspaceUser{Role: role}).WithUser(&db.User{Id: "user-1"}).WithWorkspace(workspace).Can(CanDeleteAgent)
+			allowed, err := newPerm(&db.WorkspaceUser{Role: role}).
+				WithUser(&db.User{Id: "user-1"}).
+				WithWorkspace(workspace).
+				Can(CanDeleteAgent)
 			require.NoError(t, err)
 			assert.True(t, allowed, role)
 		}
 	})
 
 	t.Run("unknown permissions are denied", func(t *testing.T) {
-		allowed, err := newPerm(&db.WorkspaceUser{Role: db.UserRoleOwner}).WithUser(&db.User{Id: "user-1"}).WithWorkspace(workspace).Can("CAN_FLY")
+		allowed, err := newPerm(&db.WorkspaceUser{Role: db.UserRoleOwner}).
+			WithUser(&db.User{Id: "user-1"}).
+			WithWorkspace(workspace).
+			Can("CAN_FLY")
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
@@ -62,19 +73,31 @@ func TestUnitPermission(t *testing.T) {
 		meta := `{"permissions":["` + CanRegisterInstance + `"]}`
 		key := &db.AccessKey{WorkspaceId: "ws-2", Meta: &meta}
 
-		allowed, err := newPerm(nil).WithAccessKey(key).WithWorkspace(workspace).Can(CanRegisterInstance)
+		allowed, err := newPerm(nil).
+			WithAccessKey(key).
+			WithWorkspace(workspace).
+			Can(CanRegisterInstance)
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
 
 	t.Run("an access key needs the permission in its metadata", func(t *testing.T) {
-		withPermission := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`{"permissions":["` + CanRegisterInstance + `"]}`)}
-		allowed, err := newPerm(nil).WithAccessKey(withPermission).WithWorkspace(workspace).Can(CanRegisterInstance)
+		withPermission := &db.AccessKey{
+			WorkspaceId: "ws-1",
+			Meta:        new(`{"permissions":["` + CanRegisterInstance + `"]}`),
+		}
+		allowed, err := newPerm(nil).
+			WithAccessKey(withPermission).
+			WithWorkspace(workspace).
+			Can(CanRegisterInstance)
 		require.NoError(t, err)
 		assert.True(t, allowed)
 
 		withoutPermission := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`{"permissions":[]}`)}
-		allowed, err = newPerm(nil).WithAccessKey(withoutPermission).WithWorkspace(workspace).Can(CanRegisterInstance)
+		allowed, err = newPerm(nil).
+			WithAccessKey(withoutPermission).
+			WithWorkspace(workspace).
+			Can(CanRegisterInstance)
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
@@ -82,7 +105,10 @@ func TestUnitPermission(t *testing.T) {
 	t.Run("an access key never gets permissions outside the allowed set", func(t *testing.T) {
 		key := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`{"permissions":["CAN_FLY"]}`)}
 
-		allowed, err := newPerm(nil).WithAccessKey(key).WithWorkspace(workspace).Can("CAN_FLY")
+		allowed, err := newPerm(nil).
+			WithAccessKey(key).
+			WithWorkspace(workspace).
+			Can("CAN_FLY")
 		require.NoError(t, err)
 		assert.False(t, allowed)
 	})
@@ -90,7 +116,10 @@ func TestUnitPermission(t *testing.T) {
 	t.Run("an access key with corrupt metadata returns an error", func(t *testing.T) {
 		key := &db.AccessKey{WorkspaceId: "ws-1", Meta: new(`not json`)}
 
-		_, err := newPerm(nil).WithAccessKey(key).WithWorkspace(workspace).Can(CanRegisterInstance)
+		_, err := newPerm(nil).
+			WithAccessKey(key).
+			WithWorkspace(workspace).
+			Can(CanRegisterInstance)
 		assert.Error(t, err)
 	})
 
