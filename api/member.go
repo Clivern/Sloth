@@ -181,7 +181,6 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrWorkspaceUserNotFound, http.StatusNotFound, locale.TR(r, "workspace_member_not_found")},
 		}) {
 			return

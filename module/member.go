@@ -133,13 +133,6 @@ func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role st
 
 // DeleteWorkspaceMember removes a member from a workspace.
 func (w *Workspace) DeleteWorkspaceMember(workspaceId, userId db.Id) error {
-	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
 
 	m, err := w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
 	if err != nil {
