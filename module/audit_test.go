@@ -35,7 +35,14 @@ func TestUnitAudit(t *testing.T) {
 	t.Run("get returns the event", func(t *testing.T) {
 		createdAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 		audit := NewAudit(
-			&fakeAuditEvents{item: &db.AuditEvent{Id: "evt-1", WorkspaceId: "ws-1", Action: "workspace.update", CreatedAt: createdAt}},
+			&fakeAuditEvents{
+				item: &db.AuditEvent{
+					Id:          "evt-1",
+					WorkspaceId: "ws-1",
+					Action:      "workspace.update",
+					CreatedAt:   createdAt,
+				},
+			},
 			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
 		)
 
@@ -46,7 +53,10 @@ func TestUnitAudit(t *testing.T) {
 	})
 
 	t.Run("get wraps the repository error", func(t *testing.T) {
-		audit := NewAudit(&fakeAuditEvents{err: errors.New("boom")}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		audit := NewAudit(
+			&fakeAuditEvents{err: errors.New("boom")},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := audit.GetAuditEvent("ws-1", "evt-1")
 		assert.ErrorIs(t, err, ErrFailedGetAuditEvent)
@@ -54,7 +64,10 @@ func TestUnitAudit(t *testing.T) {
 
 	t.Run("list returns the events and the total", func(t *testing.T) {
 		audit := NewAudit(
-			&fakeAuditEvents{list: []*db.AuditEvent{{Id: "evt-1", WorkspaceId: "ws-1", Action: "a"}}, total: 7},
+			&fakeAuditEvents{
+				list:  []*db.AuditEvent{{Id: "evt-1", WorkspaceId: "ws-1", Action: "a"}},
+				total: 7,
+			},
 			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
 		)
 
@@ -65,7 +78,10 @@ func TestUnitAudit(t *testing.T) {
 	})
 
 	t.Run("list wraps the repository error", func(t *testing.T) {
-		audit := NewAudit(&fakeAuditEvents{err: errors.New("boom")}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		audit := NewAudit(
+			&fakeAuditEvents{err: errors.New("boom")},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := audit.ListAuditEvents("ws-1", 20, 0)
 		assert.ErrorIs(t, err, ErrFailedListAuditEvents)
