@@ -51,3 +51,4 @@ ngrok
 events/*
 !events/.gitkeep
 .secrets
+test_server.py
