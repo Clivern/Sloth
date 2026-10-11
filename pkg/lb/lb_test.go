@@ -11,9 +11,24 @@ import (
 )
 
 func TestUnitPicker(t *testing.T) {
-	a := AgentInstance{InstanceId: "invoice-extractor-1", Address: "10.0.12.41", Port: 8080, Outstanding: 2}
-	b := AgentInstance{InstanceId: "invoice-extractor-2", Address: "10.0.12.42", Port: 8080, Outstanding: 0}
-	c := AgentInstance{InstanceId: "invoice-extractor-3", Address: "10.0.12.43", Port: 8080, Outstanding: 0}
+	a := AgentInstance{
+		InstanceId:  "invoice-extractor-1",
+		Address:     "10.0.12.41",
+		Port:        8080,
+		Outstanding: 2,
+	}
+	b := AgentInstance{
+		InstanceId:  "invoice-extractor-2",
+		Address:     "10.0.12.42",
+		Port:        8080,
+		Outstanding: 0,
+	}
+	c := AgentInstance{
+		InstanceId:  "invoice-extractor-3",
+		Address:     "10.0.12.43",
+		Port:        8080,
+		Outstanding: 0,
+	}
 
 	t.Run("empty pool", func(t *testing.T) {
 		_, err := New().Pick(nil, Options{})
