@@ -468,6 +468,18 @@ msgstr "En attente de la première vérification"
 msgid "waiting_for_first_report"
 msgstr "En attente du premier rapport"
 
+msgid "identity_not_found"
+msgstr "Identité d'agent introuvable."
+
+msgid "identity_already_exists"
+msgstr "Une identité portant ce nom existe déjà pour cet agent."
+
+msgid "invalid_identity_config"
+msgstr "Les identités en authentification basique exigent un nom d'utilisateur, les clés API n'en ont pas."
+
+msgid "failed_identity_request"
+msgstr "Échec de la requête d'identité d'agent."
+
 msgid "protection_not_found"
 msgstr "Protection d'agent introuvable."
 

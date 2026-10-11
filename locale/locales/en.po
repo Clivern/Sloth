@@ -480,6 +480,18 @@ msgstr "Waiting for the first check"
 msgid "waiting_for_first_report"
 msgstr "Waiting for the first report"
 
+msgid "identity_not_found"
+msgstr "Agent identity not found."
+
+msgid "identity_already_exists"
+msgstr "An identity with this name already exists for the agent."
+
+msgid "invalid_identity_config"
+msgstr "Basic auth identities need a username, and API key identities must not have one."
+
+msgid "failed_identity_request"
+msgstr "Failed to complete the agent identity request."
+
 msgid "protection_not_found"
 msgstr "Agent protection not found."
 
