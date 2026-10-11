@@ -265,6 +265,29 @@ func (f *fakeAgentChecks) ListByAgentId(agentId db.Id) ([]*db.AgentCheck, error)
 	return f.list, f.listErr
 }
 
+type fakeAgentProtections struct {
+	db.AgentProtectionRepository
+	protection *db.AgentProtection
+	getErr     error
+}
+
+func (f *fakeAgentProtections) GetByAgentId(agentId db.Id) (*db.AgentProtection, error) {
+	return f.protection, f.getErr
+}
+
+func (f *fakeAgentProtections) Create(protection *db.AgentProtection) error {
+	protection.Id = "protection-1"
+	return nil
+}
+
+func (f *fakeAgentProtections) Update(protection *db.AgentProtection) error {
+	return nil
+}
+
+func (f *fakeAgentProtections) Delete(id db.Id) error {
+	return nil
+}
+
 type fakeCheckInstances struct {
 	db.AgentInstanceRepository
 	instance *db.AgentInstance
@@ -830,4 +853,13 @@ func (f *fakeSubscriptionRecords) Create(subscription *db.Subscription) error {
 
 func requestWithUser(r *http.Request, user *db.User) *http.Request {
 	return r.WithContext(middleware.WithUserContext(r.Context(), user))
+}
+
+func newProtectionRouter(api *API) *chi.Mux {
+	router := chi.NewRouter()
+	router.Get("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection", api.GetProtectionAction)
+	router.Put("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection", api.SaveProtectionAction)
+	router.Put("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection/status", api.UpdateProtectionStatusAction)
+	router.Delete("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection", api.DeleteProtectionAction)
+	return router
 }

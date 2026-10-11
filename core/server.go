@@ -147,6 +147,13 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/{checkId}", a.UpsertAgentCheckAction)    // create or replace a health check template
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Delete("/{checkId}", a.DeleteAgentCheckAction) // delete a health check template
 			})
+
+			r.Route("/{agentName}/protection", func(r chi.Router) {
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/", a.GetProtectionAction)                   // get the agent protection
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/", a.SaveProtectionAction)               // set or replace the agent protection
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/status", a.UpdateProtectionStatusAction) // turn the agent protection on or off
+				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Delete("/", a.DeleteProtectionAction)          // remove the agent protection
+			})
 		})
 
 		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/discover", a.DiscoverAgentsAction)                                   // TODO: perm for discovery

@@ -18,24 +18,25 @@ var Instance *API
 
 // API holds shared application modules for HTTP handlers.
 type API struct {
-	Auth      *module.Auth
-	Profile   *module.Profile
-	Setup     *module.Setup
-	Settings  *module.Settings
-	APIKey    *module.APIKey
-	Me        *module.Me
-	Workspace *module.Workspace
-	Invite    *module.Invite
-	Access    *module.Access
-	Billing   *module.Billing
-	Stats     *module.Stats
-	Audit     *module.Audit
-	Agent     *module.Agent
-	Instance  *module.Instance
-	Check     *module.Check
-	Intention *module.Intention
-	KeyValue  *module.KeyValue
-	Traffic   *module.Traffic
+	Auth       *module.Auth
+	Profile    *module.Profile
+	Setup      *module.Setup
+	Settings   *module.Settings
+	APIKey     *module.APIKey
+	Me         *module.Me
+	Workspace  *module.Workspace
+	Invite     *module.Invite
+	Access     *module.Access
+	Billing    *module.Billing
+	Stats      *module.Stats
+	Audit      *module.Audit
+	Agent      *module.Agent
+	Instance   *module.Instance
+	Check      *module.Check
+	Protection *module.Protection
+	Intention  *module.Intention
+	KeyValue   *module.KeyValue
+	Traffic    *module.Traffic
 
 	GitHubOAuth *github.OAuth
 	GoogleOAuth *google.OAuth
@@ -64,30 +65,32 @@ func New() *API {
 	instances := db.NewAgentInstanceRepository(conn)
 	healthChecks := db.NewHealthCheckRepository(conn)
 	agentChecks := db.NewAgentCheckRepository(conn)
+	protections := db.NewAgentProtectionRepository(conn)
 	intentions := db.NewIntentionRepository(conn)
 	kv := db.NewWorkspaceKeyValueRepository(conn)
 	traffic := db.NewTrafficRepository(conn)
 	usage := db.NewUsageRepository(conn)
 
 	a := &API{
-		Auth:      module.NewAuth(users, sessions, configs),
-		Profile:   module.NewProfile(users),
-		Setup:     module.NewSetup(configs, users),
-		Settings:  module.NewSettings(configs),
-		APIKey:    module.NewAPIKey(apiKeys),
-		Me:        module.NewMe(apiKeys, users, accessKeys),
-		Workspace: module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
-		Invite:    module.NewInvite(invites, users, configs, workspaces, workspaceUsers, resend.NewMailer()),
-		Access:    module.NewAccess(accessKeys, workspaces),
-		Billing:   module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
-		Stats:     module.NewStats(workspaces, stats),
-		Audit:     module.NewAudit(audits, workspaces),
-		Agent:     module.NewAgent(agents, instances, healthChecks, workspaces),
-		Instance:  module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
-		Check:     module.NewCheck(agents, agentChecks, instances, healthChecks),
-		Intention: module.NewIntention(intentions, workspaces),
-		KeyValue:  module.NewKeyValue(kv, workspaces),
-		Traffic:   module.NewTraffic(traffic, workspaces),
+		Auth:       module.NewAuth(users, sessions, configs),
+		Profile:    module.NewProfile(users),
+		Setup:      module.NewSetup(configs, users),
+		Settings:   module.NewSettings(configs),
+		APIKey:     module.NewAPIKey(apiKeys),
+		Me:         module.NewMe(apiKeys, users, accessKeys),
+		Workspace:  module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
+		Invite:     module.NewInvite(invites, users, configs, workspaces, workspaceUsers, resend.NewMailer()),
+		Access:     module.NewAccess(accessKeys, workspaces),
+		Billing:    module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
+		Stats:      module.NewStats(workspaces, stats),
+		Audit:      module.NewAudit(audits, workspaces),
+		Agent:      module.NewAgent(agents, instances, healthChecks, workspaces),
+		Instance:   module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
+		Check:      module.NewCheck(agents, agentChecks, instances, healthChecks),
+		Protection: module.NewProtection(agents, protections),
+		Intention:  module.NewIntention(intentions, workspaces),
+		KeyValue:   module.NewKeyValue(kv, workspaces),
+		Traffic:    module.NewTraffic(traffic, workspaces),
 		GitHubOAuth: github.NewOAuth(github.OAuthConfig{
 			ClientID:     viper.GetString("app.oauth.github.client_id"),
 			ClientSecret: viper.GetString("app.oauth.github.client_secret"),
