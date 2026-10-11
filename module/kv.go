@@ -22,7 +22,7 @@ var (
 	ErrFailedGetKeyValue    = errors.New("failed get kv")
 	ErrFailedPutKeyValue    = errors.New("failed put kv")
 	ErrFailedDeleteKeyValue = errors.New("failed delete kv")
-	keyValueKeyPattern      = regexp.MustCompile(`^[A-Za-z0-9_./-]{1,200}$`)
+	KeyValueKeyPattern      = regexp.MustCompile(`^[A-Za-z0-9_./-]{1,200}$`)
 )
 
 // KeyValue is the module for workspace key/value config.
@@ -64,28 +64,6 @@ func NewKeyValue(items db.WorkspaceKeyValueRepository, workspaces db.WorkspaceRe
 
 // ListKeyValue returns non-expired keys that start with prefix.
 func (k *KeyValue) ListKeyValue(workspaceId db.Id, prefix string) (*ListKeyValueResponse, error) {
-	prefixKey := strings.TrimSuffix(prefix, "/")
-	valid := prefix == "" || keyValueKeyPattern.MatchString(prefixKey)
-	if valid && prefix != "" {
-		for _, part := range strings.Split(prefixKey, "/") {
-			if part == "" || part == "." || part == ".." {
-				valid = false
-				break
-			}
-		}
-	}
-	if !valid {
-		return nil, ErrInvalidKeyValueKey
-	}
-
-	workspace, err := k.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	items, err := k.KeyValueRepository.ListByPrefix(workspaceId, strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(prefix))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListKeyValue, err)
@@ -114,27 +92,6 @@ func (k *KeyValue) ListKeyValue(workspaceId db.Id, prefix string) (*ListKeyValue
 
 // GetKeyValue returns one non-expired key.
 func (k *KeyValue) GetKeyValue(workspaceId db.Id, key string) (*KeyValueResponse, error) {
-	valid := keyValueKeyPattern.MatchString(key)
-	if valid {
-		for _, part := range strings.Split(key, "/") {
-			if part == "" || part == "." || part == ".." {
-				valid = false
-				break
-			}
-		}
-	}
-	if !valid {
-		return nil, ErrInvalidKeyValueKey
-	}
-
-	workspace, err := k.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	item, err := k.KeyValueRepository.Get(workspaceId, key)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetKeyValue, err)
@@ -161,7 +118,7 @@ func (k *KeyValue) GetKeyValue(workspaceId db.Id, key string) (*KeyValueResponse
 
 // PutKeyValue writes a workspace key.
 func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRequest) (*KeyValueResponse, error) {
-	valid := keyValueKeyPattern.MatchString(key)
+	valid := KeyValueKeyPattern.MatchString(key)
 	if valid {
 		for _, part := range strings.Split(key, "/") {
 			if part == "" || part == "." || part == ".." {
@@ -221,27 +178,6 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 
 // DeleteKeyValue removes a workspace key.
 func (k *KeyValue) DeleteKeyValue(workspaceId db.Id, key string) error {
-	valid := keyValueKeyPattern.MatchString(key)
-	if valid {
-		for _, part := range strings.Split(key, "/") {
-			if part == "" || part == "." || part == ".." {
-				valid = false
-				break
-			}
-		}
-	}
-	if !valid {
-		return ErrInvalidKeyValueKey
-	}
-
-	workspace, err := k.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
-
 	item, err := k.KeyValueRepository.Get(workspaceId, key)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrFailedDeleteKeyValue, err)

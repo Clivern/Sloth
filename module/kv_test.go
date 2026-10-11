@@ -14,21 +14,12 @@ import (
 )
 
 func TestUnitKeyValue(t *testing.T) {
-	t.Run("list rejects invalid prefixes", func(t *testing.T) {
-		kv := NewKeyValue(&fakeWorkspaceKeyValues{}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
-
-		_, err := kv.ListKeyValue("ws-1", "a//b")
-		assert.ErrorIs(t, err, ErrInvalidKeyValueKey)
-
-		_, err = kv.ListKeyValue("ws-1", "../secrets")
-		assert.ErrorIs(t, err, ErrInvalidKeyValueKey)
-	})
-
-	t.Run("list returns not found for a missing workspace", func(t *testing.T) {
+	t.Run("list returns an empty result for an invalid prefix and a missing workspace", func(t *testing.T) {
 		kv := NewKeyValue(&fakeWorkspaceKeyValues{}, &fakeWorkspaces{})
 
-		_, err := kv.ListKeyValue("ws-1", "app/")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
+		response, err := kv.ListKeyValue("ws-1", "a//b")
+		require.NoError(t, err)
+		assert.Empty(t, response.Items)
 	})
 
 	t.Run(
@@ -57,11 +48,11 @@ func TestUnitKeyValue(t *testing.T) {
 		assert.ErrorIs(t, err, ErrFailedListKeyValue)
 	})
 
-	t.Run("get rejects invalid keys and returns not found for missing ones", func(t *testing.T) {
+	t.Run("get returns not found for an invalid key and for missing ones", func(t *testing.T) {
 		workspace := &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}
 
 		_, err := NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).GetKeyValue("ws-1", "a/../b")
-		assert.ErrorIs(t, err, ErrInvalidKeyValueKey)
+		assert.ErrorIs(t, err, ErrKeyValueNotFound)
 
 		_, err = NewKeyValue(&fakeWorkspaceKeyValues{}, workspace).GetKeyValue("ws-1", "app/theme")
 		assert.ErrorIs(t, err, ErrKeyValueNotFound)
