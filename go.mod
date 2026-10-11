@@ -3,7 +3,7 @@ module github.com/clivern/cognit
 go 1.27.2
 
 require (
-	github.com/OpenRouterTeam/go-sdk v0.9.38
+	github.com/OpenRouterTeam/go-sdk v0.9.42
 	github.com/drone/envsubst v1.0.3
 	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.5
