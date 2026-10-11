@@ -6,6 +6,7 @@ package db
 import (
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +26,9 @@ func TestIntegrationAgentRepository(t *testing.T) {
 		assert.Equal(t, workspace.Id, got.WorkspaceId)
 		assert.Equal(t, agent.CardChecksum, got.CardChecksum)
 		assert.Equal(t, "1.0.0", got.Version)
-		assert.Contains(t, got.Card, "invoice-extractor")
+		assert.Equal(t, "/.well-known/agent-card.json", got.CardPath)
+		require.NotNil(t, got.Card)
+		assert.Contains(t, *got.Card, "invoice-extractor")
 
 		byName, err := repo.GetByWorkspaceAndName(workspace.Id, "invoice-extractor")
 		require.NoError(t, err)
@@ -51,14 +54,16 @@ func TestIntegrationAgentRepository(t *testing.T) {
 		createTestAgent(t, database, workspace.Id, "other-agent")
 
 		agent.Version = "1.1.0"
-		agent.Card = `{"name":"support-assistant","version":"1.1.0"}`
-		agent.CardChecksum = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		agent.Card = lo.ToPtr(`{"name":"support-assistant","version":"1.1.0"}`)
+		agent.CardChecksum = lo.ToPtr("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+		agent.CardPath = "/agent.json"
 		require.NoError(t, repo.Update(agent))
 
 		got, err := repo.GetById(agent.Id)
 		require.NoError(t, err)
 		assert.Equal(t, "1.1.0", got.Version)
 		assert.Equal(t, agent.CardChecksum, got.CardChecksum)
+		assert.Equal(t, "/agent.json", got.CardPath)
 
 		list, err := repo.ListByWorkspaceId(workspace.Id, 50, 0)
 		require.NoError(t, err)
@@ -77,13 +82,51 @@ func TestIntegrationAgentRepository(t *testing.T) {
 	t.Run("unique name per workspace", func(t *testing.T) {
 		createTestAgent(t, database, workspace.Id, "unique-agent")
 		duplicate := &Agent{
-			WorkspaceId:  workspace.Id,
-			Name:         "unique-agent",
-			Card:         `{"name":"unique-agent"}`,
-			CardChecksum: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-			Version:      "1.0.0",
+			WorkspaceId: workspace.Id,
+			Name:        "unique-agent",
+			CardPath:    "/.well-known/agent-card.json",
+			Version:     "1.0.0",
 		}
 		assert.Error(t, repo.Create(duplicate))
+	})
+
+	t.Run("an agent can be created without a card", func(t *testing.T) {
+		agent := &Agent{
+			WorkspaceId: workspace.Id,
+			Name:        "pending-agent",
+			CardPath:    "/.well-known/agent-card.json",
+			Version:     "1.0.0",
+		}
+		require.NoError(t, repo.Create(agent))
+
+		got, err := repo.GetById(agent.Id)
+		require.NoError(t, err)
+		assert.Nil(t, got.Card)
+		assert.Nil(t, got.CardChecksum)
+	})
+
+	t.Run("set card if missing only fills an empty card", func(t *testing.T) {
+		agent := &Agent{
+			WorkspaceId: workspace.Id,
+			Name:        "fetched-agent",
+			CardPath:    "/.well-known/agent-card.json",
+			Version:     "1.0.0",
+		}
+		require.NoError(t, repo.Create(agent))
+
+		stored, err := repo.SetCardIfMissing(agent.Id, `{"name":"first"}`, "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+		require.NoError(t, err)
+		assert.True(t, stored)
+
+		stored, err = repo.SetCardIfMissing(agent.Id, `{"name":"second"}`, "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+		require.NoError(t, err)
+		assert.False(t, stored)
+
+		got, err := repo.GetById(agent.Id)
+		require.NoError(t, err)
+		require.NotNil(t, got.Card)
+		assert.Contains(t, *got.Card, "first")
+		assert.Equal(t, "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", lo.FromPtr(got.CardChecksum))
 	})
 }
 

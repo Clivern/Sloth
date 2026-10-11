@@ -14,8 +14,9 @@ type Agent struct {
 	Id           Id
 	WorkspaceId  Id
 	Name         string
-	Card         string
-	CardChecksum string
+	Card         *string
+	CardChecksum *string
+	CardPath     string
 	Version      string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -27,6 +28,7 @@ type AgentRepository interface {
 	GetById(id Id) (*Agent, error)
 	GetByWorkspaceAndName(workspaceId Id, name string) (*Agent, error)
 	Update(agent *Agent) error
+	SetCardIfMissing(id Id, card, checksum string) (bool, error)
 	Delete(id Id) error
 	ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Agent, error)
 	CountByWorkspaceId(workspaceId Id) (int64, error)
@@ -75,14 +77,15 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 	agent.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agents (id, workspace_id, name, card, card_checksum, version)
-		VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+		`INSERT INTO agents (id, workspace_id, name, card, card_checksum, card_path, version)
+		VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
 		RETURNING created_at, updated_at`,
 		agent.Id.String(),
 		agent.WorkspaceId.String(),
 		agent.Name,
 		agent.Card,
 		agent.CardChecksum,
+		agent.CardPath,
 		agent.Version,
 	).Scan(&agent.CreatedAt, &agent.UpdatedAt)
 }
@@ -91,7 +94,7 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 	agent := &Agent{}
 	err := r.db.QueryRow(
-		`SELECT id, workspace_id, name, card, card_checksum, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
 		FROM agents
 		WHERE id = $1`,
 		id.String(),
@@ -101,6 +104,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 		&agent.Name,
 		&agent.Card,
 		&agent.CardChecksum,
+		&agent.CardPath,
 		&agent.Version,
 		&agent.CreatedAt,
 		&agent.UpdatedAt,
@@ -116,7 +120,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name string) (*Agent, error) {
 	agent := &Agent{}
 	err := r.db.QueryRow(
-		`SELECT id, workspace_id, name, card, card_checksum, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
 		FROM agents
 		WHERE workspace_id = $1 AND name = $2`,
 		workspaceId.String(),
@@ -127,6 +131,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 		&agent.Name,
 		&agent.Card,
 		&agent.CardChecksum,
+		&agent.CardPath,
 		&agent.Version,
 		&agent.CreatedAt,
 		&agent.UpdatedAt,
@@ -138,21 +143,42 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 	return agent, err
 }
 
-// Update updates an agent card and version.
+// Update updates an agent card, card path and version.
 func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 	_, err := r.db.Exec(
 		`UPDATE agents
-		SET name = $1, card = $2::jsonb, card_checksum = $3, version = $4, updated_at = $5
-		WHERE id = $6`,
+		SET name = $1, card = $2::jsonb, card_checksum = $3, card_path = $4, version = $5, updated_at = $6
+		WHERE id = $7`,
 		agent.Name,
 		agent.Card,
 		agent.CardChecksum,
+		agent.CardPath,
 		agent.Version,
 		time.Now().UTC(),
 		agent.Id.String(),
 	)
 
 	return err
+}
+
+// SetCardIfMissing stores a fetched card only when the agent has none yet and reports whether it did.
+func (r *AgentRepositoryPostgres) SetCardIfMissing(id Id, card, checksum string) (bool, error) {
+	result, err := r.db.Exec(
+		`UPDATE agents
+		SET card = $1::jsonb, card_checksum = $2, updated_at = $3
+		WHERE id = $4 AND card IS NULL`,
+		card,
+		checksum,
+		time.Now().UTC(),
+		id.String(),
+	)
+	if err != nil {
+		return false, err
+	}
+
+	affected, err := result.RowsAffected()
+
+	return affected > 0, err
 }
 
 // Delete removes an agent row.
@@ -165,7 +191,7 @@ func (r *AgentRepositoryPostgres) Delete(id Id) error {
 // ListByWorkspaceId lists agents in a workspace.
 func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Agent, error) {
 	rows, err := r.db.Query(
-		`SELECT id, workspace_id, name, card, card_checksum, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
 		FROM agents
 		WHERE workspace_id = $1
 		ORDER BY name
@@ -189,6 +215,7 @@ func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offse
 			&agent.Name,
 			&agent.Card,
 			&agent.CardChecksum,
+			&agent.CardPath,
 			&agent.Version,
 			&agent.CreatedAt,
 			&agent.UpdatedAt,

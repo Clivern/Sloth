@@ -4,6 +4,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -504,15 +506,18 @@ func newInstanceAPI(
 	instances *fakeInstanceRecords,
 	checks *fakeInstanceChecks,
 ) *API {
-	return &API{
-		Instance: module.NewInstance(
-			agent,
-			instances,
-			checks,
-			&fakeAgentChecks{},
-			&fakeWorkspaceRecords{workspace: workspace},
-		),
+	instance := module.NewInstance(
+		agent,
+		instances,
+		checks,
+		&fakeAgentChecks{},
+		&fakeWorkspaceRecords{workspace: workspace},
+	)
+	instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
+		return nil, errors.New("connection refused")
 	}
+
+	return &API{Instance: instance}
 }
 
 func newInstanceRouter(api *API) *chi.Mux {

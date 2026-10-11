@@ -1034,7 +1034,12 @@ paths:
   /api/v1/workspaces/{workspaceId}/agents/{agentName}:
     put:
       tags: [Agents]
-      summary: Register or replace agent card
+      summary: Register or update agent
+      description: |
+        Registers an agent by name and version. The agent card is not sent here; it is
+        fetched from the first instance that registers, at `cardPath` on its address and
+        port. Changing the version or card path clears the stored card so the next
+        instance to register fetches it again.
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -1167,7 +1172,9 @@ paths:
       summary: Register or update instance
       description: |
         Accepts workspace access keys (`X-Access-Key`) without a user session.
-        The agent card must exist before registering an instance.
+        The agent must be registered before its instances. While the agent has no card,
+        registering an instance fetches it from the instance's address and port; a failed
+        fetch does not fail the registration.
       security:
         - sessionCookie: []
         - userApiKey: []
@@ -2615,16 +2622,17 @@ components:
 
     UpsertAgentRequest:
       type: object
-      required: [card]
+      required: [version]
       properties:
-        card:
-          type: object
-          description: A2A Agent Card JSON object
-          additionalProperties: true
         version:
           type: string
           maxLength: 40
-          description: Optional; taken from card.version when omitted
+        cardPath:
+          type: string
+          maxLength: 255
+          pattern: "^/"
+          default: /.well-known/agent-card.json
+          description: Path instances serve their A2A card on
 
     Agent:
       type: object
@@ -2641,8 +2649,13 @@ components:
           type: string
         card:
           type: object
+          nullable: true
           additionalProperties: true
+          description: The card fetched from the first instance, with interface URLs pointed at the gateway; null until fetched.
         cardChecksum:
+          type: string
+          description: Empty until the card is fetched.
+        cardPath:
           type: string
         health:
           type: string

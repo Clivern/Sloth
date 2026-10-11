@@ -13,6 +13,7 @@ import (
 
 	"github.com/clivern/cognit/db"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,13 +23,14 @@ func TestUnitAgentActions(t *testing.T) {
 		Id:           "agent-1",
 		WorkspaceId:  "ws-1",
 		Name:         "user-directory",
-		Card:         `{"name":"User Directory","version":"1.0.0"}`,
-		CardChecksum: "9f2c",
+		Card:         lo.ToPtr(`{"name":"User Directory","version":"1.0.0"}`),
+		CardChecksum: lo.ToPtr("9f2c"),
+		CardPath:     "/.well-known/agent-card.json",
 		Version:      "1.0.0",
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
-	validBody := `{"card":{"name":"User Directory","version":"1.0.0"}}`
+	validBody := `{"version":"1.0.0"}`
 
 	t.Run("list returns agents with pagination meta", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{list: []*db.Agent{stored}, total: 1})
@@ -140,18 +142,17 @@ func TestUnitAgentActions(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 
-	t.Run("upsert returns 400 for a card that is not an object", func(t *testing.T) {
+	t.Run("upsert returns 400 for a card path that is not absolute", func(t *testing.T) {
 		api := newAgentAPI(workspace, &fakeAgentCatalog{})
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(
 			http.MethodPut,
 			"/api/v1/workspaces/ws-1/agents/user-directory",
-			strings.NewReader(`{"card":"text","version":"1.0.0"}`),
+			strings.NewReader(`{"version":"1.0.0","cardPath":"agent.json"}`),
 		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Contains(t, w.Body.String(), "invalid_agent_card")
 	})
 
 	t.Run("upsert returns 400 when no version is given", func(t *testing.T) {
@@ -160,12 +161,11 @@ func TestUnitAgentActions(t *testing.T) {
 		req := httptest.NewRequest(
 			http.MethodPut,
 			"/api/v1/workspaces/ws-1/agents/user-directory",
-			strings.NewReader(`{"card":{"name":"User Directory"}}`),
+			strings.NewReader(`{}`),
 		)
 		newAgentRouter(api).ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Contains(t, w.Body.String(), "invalid_agent_version")
 	})
 
 	t.Run("upsert returns 400 for invalid agent name", func(t *testing.T) {

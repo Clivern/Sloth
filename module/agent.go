@@ -4,23 +4,23 @@
 package module
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/pkg/util"
+
 	"github.com/samber/lo"
-	"github.com/spf13/viper"
 )
 
 var (
 	ErrAgentNotFound        = errors.New("agent not found")
 	ErrInvalidAgentName     = errors.New("invalid agent name")
-	ErrInvalidAgentCard     = errors.New("invalid agent card")
+	ErrInvalidCardPath      = errors.New("invalid agent card path")
 	ErrAgentVersionRequired = errors.New("agent version required")
 	ErrFailedListAgents     = errors.New("failed list agents")
 	ErrFailedGetAgent       = errors.New("failed get agent")
@@ -39,10 +39,10 @@ type Agent struct {
 	WorkspaceRepository   db.WorkspaceRepository
 }
 
-// UpsertAgentRequest is the body for registering or replacing an agent card.
+// UpsertAgentRequest is the body for registering or updating an agent.
 type UpsertAgentRequest struct {
-	Card    json.RawMessage `json:"card" label:"Card"`
-	Version string          `json:"version" validate:"omitempty,max=40" label:"Version"`
+	Version  string `json:"version" validate:"required,max=40" label:"Version"`
+	CardPath string `json:"cardPath" validate:"omitempty,max=255,startswith=/" label:"Card Path"`
 }
 
 // AgentResponse is an agent shaped for API responses.
@@ -53,6 +53,7 @@ type AgentResponse struct {
 	Version      string          `json:"version"`
 	Card         json.RawMessage `json:"card"`
 	CardChecksum string          `json:"cardChecksum"`
+	CardPath     string          `json:"cardPath"`
 	Health       string          `json:"health"`
 	StatusCounts map[string]int  `json:"statusCounts"`
 	CreatedAt    string          `json:"createdAt"`
@@ -99,8 +100,9 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			WorkspaceId:  item.WorkspaceId,
 			Name:         item.Name,
 			Version:      item.Version,
-			Card:         json.RawMessage(item.Card),
-			CardChecksum: item.CardChecksum,
+			Card:         util.JSONRawFromString(item.Card),
+			CardChecksum: lo.FromPtr(item.CardChecksum),
+			CardPath:     item.CardPath,
 			Health:       health,
 			StatusCounts: counts,
 			CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
@@ -131,8 +133,9 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		WorkspaceId:  agent.WorkspaceId,
 		Name:         agent.Name,
 		Version:      agent.Version,
-		Card:         json.RawMessage(agent.Card),
-		CardChecksum: agent.CardChecksum,
+		Card:         util.JSONRawFromString(agent.Card),
+		CardChecksum: lo.FromPtr(agent.CardChecksum),
+		CardPath:     agent.CardPath,
 		Health:       health,
 		StatusCounts: counts,
 		CreatedAt:    agent.CreatedAt.UTC().Format(time.RFC3339),
@@ -140,55 +143,20 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 	}, nil
 }
 
-// UpsertAgent creates or replaces the agent card for a name.
+// UpsertAgent creates or updates an agent's version and card path.
 func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequest) (*AgentResponse, bool, error) {
 	if !AgentNamePattern.MatchString(name) {
 		return nil, false, ErrInvalidAgentName
 	}
 
-	if req == nil {
-		return nil, false, ErrInvalidAgentCard
-	}
-
-	var raw map[string]any
-	var body struct {
-		Version string `json:"version"`
-	}
-	if json.Unmarshal(req.Card, &raw) != nil || json.Unmarshal(req.Card, &body) != nil {
-		return nil, false, ErrInvalidAgentCard
-	}
-
-	version := lo.CoalesceOrEmpty(req.Version, body.Version)
-	if version == "" || len(version) > 40 {
+	if req == nil || req.Version == "" || len(req.Version) > 40 {
 		return nil, false, ErrAgentVersionRequired
 	}
 
-	gateway := fmt.Sprintf(
-		"%s/api/v1/workspaces/%s/a2a/agents/%s",
-		viper.GetString("app.url"),
-		workspaceId,
-		name,
-	)
-
-	interfaces, _ := raw["supportedInterfaces"].([]any)
-	if len(interfaces) == 0 {
-		interfaces = []any{map[string]any{}}
+	cardPath := lo.CoalesceOrEmpty(req.CardPath, DefaultCardPath)
+	if !strings.HasPrefix(cardPath, "/") || len(cardPath) > 255 {
+		return nil, false, ErrInvalidCardPath
 	}
-
-	for _, iface := range interfaces {
-		iface.(map[string]any)["url"] = gateway
-	}
-
-	raw["supportedInterfaces"] = interfaces
-
-	if lo.HasKey(raw, "url") {
-		raw["url"] = gateway
-	}
-
-	cardJSON, _ := json.Marshal(raw)
-	sum := sha256.Sum256(cardJSON)
-	card := string(cardJSON)
-	checksum := hex.EncodeToString(sum[:])
 
 	existing, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
@@ -200,10 +168,15 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		existing = &db.Agent{WorkspaceId: workspaceId, Name: name}
 	}
 
+	// A new version or card path makes the stored card stale, so the next instance fetches it again.
+	if existing.Version != req.Version || existing.CardPath != cardPath {
+		existing.Card = nil
+		existing.CardChecksum = nil
+	}
+
 	existing.Name = name
-	existing.Card = card
-	existing.CardChecksum = checksum
-	existing.Version = version
+	existing.CardPath = cardPath
+	existing.Version = req.Version
 
 	if created {
 		err = a.AgentRepository.Create(existing)
@@ -227,8 +200,9 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		WorkspaceId:  existing.WorkspaceId,
 		Name:         existing.Name,
 		Version:      existing.Version,
-		Card:         json.RawMessage(existing.Card),
-		CardChecksum: existing.CardChecksum,
+		Card:         util.JSONRawFromString(existing.Card),
+		CardChecksum: lo.FromPtr(existing.CardChecksum),
+		CardPath:     existing.CardPath,
 		Health:       health,
 		StatusCounts: counts,
 		CreatedAt:    existing.CreatedAt.UTC().Format(time.RFC3339),

@@ -4,6 +4,9 @@
 package module
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +19,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -36,6 +40,7 @@ type Instance struct {
 	HealthCheckRepository db.HealthCheckRepository
 	AgentCheckRepository  db.AgentCheckRepository
 	WorkspaceRepository   db.WorkspaceRepository
+	FetchCard             func(ctx context.Context, address string, port int, path string) (map[string]any, error)
 }
 
 // RegisterInstanceRequest is the body for registering or updating an instance.
@@ -85,6 +90,7 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 		HealthCheckRepository: checks,
 		AgentCheckRepository:  agentChecks,
 		WorkspaceRepository:   workspaces,
+		FetchCard:             NewCard().Fetch,
 	}
 }
 
@@ -265,6 +271,56 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	err = i.SyncChecks(instance.Id, agent.Id, lang)
 	if err != nil {
 		return nil, false, err
+	}
+
+	// The first instance to register supplies the card; a failed fetch leaves it to the next one.
+	if agent.Card == nil {
+		card, err := i.FetchCard(context.Background(), instance.Address, instance.Port, agent.CardPath)
+		if err != nil {
+			log.Warn().
+				Err(err).
+				Str("agentId", agent.Id.String()).
+				Str("instanceId", instanceId).
+				Msg("Failed to fetch agent card")
+		} else {
+			gateway := fmt.Sprintf(
+				"%s/api/v1/workspaces/%s/a2a/agents/%s",
+				viper.GetString("app.url"),
+				workspaceId,
+				agent.Name,
+			)
+
+			interfaces, _ := card["supportedInterfaces"].([]any)
+			if len(interfaces) == 0 {
+				interfaces = []any{map[string]any{}}
+			}
+
+			for n, iface := range interfaces {
+				entry, ok := iface.(map[string]any)
+				if !ok {
+					entry = map[string]any{}
+					interfaces[n] = entry
+				}
+				entry["url"] = gateway
+			}
+
+			card["supportedInterfaces"] = interfaces
+
+			if lo.HasKey(card, "url") {
+				card["url"] = gateway
+			}
+
+			cardJSON, _ := json.Marshal(card)
+			sum := sha256.Sum256(cardJSON)
+
+			_, err = i.AgentRepository.SetCardIfMissing(agent.Id, string(cardJSON), hex.EncodeToString(sum[:]))
+			if err != nil {
+				log.Error().
+					Err(err).
+					Str("agentId", agent.Id.String()).
+					Msg("Failed to store agent card")
+			}
+		}
 	}
 
 	instance.UpdatedAt = time.Now().UTC()

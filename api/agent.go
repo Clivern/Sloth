@@ -91,7 +91,7 @@ func (a *API) GetAgentAction(w http.ResponseWriter, r *http.Request) {
 	a.WriteJSON(w, http.StatusOK, agent)
 }
 
-// UpsertAgentAction registers or replaces an agent card.
+// UpsertAgentAction registers or updates an agent.
 func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
@@ -125,7 +125,7 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
-			{module.ErrInvalidAgentCard, http.StatusBadRequest, locale.TR(r, "invalid_agent_card")},
+			{module.ErrInvalidCardPath, http.StatusBadRequest, locale.TR(r, "invalid_agent_card_path")},
 			{module.ErrAgentVersionRequired, http.StatusBadRequest, locale.TR(r, "invalid_agent_version")},
 		}) {
 			return

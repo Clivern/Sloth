@@ -13,6 +13,7 @@ import (
 	"github.com/clivern/cognit/module"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,8 +22,8 @@ func TestUnitAgentCardEndpoint(t *testing.T) {
 	card := `{"name":"User Directory","version":"1.0.0"}`
 	agent := &db.Agent{
 		Name:         "user-directory",
-		Card:         card,
-		CardChecksum: "9f2c",
+		Card:         lo.ToPtr(card),
+		CardChecksum: lo.ToPtr("9f2c"),
 		Version:      "1.0.0",
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -89,5 +90,28 @@ func TestUnitAgentCardEndpoint(t *testing.T) {
 		)
 
 		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	t.Run("returns 404 while the card has not been fetched", func(t *testing.T) {
+		pending := &API{
+			Agent: module.NewAgent(
+				&fakeAgentCatalog{agent: &db.Agent{Name: "user-directory", Version: "1.0.0"}},
+				&fakeInstanceRecords{},
+				nil,
+				&fakeWorkspaceRecords{workspace: &db.Workspace{Id: workspaceId}},
+			),
+		}
+		pendingRouter := chi.NewRouter()
+		pendingRouter.Get(
+			"/api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json",
+			pending.GetAgentCardAction,
+		)
+
+		w := httptest.NewRecorder()
+		pendingRouter.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Contains(t, w.Body.String(), "agent_card_pending")
+		assert.Empty(t, w.Header().Get("ETag"))
 	})
 }

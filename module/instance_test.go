@@ -4,12 +4,16 @@
 package module
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/clivern/cognit/db"
 
+	"github.com/samber/lo"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -267,6 +271,95 @@ func TestUnitInstance(t *testing.T) {
 
 		// Nothing is created for the instance unless the agent defines a check.
 		assert.Empty(t, f.healthChecks.created)
+	})
+
+	t.Run("register fetches the card from the first instance and points it at the gateway", func(t *testing.T) {
+		viper.Set("app.url", "https://cognit.test")
+		f := defaultInstanceFixture()
+		f.agents.agent.CardPath = "/.well-known/agent-card.json"
+
+		var fetched string
+		f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
+			fetched = fmt.Sprintf("%s:%d%s", address, port, path)
+			return map[string]any{
+				"name":                "Support",
+				"url":                 "http://10.0.0.12:8080",
+				"supportedInterfaces": []any{map[string]any{"url": "http://10.0.0.12:8080/a2a", "protocolBinding": "JSONRPC"}},
+			}, nil
+		}
+
+		_, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
+			"en",
+		)
+		require.NoError(t, err)
+		assert.Equal(t, "10.0.0.12:8080/.well-known/agent-card.json", fetched)
+		require.Len(t, f.agents.cards, 1)
+		assert.Equal(
+			t,
+			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}`,
+			f.agents.cards[0],
+		)
+	})
+
+	t.Run("register adds a gateway interface to a fetched card that has none", func(t *testing.T) {
+		viper.Set("app.url", "https://cognit.test")
+		f := defaultInstanceFixture()
+		f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
+			return map[string]any{"name": "Support"}, nil
+		}
+
+		_, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
+			"en",
+		)
+		require.NoError(t, err)
+		require.Len(t, f.agents.cards, 1)
+		assert.Equal(
+			t,
+			`{"name":"Support","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}]}`,
+			f.agents.cards[0],
+		)
+	})
+
+	t.Run("register still succeeds when the card cannot be fetched", func(t *testing.T) {
+		f := defaultInstanceFixture()
+
+		_, created, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
+			"en",
+		)
+		require.NoError(t, err)
+		assert.True(t, created)
+		assert.Empty(t, f.agents.cards)
+	})
+
+	t.Run("register does not fetch when the agent already has a card", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.agents.agent.Card = lo.ToPtr(`{"name":"Support"}`)
+		f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
+			t.Fatal("card should not be fetched")
+			return nil, nil
+		}
+
+		_, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
+			"en",
+		)
+		require.NoError(t, err)
+		assert.Empty(t, f.agents.cards)
 	})
 
 	t.Run(

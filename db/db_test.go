@@ -14,6 +14,7 @@ import (
 
 	"github.com/clivern/cognit/migration"
 	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -119,8 +120,9 @@ func createTestAgent(t *testing.T, database *sql.DB, workspaceId Id, name string
 	agent := &Agent{
 		WorkspaceId:  workspaceId,
 		Name:         name,
-		Card:         `{"name":"` + name + `"}`,
-		CardChecksum: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Card:         lo.ToPtr(`{"name":"` + name + `"}`),
+		CardChecksum: lo.ToPtr("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		CardPath:     "/.well-known/agent-card.json",
 		Version:      "1.0.0",
 	}
 	require.NoError(t, NewAgentRepository(database).Create(agent))

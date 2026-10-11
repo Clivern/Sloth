@@ -54,6 +54,13 @@ func (a *API) GetAgentCardAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if agent.Card == nil {
+		a.WriteJSON(w, http.StatusNotFound, map[string]any{
+			"errorMessage": locale.TR(r, "agent_card_pending"),
+		})
+		return
+	}
+
 	// The checksum is a SHA-256 of the compacted card, so it works as a strong ETag.
 	etag := fmt.Sprintf(`"%s"`, agent.CardChecksum)
 

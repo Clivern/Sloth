@@ -4,6 +4,7 @@
 package module
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/stripe"
 
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 )
@@ -73,6 +75,7 @@ type fakeAgents struct {
 	created []*db.Agent
 	updated []*db.Agent
 	deleted []db.Id
+	cards   []string
 }
 
 func (f *fakeAgents) GetById(id db.Id) (*db.Agent, error) {
@@ -91,6 +94,11 @@ func (f *fakeAgents) Create(agent *db.Agent) error {
 func (f *fakeAgents) Update(agent *db.Agent) error {
 	f.updated = append(f.updated, agent)
 	return nil
+}
+
+func (f *fakeAgents) SetCardIfMissing(id db.Id, card, checksum string) (bool, error) {
+	f.cards = append(f.cards, card)
+	return true, nil
 }
 
 func (f *fakeAgents) Delete(id db.Id) error {
@@ -570,7 +578,8 @@ func defaultAgentFixture() *agentFixture {
 			WorkspaceId: "ws-1",
 			Name:        "support-assistant",
 			Version:     "1.0.0",
-			Card:        `{"name":"Support"}`,
+			Card:        lo.ToPtr(`{"name":"Support"}`),
+			CardPath:    "/.well-known/agent-card.json",
 		},
 	)
 }
@@ -601,6 +610,9 @@ func newInstanceFixture(workspace *db.Workspace, agent *db.Agent) *instanceFixtu
 		f.agentChecks,
 		&fakeWorkspaces{workspace: workspace},
 	)
+	f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
+		return nil, errors.New("connection refused")
+	}
 
 	return f
 }

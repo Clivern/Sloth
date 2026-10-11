@@ -402,8 +402,11 @@ msgstr "Agent not found."
 msgid "invalid_agent_name"
 msgstr "Invalid agent name."
 
-msgid "invalid_agent_card"
-msgstr "Invalid agent card."
+msgid "invalid_agent_card_path"
+msgstr "Invalid agent card path."
+
+msgid "agent_card_pending"
+msgstr "The agent card has not been fetched from an instance yet."
 
 msgid "invalid_agent_version"
 msgstr "Invalid agent version."

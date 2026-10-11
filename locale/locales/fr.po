@@ -390,8 +390,11 @@ msgstr "Agent introuvable."
 msgid "invalid_agent_name"
 msgstr "Nom d'agent invalide."
 
-msgid "invalid_agent_card"
-msgstr "Carte d'agent invalide."
+msgid "invalid_agent_card_path"
+msgstr "Chemin de carte d'agent invalide."
+
+msgid "agent_card_pending"
+msgstr "La carte de l'agent n'a pas encore été récupérée depuis une instance."
 
 msgid "invalid_agent_version"
 msgstr "Version d'agent invalide."

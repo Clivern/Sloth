@@ -4,12 +4,12 @@
 package module
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
@@ -191,60 +191,45 @@ func TestUnitAgent(t *testing.T) {
 	})
 
 	t.Run("upsert rejects invalid names", func(t *testing.T) {
-		req := &UpsertAgentRequest{Card: json.RawMessage(`{"version":"1.0.0"}`)}
+		req := &UpsertAgentRequest{Version: "1.0.0"}
 
 		_, _, err := defaultAgentFixture().agent.UpsertAgent("ws-1", "-bad", req)
 		assert.ErrorIs(t, err, ErrInvalidAgentName)
 	})
 
-	t.Run("upsert rejects cards that are missing or not a JSON object", func(t *testing.T) {
+	t.Run("upsert requires a version of at most 40 characters", func(t *testing.T) {
 		f := defaultAgentFixture()
 
 		_, _, err := f.agent.UpsertAgent("ws-1", "support-assistant", nil)
-		assert.ErrorIs(t, err, ErrInvalidAgentCard)
+		assert.ErrorIs(t, err, ErrAgentVersionRequired)
 
-		_, _, err = f.agent.UpsertAgent(
-			"ws-1",
-			"support-assistant",
-			&UpsertAgentRequest{Card: json.RawMessage(`[1,2]`)},
-		)
-		assert.ErrorIs(t, err, ErrInvalidAgentCard)
-
-		_, _, err = f.agent.UpsertAgent(
-			"ws-1",
-			"support-assistant",
-			&UpsertAgentRequest{Card: json.RawMessage(`{"version":`)},
-		)
-		assert.ErrorIs(t, err, ErrInvalidAgentCard)
-	})
-
-	t.Run("upsert requires a version in the request or the card", func(t *testing.T) {
-		f := defaultAgentFixture()
-
-		_, _, err := f.agent.UpsertAgent(
-			"ws-1",
-			"support-assistant",
-			&UpsertAgentRequest{Card: json.RawMessage(`{"name":"Support"}`)},
-		)
+		_, _, err = f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{})
 		assert.ErrorIs(t, err, ErrAgentVersionRequired)
 
 		_, _, err = f.agent.UpsertAgent(
 			"ws-1",
 			"support-assistant",
-			&UpsertAgentRequest{Card: json.RawMessage(`{}`), Version: strings.Repeat("v", 41)},
+			&UpsertAgentRequest{Version: strings.Repeat("v", 41)},
 		)
 		assert.ErrorIs(t, err, ErrAgentVersionRequired)
 	})
 
-	t.Run("upsert creates a new agent with a card checksum", func(t *testing.T) {
+	t.Run("upsert rejects a card path that is not absolute", func(t *testing.T) {
+		_, _, err := defaultAgentFixture().agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Version: "1.0.0", CardPath: "agent.json"},
+		)
+		assert.ErrorIs(t, err, ErrInvalidCardPath)
+	})
+
+	t.Run("upsert creates a new agent without a card and the default card path", func(t *testing.T) {
 		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
 
 		response, created, err := f.agent.UpsertAgent(
 			"ws-1",
 			"support-assistant",
-			&UpsertAgentRequest{
-				Card: json.RawMessage(`{"name":  "Support", "version":"2.1.0"}`),
-			},
+			&UpsertAgentRequest{Version: "2.1.0"},
 		)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -252,62 +237,58 @@ func TestUnitAgent(t *testing.T) {
 		assert.Empty(t, f.agents.updated)
 
 		assert.Equal(t, "2.1.0", response.Version)
-		assert.Equal(
-			t,
-			`{"name":"Support","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"version":"2.1.0"}`,
-			string(response.Card),
-		)
-		assert.Len(t, response.CardChecksum, 64)
+		assert.Equal(t, "/.well-known/agent-card.json", response.CardPath)
+		assert.Nil(t, response.Card)
+		assert.Empty(t, response.CardChecksum)
 	})
 
-	t.Run("upsert replaces a legacy top-level url with the gateway url", func(t *testing.T) {
-		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
-
-		response, _, err := f.agent.UpsertAgent(
-			"ws-1",
-			"user-directory",
-			&UpsertAgentRequest{
-				Card: json.RawMessage(`{"url":"https://example.com/","name":"user-directory","version":"1.2.0"}`),
-			},
-		)
-		require.NoError(t, err)
-		assert.Equal(
-			t,
-			`{"name":"user-directory","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/user-directory"}],"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/user-directory","version":"1.2.0"}`,
-			string(response.Card),
-		)
-	})
-
-	t.Run("upsert replaces submitted interface urls with the gateway url", func(t *testing.T) {
+	t.Run("upsert keeps a custom card path", func(t *testing.T) {
 		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
 
 		response, _, err := f.agent.UpsertAgent(
 			"ws-1",
 			"support-assistant",
-			&UpsertAgentRequest{
-				Card: json.RawMessage(`{"version":"1.0.0","supportedInterfaces":[{"url":"http://10.0.12.20:8080/a2a/v1","protocolBinding":"HTTP+JSON","tenant":"acme"}]}`),
-			},
+			&UpsertAgentRequest{Version: "1.0.0", CardPath: "/a2a/agent.json"},
 		)
 		require.NoError(t, err)
-		assert.Equal(
-			t,
-			`{"supportedInterfaces":[{"protocolBinding":"HTTP+JSON","tenant":"acme","url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"version":"1.0.0"}`,
-			string(response.Card),
-		)
+		assert.Equal(t, "/a2a/agent.json", response.CardPath)
 	})
 
-	t.Run("upsert updates an existing agent and prefers the request version", func(t *testing.T) {
+	t.Run("upsert keeps the card when version and card path are unchanged", func(t *testing.T) {
 		f := defaultAgentFixture()
 
-		_, created, err := f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{
-			Card:    json.RawMessage(`{"version":"1.0.0"}`),
-			Version: "3.0.0",
-		})
+		_, created, err := f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Version: "1.0.0"})
+		require.NoError(t, err)
+		assert.False(t, created)
+		require.Len(t, f.agents.updated, 1)
+		assert.Equal(t, `{"name":"Support"}`, lo.FromPtr(f.agents.updated[0].Card))
+	})
+
+	t.Run("upsert clears the card when the version changes", func(t *testing.T) {
+		f := defaultAgentFixture()
+
+		_, created, err := f.agent.UpsertAgent("ws-1", "support-assistant", &UpsertAgentRequest{Version: "3.0.0"})
 		require.NoError(t, err)
 		assert.False(t, created)
 		require.Len(t, f.agents.updated, 1)
 		assert.Empty(t, f.agents.created)
 		assert.Equal(t, "3.0.0", f.agents.updated[0].Version)
+		assert.Nil(t, f.agents.updated[0].Card)
+		assert.Nil(t, f.agents.updated[0].CardChecksum)
+	})
+
+	t.Run("upsert clears the card when the card path changes", func(t *testing.T) {
+		f := defaultAgentFixture()
+
+		_, _, err := f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{Version: "1.0.0", CardPath: "/agent.json"},
+		)
+		require.NoError(t, err)
+		require.Len(t, f.agents.updated, 1)
+		assert.Equal(t, "/agent.json", f.agents.updated[0].CardPath)
+		assert.Nil(t, f.agents.updated[0].Card)
 	})
 
 	t.Run("delete returns not found for a missing agent", func(t *testing.T) {
