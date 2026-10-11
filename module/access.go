@@ -234,13 +234,6 @@ func (a *Access) GetAccessKey(workspaceId, id db.Id) (*AccessKeyResponse, error)
 
 // DeleteAccessKey deletes a workspace access key.
 func (a *Access) DeleteAccessKey(workspaceId, id db.Id) error {
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return err
-	}
-	if workspace == nil {
-		return ErrWorkspaceNotFound
-	}
 
 	item, err := a.AccessKeyRepository.GetById(id)
 	if err != nil {

@@ -169,7 +169,6 @@ func (a *API) DeleteAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 	err := a.Access.DeleteAccessKey(db.Id(wid), db.Id(keyId))
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrAccessKeyNotFound, http.StatusNotFound, locale.TR(r, "access_key_not_found")},
 		}) {
 			return
