@@ -157,7 +157,7 @@ func TestUnitInvite(t *testing.T) {
 		assert.Nil(t, result.Invites[0].AcceptedAt)
 	})
 
-	t.Run("list returns not found for a missing workspace", func(t *testing.T) {
+	t.Run("list returns an empty result for a missing workspace", func(t *testing.T) {
 		invite := NewInvite(
 			&fakeUserInvites{},
 			&fakeUsers{},
@@ -168,7 +168,7 @@ func TestUnitInvite(t *testing.T) {
 		)
 
 		_, err := invite.ListInvites("ws-1", 20, 0)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
+		require.NoError(t, err)
 	})
 
 	t.Run("get hides invites from another workspace", func(t *testing.T) {

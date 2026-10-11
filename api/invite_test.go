@@ -174,13 +174,13 @@ func TestUnitInviteActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"email":"bo@example.com"`)
 	})
 
-	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
+	t.Run("list returns an empty page for unknown workspace", func(t *testing.T) {
 		api := newAPI(nil, &fakeInvites{}, &fakeUsers{}, &fakeInviteMailer{})
 		w := httptest.NewRecorder()
 		newRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/invites", nil))
 
-		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("get returns one invite", func(t *testing.T) {

@@ -95,12 +95,6 @@ func (a *API) ListInvitesAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Invite.ListInvites(db.Id(workspaceId), limit, offset)
 	if err != nil {
-		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
-		}) {
-			return
-		}
-
 		log.Error().
 			Err(err).
 			Str("workspaceId", workspaceId).

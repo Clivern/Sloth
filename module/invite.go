@@ -194,14 +194,6 @@ func (i *Invite) ListInvites(workspaceId db.Id, limit, offset int) (*ListInvites
 			Msg("Expired invites marked")
 	}
 
-	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
-
 	total, err := i.UserInviteRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInvites, err)
