@@ -12,6 +12,8 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/util"
+
+	"github.com/samber/lo"
 )
 
 var (
@@ -417,10 +419,11 @@ func (i *Instance) GetHealth(instanceId db.Id) (string, []*HealthCheckResponse, 
 	status := db.AgentInstanceStatusPassing
 	mapped := make([]*HealthCheckResponse, 0, len(checks))
 	for _, check := range checks {
-		current := check.Status
-		if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-			current = db.HealthCheckStatusCritical
-		}
+		current := lo.Ternary(
+			check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)),
+			db.HealthCheckStatusCritical,
+			check.Status,
+		)
 
 		// The instance status is the worst check status. A TTL check past its TTL
 		switch current {

@@ -255,10 +255,11 @@ func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
 		// The instance status is the worst check status. A TTL check past its TTL
 		status := db.AgentInstanceStatusPassing
 		for _, check := range checks {
-			current := check.Status
-			if check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)) {
-				current = db.HealthCheckStatusCritical
-			}
+			current := lo.Ternary(
+				check.Type == db.HealthCheckTypeTTL && (check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now)),
+				db.HealthCheckStatusCritical,
+				check.Status,
+			)
 
 			switch current {
 			case db.HealthCheckStatusPassing:
