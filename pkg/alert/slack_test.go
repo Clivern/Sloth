@@ -16,11 +16,13 @@ import (
 
 func TestUnitSlack(t *testing.T) {
 	t.Run("Send posts the alert text to the webhook", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			assert.Contains(t, string(body), `[critical] [firing] Database down`)
-			w.Write([]byte("ok"))
-		}))
+		server := httptest.NewServer(
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				assert.Contains(t, string(body), `[critical] [firing] Database down`)
+				w.Write([]byte("ok"))
+			}),
+		)
 		defer server.Close()
 
 		client := NewSlack(slack.Config{WebhookURL: server.URL, Channel: "#alerts"})
