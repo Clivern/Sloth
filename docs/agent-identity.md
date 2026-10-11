@@ -47,3 +47,23 @@ verify secret  →  401 if not
 Match(...)     →  403 if not allowed
 forward
 ```
+
+## Protection
+
+Identity proves who is calling. Protection keeps the destination reachable **only** through Cognit.
+
+Each agent has at most one protection: the credential Cognit sends when it forwards a call. Configure the agent to reject calls without it.
+
+```
+GET    /api/v1/workspaces/{workspace}/agents/{agent}/protection
+PUT    /api/v1/workspaces/{workspace}/agents/{agent}/protection
+PUT    /api/v1/workspaces/{workspace}/agents/{agent}/protection/status
+DELETE /api/v1/workspaces/{workspace}/agents/{agent}/protection
+```
+
+| Type | Gateway sends | Stored as |
+| --- | --- | --- |
+| `api_key` | secret in `header` (default `X-API-Key`) | encrypted |
+| `basic_auth` | `username` + secret | encrypted |
+
+`PUT` takes `type`, `username` (basic auth), `header` (API key) and an optional `secret`. Without `secret`, Cognit generates one and returns it once. Saving again replaces the credential. `PUT …/status` takes `isActive` and keeps the secret.

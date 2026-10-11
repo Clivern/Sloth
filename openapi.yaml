@@ -31,6 +31,7 @@ tags:
   - name: Agents
   - name: Instances
   - name: Health checks
+  - name: Protection
   - name: Intentions
   - name: Key-value
   - name: Traffic
@@ -1393,6 +1394,112 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/protection:
+    get:
+      tags: [Protection]
+      summary: Get the agent protection
+      description: The credential Cognit uses to call the agent. Secrets are never returned.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentProtection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Agent not found, or the agent has no protection
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Protection]
+      summary: Set or replace the agent protection
+      description: |
+        An agent has at most one protection; saving replaces the previous credential and turns it on.
+        `api_key` and `basic_auth` secrets are stored encrypted so the gateway can send them.
+        When `secret` is omitted Cognit generates one and returns it in `secret` once.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAgentProtectionRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentProtection"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Protection]
+      summary: Remove the agent protection
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Agent not found, or the agent has no protection
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/protection/status:
+    put:
+      tags: [Protection]
+      summary: Turn the agent protection on or off
+      description: Keeps the stored secret.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAgentProtectionStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentProtection"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Agent not found, or the agent has no protection
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/workspaces/{workspaceId}/intentions:
     get:
       tags: [Intentions]
@@ -2506,6 +2613,58 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    SaveAgentProtectionRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [api_key, basic_auth]
+        username:
+          type: string
+          maxLength: 100
+          description: Required for `basic_auth`, not allowed for other types.
+        header:
+          type: string
+          maxLength: 100
+          description: Header carrying the secret for `api_key`. Defaults to `X-API-Key`.
+        secret:
+          type: string
+          minLength: 8
+          maxLength: 512
+          description: Optional. Generated and returned once when omitted.
+
+    UpdateAgentProtectionStatusRequest:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+
+    AgentProtection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [api_key, basic_auth]
+        username:
+          type: string
+        header:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        secret:
+          type: string
+          description: Only present when Cognit generated the secret.
 
     ReportCheckRequest:
       type: object
