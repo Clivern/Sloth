@@ -782,6 +782,7 @@
     "perm_create_agent": "Create agents",
     "perm_delete_agent": "Delete agents",
     "perm_register_instance": "Register instances",
+    "perm_report_check": "Report checks",
     "perm_list_agent_sessions": "List agent sessions",
     "perm_get_agent_session": "Get agent sessions",
     "perm_create_agent_session": "Create agent sessions",

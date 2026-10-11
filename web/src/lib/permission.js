@@ -65,6 +65,7 @@ export const WORKSPACE_KEY_PERMISSION_GROUPS = [
       { value: 'CAN_LIST_INSTANCES', labelKey: 'workspace_settings_page.perm_list_instances' },
       { value: 'CAN_GET_INSTANCE', labelKey: 'workspace_settings_page.perm_get_instance' },
       { value: 'CAN_REGISTER_INSTANCE', labelKey: 'workspace_settings_page.perm_register_instance' },
+      { value: 'CAN_REPORT_CHECK', labelKey: 'workspace_settings_page.perm_report_check' },
     ],
   },
   {
