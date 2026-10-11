@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL driver
 	"github.com/rs/zerolog/log"
 )
 
@@ -41,7 +41,8 @@ func NewConnection(config DatabaseConfig) (*Connection, error) {
 		config.Password,
 		config.Database,
 	)
-	db, err := sql.Open("postgres", dsn)
+
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}

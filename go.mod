@@ -10,8 +10,8 @@ require (
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/google/uuid v1.6.0
 	github.com/imroc/req/v3 v3.61.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/leonelquinteros/gotext v1.7.2
-	github.com/lib/pq v1.12.3
 	github.com/nats-io/nats.go v1.54.0
 	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/prometheus/client_golang v1.25.0
@@ -37,6 +37,9 @@ require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/icholy/digest v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/leodido/go-urn v1.5.0 // indirect
