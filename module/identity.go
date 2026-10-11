@@ -15,6 +15,7 @@ import (
 	"github.com/clivern/cognit/pkg/util"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -275,9 +276,14 @@ func (i *Identity) IssueToken(clientId, clientSecret string) (*IssueTokenRespons
 		return nil, ErrInvalidClient
 	}
 
-	_, err = i.TokenRepository.DeleteExpired()
+	count, err := i.TokenRepository.DeleteExpired()
 	if err != nil {
 		return nil, err
+	}
+	if count > 0 {
+		log.Info().
+			Int64("count", count).
+			Msg("Expired identity tokens deleted")
 	}
 
 	accessToken := rand.Text()

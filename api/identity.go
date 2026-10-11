@@ -165,6 +165,13 @@ func (a *API) UpdateIdentityAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info().
+		Str("workspaceId", wid).
+		Str("agent", agentName).
+		Str("identityId", identityId).
+		Bool("isActive", identity.IsActive).
+		Msg("Agent identity updated")
+
 	a.WriteJSON(w, http.StatusOK, identity)
 }
 
@@ -238,6 +245,9 @@ func (a *API) IssueIdentityTokenAction(w http.ResponseWriter, r *http.Request) {
 	token, err := a.Identity.IssueToken(clientId, clientSecret)
 	if err != nil {
 		if errors.Is(err, module.ErrInvalidClient) {
+			log.Warn().
+				Str("clientId", clientId).
+				Msg("Rejected identity token request with invalid client")
 			a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 				"error":        "invalid_client",
 				"errorMessage": locale.TR(r, "invalid_client"),
@@ -255,6 +265,11 @@ func (a *API) IssueIdentityTokenAction(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	log.Info().
+		Str("clientId", clientId).
+		Int("expiresIn", token.ExpiresIn).
+		Msg("Identity token issued")
 
 	w.Header().Set("Cache-Control", "no-store")
 	a.WriteJSON(w, http.StatusOK, token)
