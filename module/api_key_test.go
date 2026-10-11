@@ -38,7 +38,8 @@ func TestUnitAPIKey(t *testing.T) {
 	})
 
 	t.Run("create returns the repository error", func(t *testing.T) {
-		_, err := NewAPIKey(&fakeAPIKeys{err: errors.New("boom")}).CreateAPIKey(&CreateAPIKeyRequest{Name: "ci"}, user)
+		_, err := NewAPIKey(&fakeAPIKeys{err: errors.New("boom")}).
+			CreateAPIKey(&CreateAPIKeyRequest{Name: "ci"}, user)
 		assert.EqualError(t, err, "boom")
 	})
 
@@ -61,7 +62,9 @@ func TestUnitAPIKey(t *testing.T) {
 
 	t.Run("get returns the owned key with its expiry", func(t *testing.T) {
 		expiresAt := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
-		store := &fakeAPIKeys{item: &db.APIKey{Id: "key-1", Name: "ci", UserId: "user-1", ExpiresAt: &expiresAt}}
+		store := &fakeAPIKeys{
+			item: &db.APIKey{Id: "key-1", Name: "ci", UserId: "user-1", ExpiresAt: &expiresAt},
+		}
 
 		response, err := NewAPIKey(store).GetAPIKey("key-1", user)
 		require.NoError(t, err)
@@ -75,7 +78,8 @@ func TestUnitAPIKey(t *testing.T) {
 		err := NewAPIKey(&fakeAPIKeys{}).DeleteAPIKey("key-1", user)
 		assert.ErrorIs(t, err, ErrAPIKeyNotFound)
 
-		err = NewAPIKey(&fakeAPIKeys{item: &db.APIKey{Id: "key-1", UserId: "user-2"}}).DeleteAPIKey("key-1", user)
+		err = NewAPIKey(&fakeAPIKeys{item: &db.APIKey{Id: "key-1", UserId: "user-2"}}).
+			DeleteAPIKey("key-1", user)
 		assert.ErrorIs(t, err, ErrAPIKeyNotFound)
 	})
 
