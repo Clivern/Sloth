@@ -24,6 +24,17 @@ Each caller has **its own** key. `agent3` does not hand out a shared secret.
 
 Verify the secret → that row’s agent is the source. Fail → **401**.
 
+Manage identities on the agent page in the dashboard (**Identities**), or through the API:
+
+```
+GET    /api/v1/workspaces/{workspace}/agents/{agent}/identities
+POST   /api/v1/workspaces/{workspace}/agents/{agent}/identities
+PUT    /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
+DELETE /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
+```
+
+`POST` takes `name`, `type` (`api_key` or `basic_auth`) and, for basic auth, `username`. The response carries `secret` once. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
+
 `X-Source-Agent` is only a lookup hint so Cognit does not scan every key: find that agent, then verify the secret against **its** hashes. If the header says `agent1` but the secret is `agent2`’s → **401**. The header never wins.
 
 ## Policy
