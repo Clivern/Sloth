@@ -503,3 +503,6 @@ msgstr "Le propriétaire de l’espace de travail ne peut pas être modifié ni 
 
 msgid "route_not_found"
 msgstr "Route introuvable."
+
+msgid "invalid_request"
+msgstr "Requête invalide."

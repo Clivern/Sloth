@@ -49,6 +49,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 		int64(10 * 1024 * 1024),
 	))
 	r.Use(middleware.Auth())
+	r.Use(middleware.ValidateParams)
 	r.Get("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) { // suppress browser favicon requests
 		w.WriteHeader(http.StatusNoContent)
 	})

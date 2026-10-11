@@ -515,3 +515,6 @@ msgstr "The workspace owner cannot be changed or removed."
 
 msgid "route_not_found"
 msgstr "Route not found."
+
+msgid "invalid_request"
+msgstr "Invalid request."
