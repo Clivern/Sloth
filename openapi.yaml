@@ -79,6 +79,7 @@ paths:
     post:
       tags: [Public]
       summary: Initial platform setup
+      description: Rate limited to 5 requests a minute per client IP.
       security: []
       requestBody:
         required: true
@@ -95,6 +96,8 @@ paths:
                 $ref: "#/components/schemas/SuccessMessage"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -173,6 +176,7 @@ paths:
         OAuth 2.0 client credentials grant. `client_id` is the identity id. Send the credentials as
         HTTP basic auth or as form fields. Only an active `client_credentials` identity can get a token;
         the token is stored as a SHA-256 hash and expires after the identity's `tokenTtl`.
+        Rate limited to 10 requests a minute per client IP.
       security: []
       requestBody:
         required: true
@@ -209,6 +213,8 @@ paths:
           description: "`unsupported_grant_type`"
         "401":
           description: "`invalid_client`: unknown id, wrong secret, disabled or not a client credentials identity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -1111,6 +1117,56 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json:
+    get:
+      tags: [Agents]
+      summary: Get agent card
+      description: |
+        Returns the stored A2A card exactly as `card` on the agent, with interface URLs
+        pointed at the gateway. The `ETag` is the card checksum, so send it back in
+        `If-None-Match` to get a 304 while the card is unchanged. Returns 404 with
+        `agent_card_pending` until an instance has supplied the card.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/agentName"
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+          description: A previously returned `ETag`; weak (`W/`) form is accepted.
+      responses:
+        "200":
+          description: OK
+          headers:
+            ETag:
+              description: The card checksum in double quotes
+              schema:
+                type: string
+            Cache-Control:
+              description: Always `no-cache`, so clients revalidate with the ETag
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "304":
+          description: Not modified; the card still matches `If-None-Match`
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Agent not found, or its card has not been fetched from an instance yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances:
     get:
       tags: [Instances]
@@ -1173,8 +1229,10 @@ paths:
       description: |
         Accepts workspace access keys (`X-Access-Key`) without a user session.
         The agent must be registered before its instances. While the agent has no card,
-        registering an instance fetches it from the instance's address and port; a failed
-        fetch does not fail the registration.
+        registering an instance fetches it from the instance's address and port at the
+        agent's `cardPath`, over https and then http, with a 5 second timeout per attempt.
+        The body must be a JSON object of at most 1 MiB. A failed fetch does not fail the
+        registration; the next instance to register tries again.
       security:
         - sessionCookie: []
         - userApiKey: []
@@ -2133,6 +2191,17 @@ components:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Rate limit reached for this client IP; retry after the `Retry-After` header
+      headers:
+        Retry-After:
+          description: Seconds until the window resets
+          schema:
+            type: integer
       content:
         application/json:
           schema:

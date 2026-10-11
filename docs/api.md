@@ -248,7 +248,7 @@ GET  /v1/workspaces/{workspace}/agents/{agent}/extendedAgentCard
 GET  /.well-known/agent-card.json
 ```
 
-The last one is Cognit itself (directory / router agent). Per-agent cards are what callers cache. Serve `Content-Type: application/a2a+json` and `ETag` from `card.version`.
+The last one is Cognit itself (directory / router agent). Per-agent cards are what callers cache. The per-agent card is served as `application/json` with `Cache-Control: no-cache` and a strong `ETag` set to the card checksum (SHA-256 of the stored card), so `If-None-Match` returns 304 until the card changes. It returns 404 until an instance has supplied the card.
 
 If you need a public hostname per agent:
 
