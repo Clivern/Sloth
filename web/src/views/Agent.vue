@@ -321,14 +321,21 @@
                 <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.card') }}</h2>
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_desc') }}</p>
               </div>
-              <div v-if="!agent.card" class="px-5 py-4 text-sm">
-                <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-                  {{ $t('agents_page.card_pending') }}
-                </span>
-                <p class="mt-2 text-theme-textLight">{{ $t('agents_page.card_pending_desc') }}</p>
-                <dl class="mt-4">
-                  <dt class="text-theme-textLight">{{ $t('agents_page.card_path') }}</dt>
-                  <dd class="mt-1"><code class="break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text">{{ agent.cardPath }}</code></dd>
+              <div v-if="!agent.card" class="p-5">
+                <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+                    </svg>
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.card_pending') }}</p>
+                    <p class="mt-1 text-sm text-amber-800">{{ $t('agents_page.card_pending_desc') }}</p>
+                  </div>
+                </div>
+                <dl class="mt-4 text-sm">
+                  <dt class="text-xs font-medium uppercase tracking-wider text-theme-textLight">{{ $t('agents_page.card_path') }}</dt>
+                  <dd class="mt-1.5"><code class="block break-all rounded-md border border-theme-border bg-theme-hover px-3 py-2 text-xs font-mono text-theme-text">{{ agent.cardPath }}</code></dd>
                 </dl>
               </div>
               <dl v-if="agent.card" class="space-y-4 px-5 py-4 text-sm">
@@ -401,7 +408,7 @@
                   <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.protection_title') }}</h2>
                   <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.protection_desc') }}</p>
                 </div>
-                <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="protectionModalOpen = true">
+                <button v-if="canManage && protection" type="button" class="btn-secondary text-sm" @click="protectionModalOpen = true">
                   {{ protection ? $t('agents_page.protection_replace') : $t('agents_page.protection_add') }}
                 </button>
               </div>
@@ -426,9 +433,21 @@
               <div v-if="loadingProtection && !protection" class="p-8 text-center text-sm text-theme-textLight">
                 {{ $t('agents_page.loading_protection') }}
               </div>
-              <div v-else-if="!protection" class="p-8 text-center">
-                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_protection') }}</p>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_protection_hint') }}</p>
+              <div v-else-if="!protection" class="p-5">
+                <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M10.3 3.9L2.5 17.4A2 2 0 004.2 20.4h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+                    </svg>
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.no_protection') }}</p>
+                    <p class="mt-1 text-sm text-amber-800">{{ $t('agents_page.no_protection_hint') }}</p>
+                    <button v-if="canManage" type="button" class="btn-primary mt-3 text-sm" @click="protectionModalOpen = true">
+                      {{ $t('agents_page.protection_add') }}
+                    </button>
+                  </div>
+                </div>
               </div>
               <div v-else class="space-y-4 px-5 py-4">
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -486,7 +505,7 @@
                   <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.identities_title') }}</h2>
                   <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.identities_desc') }}</p>
                 </div>
-                <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="identityModalOpen = true">
+                <button v-if="canManage && identities.length" type="button" class="btn-secondary text-sm" @click="identityModalOpen = true">
                   {{ $t('agents_page.identity_add') }}
                 </button>
               </div>
@@ -517,9 +536,21 @@
               <div v-if="loadingIdentities && identities.length === 0" class="p-8 text-center text-sm text-theme-textLight">
                 {{ $t('agents_page.loading_identities') }}
               </div>
-              <div v-else-if="identities.length === 0" class="p-8 text-center">
-                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_identities') }}</p>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_identities_hint') }}</p>
+              <div v-else-if="identities.length === 0" class="p-5">
+                <div class="flex items-start gap-3 rounded-lg border border-dashed border-theme-border p-4">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-theme-hover text-theme-textLight">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-theme-text">{{ $t('agents_page.no_identities') }}</p>
+                    <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_identities_hint') }}</p>
+                    <button v-if="canManage" type="button" class="btn-secondary mt-3 text-sm" @click="identityModalOpen = true">
+                      {{ $t('agents_page.identity_add') }}
+                    </button>
+                  </div>
+                </div>
               </div>
               <ul v-else class="divide-y divide-theme-border">
                 <li v-for="identity in identities" :key="identity.id" class="px-5 py-3">
