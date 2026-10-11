@@ -480,6 +480,12 @@ msgstr "Les identités en authentification basique exigent un nom d'utilisateur,
 msgid "failed_identity_request"
 msgstr "Échec de la requête d'identité d'agent."
 
+msgid "unsupported_grant_type"
+msgstr "Type d'autorisation non pris en charge. Utilisez client_credentials."
+
+msgid "invalid_client"
+msgstr "Identifiants client invalides."
+
 msgid "protection_not_found"
 msgstr "Protection d'agent introuvable."
 
