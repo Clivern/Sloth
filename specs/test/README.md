@@ -26,6 +26,7 @@ Each `.feature` file states how one area of the Cognit API must behave. The spec
 | `intentions.feature` | Allow and deny rules between agents |
 | `kv.feature` | The workspace key-value store |
 | `traffic.feature` | Recorded gateway calls |
+| `isolation.feature` | Nothing crosses from one workspace to another, swept across every resource |
 | `pending.feature` | Routes that exist but are not built yet |
 
 ## Running a spec
