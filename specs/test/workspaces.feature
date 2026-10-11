@@ -107,3 +107,36 @@ Feature: Workspaces
     Then the response is 401 or 403
     When that key lists workspaces
     Then the response is 401 or 403
+
+  # ---------------------------------------------------------------------------
+  # More on access keys and deletion
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: An access key reading its workspace gets no role
+    Given an access key with only CAN_GET_WORKSPACE
+    When that key GETs the run's workspace
+    Then the response is 200
+    And role is ""
+
+  @mutates
+  Scenario: Deleting a workspace revokes its access keys
+    Given the user created a workspace named "spec-<runId>-doomed"
+    And an access key in it with only CAN_LIST_AGENTS
+    When the user DELETEs that workspace
+    Then that key listing agents anywhere gets 401
+
+  @mutates
+  Scenario: An access key with the delete grant can delete its own workspace
+    Given the user created a workspace named "spec-<runId>-self-delete"
+    And an access key in it with only CAN_DELETE_WORKSPACE
+    When that key DELETEs that workspace
+    Then the response is 204
+    And the user reading it gets 404
+
+  @mutates
+  Scenario: Paging through workspaces never repeats or skips one
+    Given the user created workspaces "spec-<runId>-p1", "spec-<runId>-p2" and "spec-<runId>-p3"
+    When the user pages through /api/v1/workspaces with limit 1
+    Then every workspace appears exactly once across the pages
+    And the number of pages equals _meta.total

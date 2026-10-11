@@ -93,3 +93,16 @@ Feature: User API keys
     And an access key with every permission an access key may hold
     When that key lists API keys
     Then the response is 401 or 403
+
+  @mutates
+  Scenario: A key with an expiry in the past never works
+    When the user POSTs an API key named "spec-<runId>-past" with expiresAt one hour ago
+    Then the response is 201 or 400
+    And if 201, a request to /api/v1/me with that key returns 401
+
+  @mutates
+  Scenario: The key list pages
+    Given the user made API keys "spec-<runId>-p1" and "spec-<runId>-p2"
+    When the user lists API keys with limit 1
+    Then exactly one key comes back
+    And _meta.total is at least 2

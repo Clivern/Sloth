@@ -65,3 +65,22 @@ Feature: Workspace members
     Then the response is 200
     When that key PUTs the user's membership with role "admin"
     Then the response is 403
+
+  @mutates
+  Scenario: An access key with the role grant cannot change the owner either
+    Given an access key with only CAN_UPDATE_MEMBER_ROLE
+    When that key PUTs the owner's membership with role "admin"
+    Then the response is 409
+    And the user is still "owner"
+
+  @mutates
+  Scenario: An access key with the remove grant cannot remove the owner either
+    Given an access key with only CAN_REMOVE_MEMBER
+    When that key DELETEs the owner's membership
+    Then the response is 409
+    And the user is still "owner"
+
+  @mutates
+  Scenario: Refusing to change the owner explains why
+    When the user PUTs their own membership with role "admin"
+    Then the errorMessage is "The workspace owner cannot be changed or removed."

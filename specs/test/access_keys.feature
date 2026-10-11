@@ -111,3 +111,34 @@ Feature: Workspace access keys
     When 15 seconds pass
     And that key lists the workspace's agents
     Then the response is 401
+
+  # ---------------------------------------------------------------------------
+  # More on permissions and expiry
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: Every permission an access key may hold is accepted together
+    When the user POSTs a key named "spec-<runId>-all" with every permission an access key may hold
+    Then the response is 201
+    And permissions lists all of them
+
+  @mutates
+  Scenario: A key grants exactly its permissions and nothing near them
+    Given an access key with only CAN_LIST_AGENTS
+    And the agent "spec-<runId>-echo" is registered
+    When that key GETs agents/spec-<runId>-echo
+    Then the response is 403
+
+  @mutates
+  Scenario: A key with an expiry in the past never works
+    When the user POSTs a key named "spec-<runId>-past" with permissions ["CAN_LIST_AGENTS"]
+      and expiresAt one hour ago
+    Then the response is 201 or 400
+    And if 201, that key listing the workspace's agents gets 401
+
+  @mutates
+  Scenario: A key cannot mint keys in another workspace
+    Given a second workspace "spec-<runId>-other"
+    And an access key in the run's workspace with only CAN_CREATE_WORKSPACE_ACCESS_KEY and CAN_LIST_AGENTS
+    When that key POSTs a key with permissions ["CAN_LIST_AGENTS"] to the second workspace
+    Then the response is 403

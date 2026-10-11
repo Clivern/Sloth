@@ -91,3 +91,30 @@ Feature: Workspace invites
     Then the response is 403
     When that key lists the invites
     Then the response is 200
+
+  # ---------------------------------------------------------------------------
+  # Addresses and expiry
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: An invited address is stored lowercase
+    When the user POSTs an invite for "SPEC-<runId>-6@Example.COM" with role "regular"
+    Then the response is 201
+    And email is "spec-<runId>-6@example.com"
+
+  @mutates
+  Scenario: The same address in another case is the same pending invite
+    Given the user invited "spec-<runId>-7@example.com"
+    When the user POSTs an invite for "SPEC-<runId>-7@EXAMPLE.COM" with role "admin"
+    Then the response is 409
+
+  @mutates
+  Scenario: An invite expires seven days after it is sent
+    When the user POSTs an invite for "spec-<runId>-8@example.com" with role "readonly"
+    Then expiresAt is about 7 days from now
+
+  @mutates
+  Scenario: A revoked invite cannot be revoked twice
+    Given the user invited "spec-<runId>-9@example.com" and revoked it
+    When the user DELETEs that invite again
+    Then the response is 404
