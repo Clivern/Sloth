@@ -219,6 +219,9 @@ msgstr "L'identifiant ou les libellés de session sont requis."
 msgid "invalid_access_key_permissions"
 msgstr "Permissions de clé d'accès invalides."
 
+msgid "access_key_permission_denied"
+msgstr "Vous ne pouvez accorder que les permissions que vous possédez."
+
 msgid "invalid_api_key_id"
 msgstr "ID de clé API invalide."
 

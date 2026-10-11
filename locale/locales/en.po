@@ -231,6 +231,9 @@ msgstr "Session id or labels are required."
 msgid "invalid_access_key_permissions"
 msgstr "Invalid access key permissions."
 
+msgid "access_key_permission_denied"
+msgstr "You can only grant permissions you have."
+
 msgid "invalid_api_key_id"
 msgstr "Invalid API key ID."
 
