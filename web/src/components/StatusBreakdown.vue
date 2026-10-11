@@ -17,6 +17,11 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  // Show only the statuses that have at least one item.
+  hideZero: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const STATUSES = [
@@ -26,5 +31,7 @@ const STATUSES = [
   { key: 'passing', class: 'text-emerald-700' },
 ]
 
-const items = computed(() => STATUSES.map((status) => ({ ...status, count: props.counts[status.key] || 0 })))
+const items = computed(() => STATUSES
+  .map((status) => ({ ...status, count: props.counts[status.key] || 0 }))
+  .filter((item) => !props.hideZero || item.count))
 </script>

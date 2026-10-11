@@ -20,12 +20,33 @@
       </div>
 
       <template v-else>
-        <div class="mt-4 mb-8 flex flex-wrap items-start justify-between gap-4">
+        <router-link
+          to="/agents"
+          class="inline-flex items-center gap-1 text-sm text-theme-textLight hover:text-theme-text"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          {{ $t('agents_page.title') }}
+        </router-link>
+
+        <div class="mt-3 mb-6 flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-3">
               <h1 class="text-3xl font-semibold text-theme-text font-mono break-all">{{ agent.name }}</h1>
+              <span
+                v-if="agent.health"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                :class="healthClass(agent.health)"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(agent.health)" aria-hidden="true" />
+                {{ $t(`agents_page.health_${agent.health}`) }}
+              </span>
+              <span class="rounded-full border border-theme-border bg-white px-2.5 py-1 text-xs font-mono text-theme-textLight">
+                v{{ agent.version }}
+              </span>
             </div>
-            <p v-if="card.description" class="text-theme-textLight mt-2">{{ card.description }}</p>
+            <p v-if="card.description" class="mt-2 max-w-3xl text-theme-textLight">{{ card.description }}</p>
           </div>
           <div v-if="canManage" class="flex items-center gap-2">
             <button type="button" class="btn-secondary" @click="showEditModal = true">
@@ -45,439 +66,483 @@
           {{ errorMessage }}
         </div>
 
-        <div class="space-y-6">
-          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
-            <div class="border-b border-theme-border px-6 py-4">
-              <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.card') }}</h2>
-              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_desc') }}</p>
+        <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <a href="#instances" class="rounded-xl border border-theme-border bg-white p-4 shadow-sm transition-colors hover:border-primary-300">
+            <p class="text-xs font-medium uppercase tracking-wider text-theme-textLight">{{ $t('agents_page.instances') }}</p>
+            <p class="mt-1 text-2xl font-semibold text-theme-text">{{ instancesTotal }}</p>
+            <div class="mt-1 min-h-5">
+              <StatusBreakdown v-if="instancesTotal" :counts="agent.statusCounts || {}" hide-zero />
             </div>
-            <dl class="divide-y divide-theme-border">
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.version') }}</dt>
-                <dd class="text-sm font-mono text-theme-text">{{ agent.version }}</dd>
+          </a>
+          <a href="#checks" class="rounded-xl border border-theme-border bg-white p-4 shadow-sm transition-colors hover:border-primary-300">
+            <p class="text-xs font-medium uppercase tracking-wider text-theme-textLight">{{ $t('agents_page.checks_title') }}</p>
+            <p class="mt-1 text-2xl font-semibold text-theme-text">{{ checks.length }}</p>
+            <p class="mt-1 text-sm text-theme-textLight">{{ checkTypesSummary }}</p>
+          </a>
+          <a href="#protection" class="rounded-xl border border-theme-border bg-white p-4 shadow-sm transition-colors hover:border-primary-300">
+            <p class="text-xs font-medium uppercase tracking-wider text-theme-textLight">{{ $t('agents_page.protection_title') }}</p>
+            <p class="mt-1 text-2xl font-semibold" :class="protection?.isActive ? 'text-emerald-700' : 'text-theme-text'">
+              {{ protection ? (protection.isActive ? $t('agents_page.protection_active') : $t('agents_page.protection_inactive')) : $t('agents_page.protection_not_set') }}
+            </p>
+            <p class="mt-1 text-sm text-theme-textLight">
+              {{ protection ? $t(`agents_page.protection_type_${protection.type}`) : $t('agents_page.protection_not_set_hint') }}
+            </p>
+          </a>
+          <a href="#identities" class="rounded-xl border border-theme-border bg-white p-4 shadow-sm transition-colors hover:border-primary-300">
+            <p class="text-xs font-medium uppercase tracking-wider text-theme-textLight">{{ $t('agents_page.identities_title') }}</p>
+            <p class="mt-1 text-2xl font-semibold text-theme-text">{{ identities.length }}</p>
+            <p class="mt-1 text-sm text-theme-textLight">
+              {{ $t('agents_page.identities_active_count', { count: identities.filter((identity) => identity.isActive).length }) }}
+            </p>
+          </a>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-3">
+          <div class="min-w-0 space-y-6 lg:col-span-2">
+            <section id="instances" class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.instances') }}</h2>
+                  <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.instances_desc') }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="btn-secondary text-sm disabled:opacity-50"
+                  :disabled="loadingInstances"
+                  @click="loadInstances"
+                >
+                  {{ $t('agents_page.refresh') }}
+                </button>
               </div>
-              <div v-if="card.url" class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.url') }}</dt>
-                <dd class="text-sm font-mono text-theme-text break-all">{{ card.url }}</dd>
+
+              <div v-if="loadingInstances && instances.length === 0" class="p-12 text-center text-sm text-theme-textLight">
+                {{ $t('agents_page.loading_instances') }}
               </div>
-              <div v-if="card.provider" class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.provider') }}</dt>
-                <dd class="text-sm text-theme-text">{{ card.provider }}</dd>
+              <div v-else-if="instances.length === 0" class="p-12 text-center">
+                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_instances') }}</p>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_instances_hint') }}</p>
               </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.skills') }}</dt>
-                <dd>
-                  <ul v-if="card.skills.length" class="space-y-3">
-                    <li v-for="skill in card.skills" :key="skill.id">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-theme-hover px-2 py-0.5 text-xs font-medium text-theme-text font-mono">{{ skill.id }}</span>
-                        <span v-if="skill.name" class="text-sm text-theme-text">{{ skill.name }}</span>
+              <div v-else class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-theme-border">
+                  <thead class="bg-theme-hover">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.instance') }}</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.address') }}</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.health') }}</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.checks_title') }}</th>
+                      <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-theme-border">
+                    <template v-for="instance in instances" :key="instance.id">
+                    <tr class="hover:bg-theme-hover">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ instance.instanceId }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ instance.address }}:{{ instance.port }}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span
-                          v-for="tag in skill.tags"
-                          :key="tag"
-                          class="rounded-full border border-theme-border px-2 py-0.5 text-xs text-theme-textLight"
+                          class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                          :class="healthClass(instance.status)"
                         >
-                          {{ tag }}
+                          <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(instance.status)" aria-hidden="true" />
+                          {{ $t(`agents_page.health_${instance.status}`) }}
                         </span>
-                      </div>
-                      <p v-if="skill.description" class="mt-1 text-sm text-theme-textLight">{{ skill.description }}</p>
-                    </li>
-                  </ul>
-                  <span v-else class="text-sm text-theme-textLight">—</span>
-                </dd>
-              </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.input_modes') }}</dt>
-                <dd class="text-sm text-theme-text">{{ card.inputModes.length ? card.inputModes.join(', ') : '—' }}</dd>
-              </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.output_modes') }}</dt>
-                <dd class="text-sm text-theme-text">{{ card.outputModes.length ? card.outputModes.join(', ') : '—' }}</dd>
-              </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.capabilities') }}</dt>
-                <dd class="text-sm text-theme-text">{{ card.capabilities.length ? card.capabilities.join(', ') : '—' }}</dd>
-              </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.checksum') }}</dt>
-                <dd class="text-xs font-mono text-theme-textLight break-all">{{ agent.cardChecksum }}</dd>
-              </div>
-              <div class="grid gap-2 px-6 py-4 sm:grid-cols-[180px_1fr]">
-                <dt class="text-sm text-theme-textLight">{{ $t('agents_page.updated') }}</dt>
-                <dd class="text-sm text-theme-text">{{ formatRelative(agent.updatedAt) }}</dd>
-              </div>
-            </dl>
-            <details class="border-t border-theme-border">
-              <summary class="cursor-pointer px-6 py-3 text-sm font-medium text-theme-text hover:bg-theme-hover">
-                {{ $t('agents_page.raw_card') }}
-              </summary>
-              <pre class="overflow-x-auto bg-theme-hover px-6 py-4 text-xs leading-5 font-mono text-theme-text">{{ rawCard }}</pre>
-            </details>
-          </section>
-
-          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
-            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
-              <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.checks_title') }}</h2>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.checks_desc') }}</p>
-              </div>
-              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="openCheckModal(null)">
-                {{ $t('agents_page.check_add') }}
-              </button>
-            </div>
-
-            <div v-if="loadingChecks && checks.length === 0" class="p-8 text-center text-sm text-theme-textLight">
-              {{ $t('agents_page.loading_checks') }}
-            </div>
-            <div v-else-if="checks.length === 0" class="p-8 text-center">
-              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_checks') }}</p>
-              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_checks_hint') }}</p>
-            </div>
-            <div v-else class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-theme-border">
-                <thead class="bg-theme-hover">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_type') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_settings') }}</th>
-                    <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-theme-border">
-                  <tr v-for="check in checks" :key="check.checkId" class="hover:bg-theme-hover">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
-                      <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }}</p>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ $t(`agents_page.check_type_${check.type}`) }}</td>
-                    <td class="px-6 py-4 text-sm text-theme-text font-mono">{{ describeCheck(check) }}</td>
-                    <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <span class="inline-flex items-center gap-3">
-                        <button type="button" class="text-primary-600 hover:text-primary-700 hover:underline" @click="openCheckModal(check)">
-                          {{ $t('common.edit') }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span v-if="!(instance.checks || []).length" class="text-theme-textLight">{{ $t('agents_page.instance_no_checks') }}</span>
+                        <button
+                          v-else
+                          type="button"
+                          class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
+                          :aria-expanded="!!expanded[instance.id]"
+                          @click="toggleInstance(instance.id)"
+                        >
+                          <StatusBreakdown :counts="countByStatus(instance.checks)" hide-zero />
+                          <svg class="h-3.5 w-3.5 transition-transform" :class="expanded[instance.id] ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
                         </button>
+                      </td>
+                      <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <button
                           type="button"
                           class="text-red-600 hover:text-red-700 hover:underline"
-                          @click="askDeleteCheck(check)"
+                          @click="askDeregister(instance)"
                         >
-                          {{ $t('agents_page.delete') }}
+                          {{ $t('agents_page.deregister') }}
                         </button>
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
-            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
-              <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.protection_title') }}</h2>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.protection_desc') }}</p>
+                      </td>
+                    </tr>
+                    <tr v-if="expanded[instance.id]">
+                      <td :colspan="canManage ? 5 : 4" class="bg-theme-hover px-6 py-4">
+                        <ul class="space-y-3">
+                          <li v-for="check in instance.checks" :key="check.checkId" class="grid gap-1 sm:grid-cols-[220px_110px_1fr]">
+                            <div>
+                              <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
+                              <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }} · {{ $t(`agents_page.check_type_${check.type}`) }}</p>
+                            </div>
+                            <div>
+                              <span
+                                class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                                :class="healthClass(check.status)"
+                              >
+                                <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(check.status)" aria-hidden="true" />
+                                {{ $t(`agents_page.health_${check.status}`) }}
+                              </span>
+                            </div>
+                            <div class="min-w-0">
+                              <p class="text-sm text-theme-text break-words font-mono">{{ check.output || '—' }}</p>
+                              <p class="text-xs text-theme-textLight">
+                                {{ $t('agents_page.check_last_run', { when: formatRelative(check.lastRunAt, $t('agents_page.check_never')) }) }}
+                              </p>
+                            </div>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                    </template>
+                  </tbody>
+                </table>
               </div>
-              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="protectionModalOpen = true">
-                {{ protection ? $t('agents_page.protection_replace') : $t('agents_page.protection_add') }}
-              </button>
-            </div>
 
-            <div v-if="newProtectionSecret" class="border-b border-amber-200 bg-amber-50 px-6 py-4 space-y-2">
-              <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.protection_secret_title') }}</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newProtectionSecret }}</code>
-                <button type="button" class="btn-secondary shrink-0" @click="copyProtectionSecret">
-                  {{ protectionSecretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+              <div
+                v-if="instancesTotal > 0"
+                class="bg-white px-6 py-4 border-t border-theme-border flex items-center justify-between"
+              >
+                <div class="text-sm text-theme-textLight">
+                  {{ $t('agents_page.showing', { from: instancesOffset + 1, to: Math.min(instancesOffset + instancesLimit, instancesTotal), total: instancesTotal }) }}
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="instancesOffset === 0"
+                    @click="goToInstancesPage(instancesOffset - instancesLimit)"
+                  >
+                    {{ $t('agents_page.previous') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="instancesOffset + instancesLimit >= instancesTotal"
+                    @click="goToInstancesPage(instancesOffset + instancesLimit)"
+                  >
+                    {{ $t('agents_page.next') }}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section id="checks" class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.checks_title') }}</h2>
+                  <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.checks_desc') }}</p>
+                </div>
+                <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="openCheckModal(null)">
+                  {{ $t('agents_page.check_add') }}
                 </button>
               </div>
-              <button
-                type="button"
-                class="text-sm text-amber-800 hover:text-amber-900 font-medium"
-                @click="newProtectionSecret = null; protectionSecretCopied = false"
-              >
-                {{ $t('common.close') }}
-              </button>
-            </div>
 
-            <div v-if="loadingProtection && !protection" class="p-8 text-center text-sm text-theme-textLight">
-              {{ $t('agents_page.loading_protection') }}
-            </div>
-            <div v-else-if="!protection" class="p-8 text-center">
-              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_protection') }}</p>
-              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_protection_hint') }}</p>
-            </div>
-            <div v-else class="flex flex-wrap items-start justify-between gap-4 px-6 py-4">
-              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                <div>
-                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_type') }}</dt>
-                  <dd class="text-theme-text">{{ $t(`agents_page.protection_type_${protection.type}`) }}</dd>
-                </div>
-                <div>
-                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_status') }}</dt>
-                  <dd>
+              <div v-if="loadingChecks && checks.length === 0" class="p-8 text-center text-sm text-theme-textLight">
+                {{ $t('agents_page.loading_checks') }}
+              </div>
+              <div v-else-if="checks.length === 0" class="p-8 text-center">
+                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_checks') }}</p>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_checks_hint') }}</p>
+              </div>
+              <div v-else class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-theme-border">
+                  <thead class="bg-theme-hover">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check') }}</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_type') }}</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.check_settings') }}</th>
+                      <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-theme-border">
+                    <tr v-for="check in checks" :key="check.checkId" class="hover:bg-theme-hover">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
+                        <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }}</p>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ $t(`agents_page.check_type_${check.type}`) }}</td>
+                      <td class="px-6 py-4 text-sm text-theme-text font-mono">{{ describeCheck(check) }}</td>
+                      <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <span class="inline-flex items-center gap-3">
+                          <button type="button" class="text-primary-600 hover:text-primary-700 hover:underline" @click="openCheckModal(check)">
+                            {{ $t('common.edit') }}
+                          </button>
+                          <button
+                            type="button"
+                            class="text-red-600 hover:text-red-700 hover:underline"
+                            @click="askDeleteCheck(check)"
+                          >
+                            {{ $t('agents_page.delete') }}
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="border-b border-theme-border px-6 py-4">
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.skills') }}</h2>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.skills_desc') }}</p>
+              </div>
+              <ul v-if="card.skills.length" class="divide-y divide-theme-border">
+                <li v-for="skill in card.skills" :key="skill.id" class="px-6 py-4">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span v-if="skill.name" class="text-sm font-medium text-theme-text">{{ skill.name }}</span>
+                    <span class="rounded bg-theme-hover px-1.5 py-0.5 text-xs font-mono text-theme-textLight">{{ skill.id }}</span>
+                  </div>
+                  <p v-if="skill.description" class="mt-1 text-sm text-theme-textLight">{{ skill.description }}</p>
+                  <div v-if="skill.tags.length" class="mt-2 flex flex-wrap gap-1.5">
                     <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="protection.isActive ? 'bg-green-50 text-green-700' : 'bg-theme-hover text-theme-textLight'"
+                      v-for="tag in skill.tags"
+                      :key="tag"
+                      class="rounded-full border border-theme-border px-2 py-0.5 text-xs text-theme-textLight"
                     >
-                      {{ protection.isActive ? $t('agents_page.protection_active') : $t('agents_page.protection_inactive') }}
+                      {{ tag }}
                     </span>
+                  </div>
+                </li>
+              </ul>
+              <p v-else class="p-8 text-center text-sm text-theme-textLight">{{ $t('agents_page.no_skills') }}</p>
+            </section>
+          </div>
+
+          <div class="min-w-0 space-y-6">
+            <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="border-b border-theme-border px-5 py-4">
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.card') }}</h2>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_desc') }}</p>
+              </div>
+              <dl class="space-y-4 px-5 py-4 text-sm">
+                <div v-if="card.url">
+                  <dt class="text-theme-textLight">{{ $t('agents_page.gateway_url') }}</dt>
+                  <dd class="mt-1 flex items-start gap-2">
+                    <code class="min-w-0 flex-1 break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text">{{ card.url }}</code>
+                    <button type="button" class="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700" @click="copyUrl">
+                      {{ urlCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                    </button>
                   </dd>
                 </div>
-                <div v-if="protection.header">
-                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_header') }}</dt>
-                  <dd class="text-theme-text font-mono">{{ protection.header }}</dd>
-                </div>
-                <div v-if="protection.username">
-                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_username') }}</dt>
-                  <dd class="text-theme-text font-mono">{{ protection.username }}</dd>
+                <div v-if="card.provider">
+                  <dt class="text-theme-textLight">{{ $t('agents_page.provider') }}</dt>
+                  <dd class="mt-1 text-theme-text">{{ card.provider }}</dd>
                 </div>
                 <div>
-                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_updated') }}</dt>
-                  <dd class="text-theme-text">{{ formatRelative(protection.updatedAt) }}</dd>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.input_modes') }}</dt>
+                  <dd class="mt-1 flex flex-wrap gap-1.5">
+                    <span v-for="mode in card.inputModes" :key="mode" class="rounded bg-theme-hover px-1.5 py-0.5 text-xs font-mono text-theme-text">{{ mode }}</span>
+                    <span v-if="!card.inputModes.length" class="text-theme-textLight">—</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.output_modes') }}</dt>
+                  <dd class="mt-1 flex flex-wrap gap-1.5">
+                    <span v-for="mode in card.outputModes" :key="mode" class="rounded bg-theme-hover px-1.5 py-0.5 text-xs font-mono text-theme-text">{{ mode }}</span>
+                    <span v-if="!card.outputModes.length" class="text-theme-textLight">—</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.capabilities') }}</dt>
+                  <dd class="mt-1 flex flex-wrap gap-1.5">
+                    <span
+                      v-for="capability in card.capabilities"
+                      :key="capability"
+                      class="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700"
+                    >
+                      {{ capability }}
+                    </span>
+                    <span v-if="!card.capabilities.length" class="text-theme-textLight">—</span>
+                  </dd>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <dt class="text-theme-textLight">{{ $t('agents_page.updated') }}</dt>
+                    <dd class="mt-1 text-theme-text">{{ formatRelative(agent.updatedAt) }}</dd>
+                  </div>
+                  <div class="min-w-0">
+                    <dt class="text-theme-textLight">{{ $t('agents_page.checksum') }}</dt>
+                    <dd class="mt-1 truncate text-xs font-mono text-theme-textLight" :title="agent.cardChecksum">{{ agent.cardChecksum }}</dd>
+                  </div>
                 </div>
               </dl>
-              <span v-if="canManage" class="inline-flex items-center gap-3 text-sm">
-                <button
-                  type="button"
-                  class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
-                  :disabled="togglingProtection"
-                  @click="toggleProtection"
-                >
-                  {{ protection.isActive ? $t('agents_page.protection_disable') : $t('agents_page.protection_enable') }}
-                </button>
-                <button
-                  type="button"
-                  class="text-red-600 hover:text-red-700 hover:underline"
-                  @click="protectionDeleteOpen = true; protectionDeleteError = null"
-                >
-                  {{ $t('agents_page.protection_remove') }}
-                </button>
-              </span>
-            </div>
-          </section>
+              <details class="border-t border-theme-border">
+                <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-theme-text hover:bg-theme-hover">
+                  {{ $t('agents_page.raw_card') }}
+                </summary>
+                <pre class="max-h-96 overflow-auto bg-theme-hover px-5 py-4 text-xs leading-5 font-mono text-theme-text">{{ rawCard }}</pre>
+              </details>
+            </section>
 
-          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
-            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
-              <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.identities_title') }}</h2>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.identities_desc') }}</p>
-              </div>
-              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="identityModalOpen = true">
-                {{ $t('agents_page.identity_add') }}
-              </button>
-            </div>
-
-            <div v-if="newIdentity" class="border-b border-amber-200 bg-amber-50 px-6 py-4 space-y-2">
-              <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.identity_secret_title', { name: newIdentity.name }) }}</p>
-              <p v-if="newIdentity.username" class="text-sm text-amber-900">
-                {{ $t('agents_page.identity_username') }}: <code class="font-mono">{{ newIdentity.username }}</code>
-              </p>
-              <div class="flex flex-wrap items-center gap-2">
-                <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
-                <button type="button" class="btn-secondary shrink-0" @click="copySecret">
-                  {{ secretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+            <section id="protection" class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-5 py-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.protection_title') }}</h2>
+                  <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.protection_desc') }}</p>
+                </div>
+                <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="protectionModalOpen = true">
+                  {{ protection ? $t('agents_page.protection_replace') : $t('agents_page.protection_add') }}
                 </button>
               </div>
-              <button
-                type="button"
-                class="text-sm text-amber-800 hover:text-amber-900 font-medium"
-                @click="newIdentity = null; secretCopied = false"
-              >
-                {{ $t('common.close') }}
-              </button>
-            </div>
 
-            <div v-if="loadingIdentities && identities.length === 0" class="p-8 text-center text-sm text-theme-textLight">
-              {{ $t('agents_page.loading_identities') }}
-            </div>
-            <div v-else-if="identities.length === 0" class="p-8 text-center">
-              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_identities') }}</p>
-              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_identities_hint') }}</p>
-            </div>
-            <div v-else class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-theme-border">
-                <thead class="bg-theme-hover">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.name') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_type') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_status') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.identity_created') }}</th>
-                    <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-theme-border">
-                  <tr v-for="identity in identities" :key="identity.id" class="hover:bg-theme-hover">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ identity.name }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
-                      {{ $t(`agents_page.identity_type_${identity.type}`) }}
-                      <span v-if="identity.username" class="text-theme-textLight font-mono">· {{ identity.username }}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div v-if="newProtectionSecret" class="border-b border-amber-200 bg-amber-50 px-5 py-4 space-y-2">
+                <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.protection_secret_title') }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newProtectionSecret }}</code>
+                  <button type="button" class="btn-secondary shrink-0" @click="copyProtectionSecret">
+                    {{ protectionSecretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="text-sm text-amber-800 hover:text-amber-900 font-medium"
+                  @click="newProtectionSecret = null; protectionSecretCopied = false"
+                >
+                  {{ $t('common.close') }}
+                </button>
+              </div>
+
+              <div v-if="loadingProtection && !protection" class="p-8 text-center text-sm text-theme-textLight">
+                {{ $t('agents_page.loading_protection') }}
+              </div>
+              <div v-else-if="!protection" class="p-8 text-center">
+                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_protection') }}</p>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_protection_hint') }}</p>
+              </div>
+              <div v-else class="space-y-4 px-5 py-4">
+                <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div>
+                    <dt class="text-theme-textLight">{{ $t('agents_page.protection_type') }}</dt>
+                    <dd class="text-theme-text">{{ $t(`agents_page.protection_type_${protection.type}`) }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-theme-textLight">{{ $t('agents_page.protection_status') }}</dt>
+                    <dd>
                       <span
                         class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                        :class="identity.isActive ? 'bg-green-50 text-green-700' : 'bg-theme-hover text-theme-textLight'"
+                        :class="protection.isActive ? 'bg-green-50 text-green-700' : 'bg-theme-hover text-theme-textLight'"
                       >
-                        {{ identity.isActive ? $t('agents_page.identity_active') : $t('agents_page.identity_inactive') }}
+                        {{ protection.isActive ? $t('agents_page.protection_active') : $t('agents_page.protection_inactive') }}
                       </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ formatRelative(identity.createdAt) }}</td>
-                    <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <span class="inline-flex items-center gap-3">
-                        <button
-                          type="button"
-                          class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
-                          :disabled="togglingIdentity === identity.id"
-                          @click="toggleIdentity(identity)"
-                        >
-                          {{ identity.isActive ? $t('agents_page.identity_disable') : $t('agents_page.identity_enable') }}
-                        </button>
-                        <button
-                          type="button"
-                          class="text-red-600 hover:text-red-700 hover:underline"
-                          @click="askDeleteIdentity(identity)"
-                        >
-                          {{ $t('agents_page.identity_revoke') }}
-                        </button>
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
-            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
-              <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.instances') }}</h2>
-                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.instances_desc') }}</p>
+                    </dd>
+                  </div>
+                  <div v-if="protection.header">
+                    <dt class="text-theme-textLight">{{ $t('agents_page.protection_header') }}</dt>
+                    <dd class="text-theme-text font-mono">{{ protection.header }}</dd>
+                  </div>
+                  <div v-if="protection.username">
+                    <dt class="text-theme-textLight">{{ $t('agents_page.protection_username') }}</dt>
+                    <dd class="text-theme-text font-mono">{{ protection.username }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-theme-textLight">{{ $t('agents_page.protection_updated') }}</dt>
+                    <dd class="text-theme-text">{{ formatRelative(protection.updatedAt) }}</dd>
+                  </div>
+                </dl>
+                <div v-if="canManage" class="flex items-center gap-3 border-t border-theme-border pt-3 text-sm">
+                  <button
+                    type="button"
+                    class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                    :disabled="togglingProtection"
+                    @click="toggleProtection"
+                  >
+                    {{ protection.isActive ? $t('agents_page.protection_disable') : $t('agents_page.protection_enable') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-700 hover:underline"
+                    @click="protectionDeleteOpen = true; protectionDeleteError = null"
+                  >
+                    {{ $t('agents_page.protection_remove') }}
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                class="btn-secondary text-sm disabled:opacity-50"
-                :disabled="loadingInstances"
-                @click="loadInstances"
-              >
-                {{ $t('agents_page.refresh') }}
-              </button>
-            </div>
+            </section>
 
-            <div v-if="loadingInstances && instances.length === 0" class="p-12 text-center text-sm text-theme-textLight">
-              {{ $t('agents_page.loading_instances') }}
-            </div>
-            <div v-else-if="instances.length === 0" class="p-12 text-center">
-              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_instances') }}</p>
-              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_instances_hint') }}</p>
-            </div>
-            <div v-else class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-theme-border">
-                <thead class="bg-theme-hover">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.instance') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.address') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.health') }}</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.checks_title') }}</th>
-                    <th v-if="canManage" class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('agents_page.actions') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-theme-border">
-                  <template v-for="instance in instances" :key="instance.id">
-                  <tr class="hover:bg-theme-hover">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text font-mono">{{ instance.instanceId }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ instance.address }}:{{ instance.port }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                        :class="healthClass(instance.status)"
-                      >
-                        <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(instance.status)" aria-hidden="true" />
-                        {{ $t(`agents_page.health_${instance.status}`) }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                      <span v-if="!(instance.checks || []).length" class="text-theme-textLight">{{ $t('agents_page.instance_no_checks') }}</span>
-                      <button
-                        v-else
-                        type="button"
-                        class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
-                        :aria-expanded="!!expanded[instance.id]"
-                        @click="toggleInstance(instance.id)"
-                      >
-                        <StatusBreakdown :counts="countByStatus(instance.checks)" />
-                        <svg class="h-3.5 w-3.5 transition-transform" :class="expanded[instance.id] ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </td>
-                    <td v-if="canManage" class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button
-                        type="button"
-                        class="text-red-600 hover:text-red-700 hover:underline"
-                        @click="askDeregister(instance)"
-                      >
-                        {{ $t('agents_page.deregister') }}
-                      </button>
-                    </td>
-                  </tr>
-                  <tr v-if="expanded[instance.id]">
-                    <td :colspan="canManage ? 5 : 4" class="bg-theme-hover px-6 py-4">
-                      <ul class="space-y-3">
-                        <li v-for="check in instance.checks" :key="check.checkId" class="grid gap-1 sm:grid-cols-[220px_110px_1fr]">
-                          <div>
-                            <p class="text-sm font-medium text-theme-text">{{ check.name }}</p>
-                            <p class="text-xs font-mono text-theme-textLight">{{ check.checkId }} · {{ $t(`agents_page.check_type_${check.type}`) }}</p>
-                          </div>
-                          <div>
-                            <span
-                              class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                              :class="healthClass(check.status)"
-                            >
-                              <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(check.status)" aria-hidden="true" />
-                              {{ $t(`agents_page.health_${check.status}`) }}
-                            </span>
-                          </div>
-                          <div class="min-w-0">
-                            <p class="text-sm text-theme-text break-words font-mono">{{ check.output || '—' }}</p>
-                            <p class="text-xs text-theme-textLight">
-                              {{ $t('agents_page.check_last_run', { when: formatRelative(check.lastRunAt, $t('agents_page.check_never')) }) }}
-                            </p>
-                          </div>
-                        </li>
-                      </ul>
-                    </td>
-                  </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-
-            <div
-              v-if="instancesTotal > 0"
-              class="bg-white px-6 py-4 border-t border-theme-border flex items-center justify-between"
-            >
-              <div class="text-sm text-theme-textLight">
-                {{ $t('agents_page.showing', { from: instancesOffset + 1, to: Math.min(instancesOffset + instancesLimit, instancesTotal), total: instancesTotal }) }}
-              </div>
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="instancesOffset === 0"
-                  @click="goToInstancesPage(instancesOffset - instancesLimit)"
-                >
-                  {{ $t('agents_page.previous') }}
-                </button>
-                <button
-                  type="button"
-                  class="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="instancesOffset + instancesLimit >= instancesTotal"
-                  @click="goToInstancesPage(instancesOffset + instancesLimit)"
-                >
-                  {{ $t('agents_page.next') }}
+            <section id="identities" class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+              <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-5 py-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.identities_title') }}</h2>
+                  <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.identities_desc') }}</p>
+                </div>
+                <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="identityModalOpen = true">
+                  {{ $t('agents_page.identity_add') }}
                 </button>
               </div>
-            </div>
-          </section>
+
+              <div v-if="newIdentity" class="border-b border-amber-200 bg-amber-50 px-5 py-4 space-y-2">
+                <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.identity_secret_title', { name: newIdentity.name }) }}</p>
+                <p v-if="newIdentity.username" class="text-sm text-amber-900">
+                  {{ $t('agents_page.identity_username') }}: <code class="font-mono">{{ newIdentity.username }}</code>
+                </p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
+                  <button type="button" class="btn-secondary shrink-0" @click="copySecret">
+                    {{ secretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="text-sm text-amber-800 hover:text-amber-900 font-medium"
+                  @click="newIdentity = null; secretCopied = false"
+                >
+                  {{ $t('common.close') }}
+                </button>
+              </div>
+
+              <div v-if="loadingIdentities && identities.length === 0" class="p-8 text-center text-sm text-theme-textLight">
+                {{ $t('agents_page.loading_identities') }}
+              </div>
+              <div v-else-if="identities.length === 0" class="p-8 text-center">
+                <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_identities') }}</p>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_identities_hint') }}</p>
+              </div>
+              <ul v-else class="divide-y divide-theme-border">
+                <li v-for="identity in identities" :key="identity.id" class="px-5 py-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-medium text-theme-text font-mono">{{ identity.name }}</p>
+                      <p class="mt-0.5 text-xs text-theme-textLight">
+                        {{ $t(`agents_page.identity_type_${identity.type}`) }}
+                        <span v-if="identity.username" class="font-mono">· {{ identity.username }}</span>
+                        · {{ formatRelative(identity.createdAt) }}
+                      </p>
+                    </div>
+                    <span
+                      class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="identity.isActive ? 'bg-emerald-50 text-emerald-800' : 'bg-theme-hover text-theme-textLight'"
+                    >
+                      {{ identity.isActive ? $t('agents_page.identity_active') : $t('agents_page.identity_inactive') }}
+                    </span>
+                  </div>
+                  <div v-if="canManage" class="mt-2 flex items-center gap-3 text-xs">
+                    <button
+                      type="button"
+                      class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                      :disabled="togglingIdentity === identity.id"
+                      @click="toggleIdentity(identity)"
+                    >
+                      {{ identity.isActive ? $t('agents_page.identity_disable') : $t('agents_page.identity_enable') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="text-red-600 hover:text-red-700 hover:underline"
+                      @click="askDeleteIdentity(identity)"
+                    >
+                      {{ $t('agents_page.identity_revoke') }}
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
         </div>
       </template>
     </main>
@@ -769,6 +834,7 @@ const checkDeleteTarget = ref(null)
 const checkDeleting = ref(false)
 const checkDeleteError = ref(null)
 const expanded = reactive({})
+const urlCopied = ref(false)
 
 const protection = ref(null)
 const loadingProtection = ref(false)
@@ -799,6 +865,10 @@ const deleteError = ref(null)
 const agentName = computed(() => String(route.params.name || ''))
 const card = computed(() => parseCard(agent.value?.card))
 const rawCard = computed(() => JSON.stringify(agent.value?.card ?? {}, null, 2))
+const checkTypesSummary = computed(() => {
+  const types = [...new Set(checks.value.map((check) => t(`agents_page.check_type_${check.type}`)))]
+  return types.length ? types.join(', ') : t('agents_page.no_checks_short')
+})
 
 async function loadAgent() {
   loading.value = true
@@ -1057,6 +1127,13 @@ function describeCheck(check) {
   const port = check.port ? `:${check.port}` : ''
   const target = check.type === 'http' ? `${check.scheme}://…${port}${check.path}` : `tcp …${port}`
   return t('agents_page.check_describe_probe', { target, interval: check.interval, timeout: check.timeout })
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(card.value.url).then(() => {
+    urlCopied.value = true
+    setTimeout(() => { urlCopied.value = false }, 2000)
+  })
 }
 
 function goToInstancesPage(newOffset) {

@@ -43,7 +43,7 @@ export function parseCard(card) {
 
   return {
     description: typeof body.description === 'string' ? body.description : '',
-    url: typeof body.url === 'string' ? body.url : '',
+    url: typeof body.url === 'string' ? body.url : String(asArray(body.supportedInterfaces)[0]?.url ?? ''),
     provider: body.provider?.organization || '',
     skills: asArray(body.skills)
       .filter((skill) => skill && typeof skill === 'object')
