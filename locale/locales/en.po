@@ -506,3 +506,6 @@ msgstr "Basic auth protections need a username, and other protection types must 
 
 msgid "failed_protection_request"
 msgstr "Failed to complete the agent protection request."
+
+msgid "too_many_requests"
+msgstr "Too many requests. Please try again later."

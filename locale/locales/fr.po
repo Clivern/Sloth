@@ -494,3 +494,6 @@ msgstr "Les protections en authentification basique exigent un nom d'utilisateur
 
 msgid "failed_protection_request"
 msgstr "Échec de la requête de protection d'agent."
+
+msgid "too_many_requests"
+msgstr "Trop de requêtes. Veuillez réessayer plus tard."

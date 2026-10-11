@@ -51,16 +51,16 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 	})
 
 	r.Group(func(r chi.Router) { // public — no auth required
-		r.Get("/api/v1/public/_health", a.HealthAction)                                   // liveness probe
-		r.Get("/api/v1/public/_ready", a.ReadyAction)                                     // readiness probe (db, deps)
-		r.Post("/api/v1/public/action/setup", a.SetupAction)                              // initial app setup
-		r.Get("/api/v1/public/action/setup/status", a.SetupStatusAction)                  // setup completion status
-		r.Post("/api/v1/public/action/logout", a.LogoutAction)                            // user logout
-		r.Get("/api/v1/public/action/oauth/github", a.GitHubOAuthStartAction)             // start GitHub OAuth
-		r.Get("/api/v1/public/action/oauth/github/callback", a.GitHubOAuthCallbackAction) // GitHub OAuth callback
-		r.Get("/api/v1/public/action/oauth/google", a.GoogleOAuthStartAction)             // start Google OAuth
-		r.Get("/api/v1/public/action/oauth/google/callback", a.GoogleOAuthCallbackAction) // Google OAuth callback
-		r.Post("/api/v1/public/oauth/token", a.IssueIdentityTokenAction)                  // client credentials token for an agent identity
+		r.Get("/api/v1/public/_health", a.HealthAction)                                                              // liveness probe
+		r.Get("/api/v1/public/_ready", a.ReadyAction)                                                                // readiness probe (db, deps)
+		r.With(middleware.RateLimit(5, time.Minute)).Post("/api/v1/public/action/setup", a.SetupAction)              // initial app setup
+		r.Get("/api/v1/public/action/setup/status", a.SetupStatusAction)                                             // setup completion status
+		r.Post("/api/v1/public/action/logout", a.LogoutAction)                                                       // user logout
+		r.Get("/api/v1/public/action/oauth/github", a.GitHubOAuthStartAction)                                        // start GitHub OAuth
+		r.Get("/api/v1/public/action/oauth/github/callback", a.GitHubOAuthCallbackAction)                            // GitHub OAuth callback
+		r.Get("/api/v1/public/action/oauth/google", a.GoogleOAuthStartAction)                                        // start Google OAuth
+		r.Get("/api/v1/public/action/oauth/google/callback", a.GoogleOAuthCallbackAction)                            // Google OAuth callback
+		r.With(middleware.RateLimit(10, time.Minute)).Post("/api/v1/public/oauth/token", a.IssueIdentityTokenAction) // client credentials token for an agent identity
 		if conf.IsSaaS() {
 			r.Post("/api/v1/public/action/stripe/webhook", a.StripeWebhookAction) // Stripe billing webhook
 		}
