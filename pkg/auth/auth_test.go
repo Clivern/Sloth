@@ -29,7 +29,11 @@ func TestUnitAuth(t *testing.T) {
 		require.NoError(t, auth.Encrypt())
 		require.NoError(t, auth.Validate())
 		require.NoError(t, auth.Match(map[string]string{"username": "agent", "password": "pass"}))
-		assert.ErrorIs(t, auth.Match(map[string]string{"username": "agent", "password": "wrong"}), ErrCredentials)
+		assert.ErrorIs(
+			t,
+			auth.Match(map[string]string{"username": "agent", "password": "wrong"}),
+			ErrCredentials,
+		)
 	})
 
 	t.Run("rejects incomplete config", func(t *testing.T) {
