@@ -124,7 +124,6 @@ func (a *API) UpsertAgentAction(w http.ResponseWriter, r *http.Request) {
 	agent, created, err := a.Agent.UpsertAgent(db.Id(wid), agentName, &req)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrInvalidAgentName, http.StatusBadRequest, locale.TR(r, "invalid_agent_name")},
 			{module.ErrInvalidAgentCard, http.StatusBadRequest, locale.TR(r, "invalid_agent_card")},
 			{module.ErrAgentVersionRequired, http.StatusBadRequest, locale.TR(r, "invalid_agent_version")},

@@ -187,15 +187,11 @@ func TestUnitAgent(t *testing.T) {
 		assert.Equal(t, 1, response.StatusCounts[db.AgentInstanceStatusPassing])
 	})
 
-	t.Run("upsert rejects invalid names and missing workspaces", func(t *testing.T) {
+	t.Run("upsert rejects invalid names", func(t *testing.T) {
 		req := &UpsertAgentRequest{Card: json.RawMessage(`{"version":"1.0.0"}`)}
 
 		_, _, err := defaultAgentFixture().agent.UpsertAgent("ws-1", "-bad", req)
 		assert.ErrorIs(t, err, ErrInvalidAgentName)
-
-		noWorkspace := newAgentFixture(nil, nil)
-		_, _, err = noWorkspace.agent.UpsertAgent("ws-1", "support-assistant", req)
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
 	})
 
 	t.Run("upsert rejects cards that are missing or not a JSON object", func(t *testing.T) {

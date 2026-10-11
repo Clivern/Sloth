@@ -146,14 +146,6 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		return nil, false, ErrInvalidAgentName
 	}
 
-	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, false, err
-	}
-	if workspace == nil {
-		return nil, false, ErrWorkspaceNotFound
-	}
-
 	if req == nil {
 		return nil, false, ErrInvalidAgentCard
 	}
