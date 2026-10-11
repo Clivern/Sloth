@@ -156,3 +156,44 @@ Feature: Agent identities and client credentials
     Then the response is 200
     When that key POSTs an identity named "spec-<runId>-sneaky" with type "api_key"
     Then the response is 403
+
+  # ---------------------------------------------------------------------------
+  # More on tokens
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: A custom token lifetime is used for the tokens
+    Given a client_credentials identity "spec-<runId>-cc120" with tokenTtl 120
+    When a request trades its id and secret for a token
+    Then expires_in is 120
+
+  @mutates
+  Scenario: Each token request gets a new token
+    Given a client_credentials identity "spec-<runId>-cc"
+    When a request trades its id and secret for a token twice
+    Then the two access_tokens differ
+
+  @mutates
+  Scenario: A turned-off identity works again once turned back on
+    Given a client_credentials identity "spec-<runId>-cc" that has been turned off
+    When the user PUTs it with isActive true
+    Then a token request with its id and secret returns 200
+
+  @readonly
+  Scenario: A client id that is not a UUID is an invalid client, not a server error
+    When a request POSTs the token route with grant_type=client_credentials,
+      client_id=not-a-uuid and client_secret=x
+    Then the response is 401
+    And error is "invalid_client"
+
+  @readonly
+  Scenario: A token request without a grant type is rejected
+    When a request POSTs the token route with client_id and client_secret but no grant_type
+    Then the response is 400
+    And error is "unsupported_grant_type"
+
+  @mutates
+  Scenario: Only client_credentials identities carry a token lifetime
+    When the user POSTs an identity named "spec-<runId>-key-ttl" with type "api_key" and tokenTtl 120
+    Then the response is 201
+    And the body has no tokenTtl field

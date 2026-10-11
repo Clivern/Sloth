@@ -106,3 +106,14 @@ Feature: Agent protection
     Then the response is 200
     When that key DELETEs protection
     Then the response is 403
+
+  @mutates
+  Scenario: Basic auth protection has no header
+    When the user PUTs protection with type "basic_auth" and username "gateway"
+    Then the body has no header field
+
+  @mutates
+  Scenario: Deleting the agent removes its protection
+    Given an api_key protection
+    When the user DELETEs the agent and registers it again
+    Then reading the protection returns 404
