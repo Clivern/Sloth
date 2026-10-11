@@ -177,7 +177,11 @@ func (f *fakeInstances) CountLiveByAgentId(agentId db.Id, now time.Time) (int64,
 	return int64(len(f.live)), nil
 }
 
-func (f *fakeInstances) ListLivePageByAgentId(agentId db.Id, now time.Time, limit, offset int) ([]*db.AgentInstance, error) {
+func (f *fakeInstances) ListLivePageByAgentId(
+	agentId db.Id,
+	now time.Time,
+	limit, offset int,
+) ([]*db.AgentInstance, error) {
 	return pageInstances(f.live, limit, offset), nil
 }
 
@@ -446,7 +450,13 @@ func newAgentFixture(workspace *db.Workspace, agent *db.Agent) *agentFixture {
 func defaultAgentFixture() *agentFixture {
 	return newAgentFixture(
 		&db.Workspace{Id: "ws-1"},
-		&db.Agent{Id: "agent-1", WorkspaceId: "ws-1", Name: "support-assistant", Version: "1.0.0", Card: `{"name":"Support"}`},
+		&db.Agent{
+			Id:          "agent-1",
+			WorkspaceId: "ws-1",
+			Name:        "support-assistant",
+			Version:     "1.0.0",
+			Card:        `{"name":"Support"}`,
+		},
 	)
 }
 
@@ -461,10 +471,13 @@ type instanceFixture struct {
 // newInstanceFixture wires an Instance module to in-memory fakes; a nil workspace or agent simulates a missing one.
 func newInstanceFixture(workspace *db.Workspace, agent *db.Agent) *instanceFixture {
 	f := &instanceFixture{
-		agents:       &fakeAgents{agent: agent},
-		instances:    &fakeInstances{},
-		healthChecks: &fakeHealthChecks{byInstance: map[db.Id]*db.HealthCheck{}, checks: map[db.Id][]*db.HealthCheck{}},
-		agentChecks:  &fakeAgentChecks{},
+		agents:    &fakeAgents{agent: agent},
+		instances: &fakeInstances{},
+		healthChecks: &fakeHealthChecks{
+			byInstance: map[db.Id]*db.HealthCheck{},
+			checks:     map[db.Id][]*db.HealthCheck{},
+		},
+		agentChecks: &fakeAgentChecks{},
 	}
 	f.instance = NewInstance(
 		f.agents,
@@ -822,7 +835,13 @@ func (f *fakeUsage) GetQuantityByPeriod(workspaceId db.Id, utype string, pstart 
 	return f.quantities[utype], f.err
 }
 
-func (f *fakeUsage) IncrementByPeriod(workspaceId db.Id, utype string, pstart, pend time.Time, quantity int64, unit string) error {
+func (f *fakeUsage) IncrementByPeriod(
+	workspaceId db.Id,
+	utype string,
+	pstart, pend time.Time,
+	quantity int64,
+	unit string,
+) error {
 	f.incremented = append(f.incremented, quantity)
 
 	return f.err
@@ -928,7 +947,10 @@ func enableBilling(t *testing.T) *stripe.Client {
 	return client
 }
 
-func newBillingModule(workspace *db.Workspace, subscription *db.Subscription) (*Billing, *fakeSubscriptions, *fakeTokenPurchases) {
+func newBillingModule(
+	workspace *db.Workspace,
+	subscription *db.Subscription,
+) (*Billing, *fakeSubscriptions, *fakeTokenPurchases) {
 	subscriptions := &fakeSubscriptions{subscription: subscription}
 	purchases := &fakeTokenPurchases{inserted: true}
 	billing := NewBilling(&fakeWorkspaces{workspace: workspace}, subscriptions, purchases, Usage{})
@@ -944,7 +966,12 @@ func saveIntentionRequest(action string) *SaveIntentionRequest {
 	}
 }
 
-func newInviteModule(invites *fakeUserInvites, users *fakeUsers, members *fakeWorkspaceUsers, mailer *fakeMailer) *Invite {
+func newInviteModule(
+	invites *fakeUserInvites,
+	users *fakeUsers,
+	members *fakeWorkspaceUsers,
+	mailer *fakeMailer,
+) *Invite {
 	return NewInvite(
 		invites,
 		users,
@@ -972,11 +999,18 @@ func newOAuthAuth(users *fakeUsers, sessions *fakeSessions, configs *fakeConfigs
 // newPerm builds a checker without a database, with an in-memory workspace repository reporting membership.
 func newPerm(membership *db.WorkspaceUser) *Perm {
 	perm := NewPerm(nil)
-	perm.WorkspaceRepository = &fakeWorkspaces{membership: membership, workspace: &db.Workspace{Id: "ws-1"}}
+	perm.WorkspaceRepository = &fakeWorkspaces{
+		membership: membership,
+		workspace:  &db.Workspace{Id: "ws-1"},
+	}
 
 	return perm
 }
 
-func newWorkspaceModule(workspaces *fakeWorkspaces, members *fakeWorkspaceUsers, subscriptions *fakeSubscriptions) *Workspace {
+func newWorkspaceModule(
+	workspaces *fakeWorkspaces,
+	members *fakeWorkspaceUsers,
+	subscriptions *fakeSubscriptions,
+) *Workspace {
 	return NewWorkspace(workspaces, members, subscriptions, &fakeUsers{})
 }
