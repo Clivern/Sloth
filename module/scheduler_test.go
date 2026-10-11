@@ -50,9 +50,16 @@ func (f *schedulerPublisher) Flush() error {
 func TestUnitScheduler(t *testing.T) {
 	definition := `{"path":"/healthz","scheme":"http"}`
 	checks := &schedulerChecks{due: []*db.HealthCheck{
-		{Id: "check-1", InstanceId: "inst-1", Type: db.HealthCheckTypeHTTP, Definition: &definition},
+		{
+			Id:         "check-1",
+			InstanceId: "inst-1",
+			Type:       db.HealthCheckTypeHTTP,
+			Definition: &definition,
+		},
 	}}
-	instances := &schedulerInstances{instance: &db.AgentInstance{Address: "10.0.12.41", Port: 8080}}
+	instances := &schedulerInstances{
+		instance: &db.AgentInstance{Address: "10.0.12.41", Port: 8080},
+	}
 	publisher := &schedulerPublisher{}
 
 	err := NewScheduler(checks, instances, publisher).Tick(time.Now())
