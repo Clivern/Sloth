@@ -93,7 +93,8 @@ func TestUnitUsage(t *testing.T) {
 	t.Run("increment returns the usage error and skips the consume", func(t *testing.T) {
 		subscriptions := &fakeSubscriptions{}
 
-		err := NewUsage().IncrementAIUsage(&fakeUsage{err: errors.New("boom")}, subscriptions, "ws-1", 500, 0)
+		err := NewUsage().
+			IncrementAIUsage(&fakeUsage{err: errors.New("boom")}, subscriptions, "ws-1", 500, 0)
 		assert.EqualError(t, err, "boom")
 		assert.Empty(t, subscriptions.consumed)
 	})
