@@ -61,48 +61,15 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}
 GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
 ```
 
-`PUT .../agents/{agent}` registers the agent. Body is the Agent Card plus instance info:
+`PUT .../agents/{agent}` registers the agent by name and version. The card is not part of the body:
 
 ```json
-{
-  "card": {
-    "name": "Invoice Extractor",
-    "description": "Extracts line items from invoices",
-    "version": "1.4.0",
-    "capabilities": {
-      "streaming": true,
-      "pushNotifications": true,
-      "extendedAgentCard": true
-    },
-    "defaultInputModes": ["text/plain", "application/pdf"],
-    "defaultOutputModes": ["application/json"],
-    "skills": [
-      {
-        "id": "invoice.extract",
-        "name": "Extract invoice",
-        "description": "Parse a PDF invoice into structured line items",
-        "tags": ["finance", "ocr"]
-      }
-    ],
-    "supportedInterfaces": [
-      {
-        "url": "https://cognit.example.com/api/v1/workspaces/acme/a2a/agents/invoice-extractor",
-        "protocolBinding": "HTTP+JSON",
-        "protocolVersion": "1.0",
-        "tenant": "acme"
-      }
-    ]
-  },
-  "instance": {
-    "id": "invoice-extractor-3",
-    "address": "10.0.12.41",
-    "port": 8080,
-    "meta": { "model": "gpt-5", "region": "eu" }
-  }
-}
+{ "version": "1.4.0", "cardPath": "/.well-known/agent-card.json" }
 ```
 
-Cognit overwrites every `supportedInterfaces[].url`, and a legacy top-level `url` if present, with the gateway URL (`{app.url}/api/v1/workspaces/{workspace}/a2a/agents/{agent}`) before storing the card, so the stored card, its checksum, and the well-known card all match. The worker's private address stays in `instance`.
+`cardPath` is optional and defaults to `/.well-known/agent-card.json`. When an instance registers (`PUT .../agents/{agent}/instances/{id}` with `address` and `port`) and the agent has no card yet, Cognit fetches it from `{address}:{port}{cardPath}` over https, falling back to http.
+
+Cognit overwrites every `supportedInterfaces[].url`, and a legacy top-level `url` if present, with the gateway URL (`{app.url}/api/v1/workspaces/{workspace}/a2a/agents/{agent}`) before storing the fetched card, so the stored card, its checksum, and the well-known card all match. The first card stored wins; changing the agent's version or card path clears it so the next instance to register supplies it again. Until then the well-known card returns 404.
 
 `GET .../catalog/agents` returns healthy instances and cards.
 

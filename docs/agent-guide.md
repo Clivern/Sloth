@@ -10,49 +10,26 @@ Endpoint reference: [api.md](api.md).
 
 ## 1. Register
 
-On boot, with a workspace token:
+Register the agent once, by name and version. The card is not sent here:
 
 ```http
-PUT /v1/workspaces/acme/agent/register
-Authorization: Bearer <your-token>
+PUT /api/v1/workspaces/acme/agents/support-assistant
 Content-Type: application/json
+
+{ "version": "1.0.0", "cardPath": "/.well-known/agent-card.json" }
 ```
 
-```json
-{
-  "card": {
-    "name": "Support Assistant",
-    "description": "Answers support questions and delegates to specialist agents",
-    "version": "1.0.0",
-    "capabilities": { "streaming": true },
-    "defaultInputModes": ["text/plain"],
-    "defaultOutputModes": ["text/plain", "application/json"],
-    "skills": [
-      {
-        "id": "support.answer",
-        "name": "Answer support question",
-        "description": "Handle a user support query",
-        "tags": ["support"]
-      }
-    ],
-    "supportedInterfaces": [
-      {
-        "url": "http://127.0.0.1:8000/api/v1/workspaces/acme/a2a/agents/support-assistant",
-        "protocolBinding": "HTTP+JSON",
-        "protocolVersion": "1.0",
-        "tenant": "acme"
-      }
-    ]
-  },
-  "instance": {
-    "id": "support-assistant-1",
-    "address": "10.0.12.20",
-    "port": 8080
-  }
-}
+`cardPath` is optional and defaults to `/.well-known/agent-card.json`. On boot, serve your A2A card there, then register your instance with a workspace access key:
+
+```http
+PUT /api/v1/workspaces/acme/agents/support-assistant/instances/support-assistant-1
+X-Access-Key: <your-key>
+Content-Type: application/json
+
+{ "address": "10.0.12.20", "port": 8080 }
 ```
 
-Cognit replaces `supportedInterfaces[].url` (and a legacy top-level `url`, if present) with the gateway URL when it stores the card, so the URL you send is overwritten. Your private address belongs in `instance`.
+While the agent has no card, Cognit fetches it from the registering instance at `https://10.0.12.20:8080{cardPath}`, falling back to `http`. It replaces `supportedInterfaces[].url` (and a legacy top-level `url`, if present) with the gateway URL before storing it, so the URL your card advertises is overwritten. The first card stored wins; bumping the agent's version or card path clears it so the next instance to register supplies a fresh one. A failed fetch does not fail the instance registration.
 
 Then define a heartbeat check on your agent, and report it before its TTL runs out:
 
