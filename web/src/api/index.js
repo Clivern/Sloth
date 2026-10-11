@@ -110,6 +110,13 @@ export const agent_check_api = {
   delete: (workspaceId, name, checkId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/checks/${encodeURIComponent(checkId)}`),
 }
 
+export const agent_protection_api = {
+  get: (workspaceId, name) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`),
+  save: (workspaceId, name, data) => api.put(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`, data),
+  updateStatus: (workspaceId, name, data) => api.put(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection/status`, data),
+  delete: (workspaceId, name) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`),
+}
+
 export const agent_instance_api = {
   list: (workspaceId, name, params) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances`, { params }),
   delete: (workspaceId, name, instanceId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances/${encodeURIComponent(instanceId)}`),

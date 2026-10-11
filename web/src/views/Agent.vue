@@ -174,6 +174,91 @@
           <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
             <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
               <div>
+                <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.protection_title') }}</h2>
+                <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.protection_desc') }}</p>
+              </div>
+              <button v-if="canManage" type="button" class="btn-secondary text-sm" @click="protectionModalOpen = true">
+                {{ protection ? $t('agents_page.protection_replace') : $t('agents_page.protection_add') }}
+              </button>
+            </div>
+
+            <div v-if="newProtectionSecret" class="border-b border-amber-200 bg-amber-50 px-6 py-4 space-y-2">
+              <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.protection_secret_title') }}</p>
+              <div class="flex flex-wrap items-center gap-2">
+                <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newProtectionSecret }}</code>
+                <button type="button" class="btn-secondary shrink-0" @click="copyProtectionSecret">
+                  {{ protectionSecretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                </button>
+              </div>
+              <button
+                type="button"
+                class="text-sm text-amber-800 hover:text-amber-900 font-medium"
+                @click="newProtectionSecret = null; protectionSecretCopied = false"
+              >
+                {{ $t('common.close') }}
+              </button>
+            </div>
+
+            <div v-if="loadingProtection && !protection" class="p-8 text-center text-sm text-theme-textLight">
+              {{ $t('agents_page.loading_protection') }}
+            </div>
+            <div v-else-if="!protection" class="p-8 text-center">
+              <p class="text-sm text-theme-textLight">{{ $t('agents_page.no_protection') }}</p>
+              <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_protection_hint') }}</p>
+            </div>
+            <div v-else class="flex flex-wrap items-start justify-between gap-4 px-6 py-4">
+              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_type') }}</dt>
+                  <dd class="text-theme-text">{{ $t(`agents_page.protection_type_${protection.type}`) }}</dd>
+                </div>
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_status') }}</dt>
+                  <dd>
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="protection.isActive ? 'bg-green-50 text-green-700' : 'bg-theme-hover text-theme-textLight'"
+                    >
+                      {{ protection.isActive ? $t('agents_page.protection_active') : $t('agents_page.protection_inactive') }}
+                    </span>
+                  </dd>
+                </div>
+                <div v-if="protection.header">
+                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_header') }}</dt>
+                  <dd class="text-theme-text font-mono">{{ protection.header }}</dd>
+                </div>
+                <div v-if="protection.username">
+                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_username') }}</dt>
+                  <dd class="text-theme-text font-mono">{{ protection.username }}</dd>
+                </div>
+                <div>
+                  <dt class="text-theme-textLight">{{ $t('agents_page.protection_updated') }}</dt>
+                  <dd class="text-theme-text">{{ formatRelative(protection.updatedAt) }}</dd>
+                </div>
+              </dl>
+              <span v-if="canManage" class="inline-flex items-center gap-3 text-sm">
+                <button
+                  type="button"
+                  class="text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                  :disabled="togglingProtection"
+                  @click="toggleProtection"
+                >
+                  {{ protection.isActive ? $t('agents_page.protection_disable') : $t('agents_page.protection_enable') }}
+                </button>
+                <button
+                  type="button"
+                  class="text-red-600 hover:text-red-700 hover:underline"
+                  @click="protectionDeleteOpen = true; protectionDeleteError = null"
+                >
+                  {{ $t('agents_page.protection_remove') }}
+                </button>
+              </span>
+            </div>
+          </section>
+
+          <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
+            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
+              <div>
                 <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.instances') }}</h2>
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.instances_desc') }}</p>
               </div>
@@ -318,6 +403,16 @@
       @saved="onCheckSaved"
     />
 
+    <AgentProtectionModal
+      v-if="agent"
+      :open="protectionModalOpen"
+      :workspace-id="currentWorkspace.id"
+      :agent-name="agent.name"
+      :current="protection"
+      @close="protectionModalOpen = false"
+      @saved="onProtectionSaved"
+    />
+
     <AgentCardModal
       v-if="agent"
       :open="showEditModal"
@@ -406,6 +501,44 @@
     <Teleport to="body">
       <Transition name="modal">
         <div
+          v-show="protectionDeleteOpen"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-protection-title"
+          @click.self="closeDeleteProtection"
+        >
+          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
+            <h2 id="delete-protection-title" class="text-lg font-semibold text-theme-text">
+              {{ $t('agents_page.protection_delete_title') }}
+            </h2>
+            <div v-if="protectionDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+              {{ protectionDeleteError }}
+            </div>
+            <p class="mt-2 text-sm text-theme-textLight">
+              {{ $t('agents_page.protection_delete_confirm') }}
+            </p>
+            <div class="mt-6 flex gap-3 justify-end">
+              <button type="button" class="btn-secondary" :disabled="protectionDeleting" @click="closeDeleteProtection">
+                {{ $t('common.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                :disabled="protectionDeleting"
+                @click="confirmDeleteProtection"
+              >
+                {{ protectionDeleting ? $t('agents_page.deleting') : $t('agents_page.protection_remove') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
           v-show="showDeleteModal"
           class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
           role="dialog"
@@ -465,7 +598,8 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
 import AgentCardModal from '@/components/AgentCardModal.vue'
 import AgentCheckModal from '@/components/AgentCheckModal.vue'
-import { agent_api, agent_check_api, agent_instance_api } from '@/api'
+import AgentProtectionModal from '@/components/AgentProtectionModal.vue'
+import { agent_api, agent_check_api, agent_instance_api, agent_protection_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'
 import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
@@ -498,6 +632,16 @@ const checkDeleting = ref(false)
 const checkDeleteError = ref(null)
 const expanded = reactive({})
 
+const protection = ref(null)
+const loadingProtection = ref(false)
+const protectionModalOpen = ref(false)
+const newProtectionSecret = ref(null)
+const protectionSecretCopied = ref(false)
+const togglingProtection = ref(false)
+const protectionDeleteOpen = ref(false)
+const protectionDeleting = ref(false)
+const protectionDeleteError = ref(null)
+
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const deleteConfirmName = ref('')
@@ -516,11 +660,13 @@ async function loadAgent() {
   instances.value = []
   instancesOffset.value = 0
   checks.value = []
+  protection.value = null
+  newProtectionSecret.value = null
 
   try {
     const res = await agent_api.get(currentWorkspace.id, agentName.value)
     agent.value = res.data
-    await Promise.all([loadChecks(), loadInstances()])
+    await Promise.all([loadChecks(), loadProtection(), loadInstances()])
   } catch (err) {
     if (err.response?.status === 404) {
       notFound.value = true
@@ -565,6 +711,75 @@ async function loadChecks() {
     errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_checks')
   } finally {
     loadingChecks.value = false
+  }
+}
+
+async function loadProtection() {
+  loadingProtection.value = true
+
+  try {
+    const res = await agent_protection_api.get(currentWorkspace.id, agentName.value)
+    protection.value = res.data
+  } catch (err) {
+    if (err.response?.status === 404) {
+      protection.value = null
+      return
+    }
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_protection')
+  } finally {
+    loadingProtection.value = false
+  }
+}
+
+function onProtectionSaved(saved) {
+  protectionModalOpen.value = false
+  newProtectionSecret.value = saved.secret || null
+  protectionSecretCopied.value = false
+  protection.value = { ...saved, secret: undefined }
+  showFlash(t('common.saved'))
+}
+
+function copyProtectionSecret() {
+  navigator.clipboard.writeText(newProtectionSecret.value).then(() => {
+    protectionSecretCopied.value = true
+    setTimeout(() => { protectionSecretCopied.value = false }, 2000)
+  })
+}
+
+async function toggleProtection() {
+  togglingProtection.value = true
+
+  try {
+    const res = await agent_protection_api.updateStatus(currentWorkspace.id, agentName.value, {
+      isActive: !protection.value.isActive,
+    })
+    protection.value = res.data
+    showFlash(t('common.saved'))
+  } catch (err) {
+    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.protection_failed_save')
+  } finally {
+    togglingProtection.value = false
+  }
+}
+
+function closeDeleteProtection() {
+  protectionDeleteOpen.value = false
+}
+
+async function confirmDeleteProtection() {
+  protectionDeleting.value = true
+  protectionDeleteError.value = null
+
+  try {
+    await agent_protection_api.delete(currentWorkspace.id, agentName.value)
+    protection.value = null
+    newProtectionSecret.value = null
+    protectionDeleteOpen.value = false
+    showFlash(t('common.deleted'))
+  } catch (err) {
+    protectionDeleteError.value = err.response?.data?.errorMessage || t('agents_page.protection_failed_delete')
+  } finally {
+    protectionDeleting.value = false
   }
 }
 
