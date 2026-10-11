@@ -18,35 +18,65 @@ func TestUnitCheck(t *testing.T) {
 	t.Run("upsert rejects malformed check ids", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "bad id!", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"bad id!",
+			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30},
+		)
 		assert.ErrorIs(t, err, ErrInvalidCheckId)
 	})
 
 	t.Run("upsert rejects a ttl check without a ttl", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"heartbeat",
+			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL},
+		)
 		assert.ErrorIs(t, err, ErrInvalidCheckTiming)
 	})
 
 	t.Run("upsert rejects http paths without a leading slash", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "http", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "healthz"})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"http",
+			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "healthz"},
+		)
 		assert.ErrorIs(t, err, ErrInvalidCheckPath)
 	})
 
 	t.Run("upsert rejects a timeout that is not below the interval", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "tcp", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTCP, Port: 5432, Interval: 10, Timeout: 10})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"tcp",
+			&UpsertAgentCheckRequest{
+				Type:     db.HealthCheckTypeTCP,
+				Port:     5432,
+				Interval: 10,
+				Timeout:  10,
+			},
+		)
 		assert.ErrorIs(t, err, ErrInvalidCheckTiming)
 	})
 
 	t.Run("upsert returns not found for a missing agent", func(t *testing.T) {
 		f := newCheckFixture(nil)
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"heartbeat",
+			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30},
+		)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
@@ -54,10 +84,15 @@ func TestUnitCheck(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}, {Id: "inst-2"}}
 
-		response, created, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "http", &UpsertAgentCheckRequest{
-			Type: db.HealthCheckTypeHTTP,
-			Path: "/healthz",
-		})
+		response, created, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"http",
+			&UpsertAgentCheckRequest{
+				Type: db.HealthCheckTypeHTTP,
+				Path: "/healthz",
+			},
+		)
 		require.NoError(t, err)
 		assert.True(t, created)
 		assert.Equal(t, 10, response.Interval)
@@ -83,10 +118,15 @@ func TestUnitCheck(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{
-			Type: db.HealthCheckTypeTTL,
-			TTL:  30,
-		})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"heartbeat",
+			&UpsertAgentCheckRequest{
+				Type: db.HealthCheckTypeTTL,
+				TTL:  30,
+			},
+		)
 		require.NoError(t, err)
 
 		require.Len(t, f.healthChecks.created, 1)
@@ -99,9 +139,18 @@ func TestUnitCheck(t *testing.T) {
 	t.Run("upsert resets a copied check when its type changes", func(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "check-1", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent}
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:     "check-1",
+			Type:   db.HealthCheckTypeTTL,
+			Source: db.HealthCheckSourceAgent,
+		}
 
-		_, _, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "heartbeat", &UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "/healthz"})
+		_, _, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"heartbeat",
+			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "/healthz"},
+		)
 		require.NoError(t, err)
 
 		assert.Equal(t, []db.Id{"check-1"}, f.healthChecks.deleted)
@@ -112,14 +161,29 @@ func TestUnitCheck(t *testing.T) {
 	t.Run("upsert updates an existing template in place", func(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1"}}
-		f.agentChecks.template = &db.AgentCheck{Id: "tpl-1", AgentId: "agent-1", CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP}
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "check-1", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent}
+		f.agentChecks.template = &db.AgentCheck{
+			Id:      "tpl-1",
+			AgentId: "agent-1",
+			CheckId: "http",
+			Name:    "http",
+			Type:    db.HealthCheckTypeHTTP,
+		}
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:     "check-1",
+			Type:   db.HealthCheckTypeHTTP,
+			Source: db.HealthCheckSourceAgent,
+		}
 
-		_, created, err := f.check.UpsertAgentCheck("ws-1", "support-assistant", "http", &UpsertAgentCheckRequest{
-			Type: db.HealthCheckTypeHTTP,
-			Path: "/ready",
-			Name: "  Readiness  ",
-		})
+		_, created, err := f.check.UpsertAgentCheck(
+			"ws-1",
+			"support-assistant",
+			"http",
+			&UpsertAgentCheckRequest{
+				Type: db.HealthCheckTypeHTTP,
+				Path: "/ready",
+				Name: "  Readiness  ",
+			},
+		)
 		require.NoError(t, err)
 		assert.False(t, created)
 		assert.Len(t, f.agentChecks.updated, 1)
@@ -172,11 +236,25 @@ func TestUnitCheck(t *testing.T) {
 	t.Run("report returns not found for a missing instance or check", func(t *testing.T) {
 		f := defaultCheckFixture()
 
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		_, err := f.check.ReportCheck(
+			"ws-1",
+			"support-assistant",
+			"inst-1",
+			"heartbeat",
+			db.HealthCheckStatusPassing,
+			&ReportCheckRequest{},
+		)
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 
 		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
-		_, err = f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		_, err = f.check.ReportCheck(
+			"ws-1",
+			"support-assistant",
+			"inst-1",
+			"heartbeat",
+			db.HealthCheckStatusPassing,
+			&ReportCheckRequest{},
+		)
 		assert.ErrorIs(t, err, ErrCheckNotFound)
 	})
 
@@ -184,8 +262,19 @@ func TestUnitCheck(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
 
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "check-1", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent}
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:     "check-1",
+			Type:   db.HealthCheckTypeHTTP,
+			Source: db.HealthCheckSourceAgent,
+		}
+		_, err := f.check.ReportCheck(
+			"ws-1",
+			"support-assistant",
+			"inst-1",
+			"heartbeat",
+			db.HealthCheckStatusPassing,
+			&ReportCheckRequest{},
+		)
 		assert.ErrorIs(t, err, ErrCheckNotReportable)
 
 	})
@@ -203,7 +292,14 @@ func TestUnitCheck(t *testing.T) {
 			Definition: &definition,
 		}
 
-		response, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusWarning, &ReportCheckRequest{Output: "queue is slow"})
+		response, err := f.check.ReportCheck(
+			"ws-1",
+			"support-assistant",
+			"inst-1",
+			"heartbeat",
+			db.HealthCheckStatusWarning,
+			&ReportCheckRequest{Output: "queue is slow"},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, db.HealthCheckStatusWarning, response.Status)
 		require.NotNil(t, response.Output)
@@ -221,11 +317,23 @@ func TestUnitCheck(t *testing.T) {
 		f := defaultCheckFixture()
 		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
 		definition := `{"ttl":30}`
-		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{Id: "check-1", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Definition: &definition}
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:         "check-1",
+			Type:       db.HealthCheckTypeTTL,
+			Source:     db.HealthCheckSourceAgent,
+			Definition: &definition,
+		}
 
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{
-			Output: strings.Repeat("a", MaxCheckOutput+10),
-		})
+		_, err := f.check.ReportCheck(
+			"ws-1",
+			"support-assistant",
+			"inst-1",
+			"heartbeat",
+			db.HealthCheckStatusPassing,
+			&ReportCheckRequest{
+				Output: strings.Repeat("a", MaxCheckOutput+10),
+			},
+		)
 		require.NoError(t, err)
 		assert.Len(t, f.healthChecks.reports[0].output, MaxCheckOutput)
 	})
