@@ -56,7 +56,13 @@ func TestUnitSessionManager(t *testing.T) {
 	})
 
 	t.Run("validate deletes an expired session", func(t *testing.T) {
-		sessions := &fakeSessions{session: &db.Session{Id: "sess-1", UserId: "user-1", ExpiresAt: time.Now().UTC().Add(-time.Minute)}}
+		sessions := &fakeSessions{
+			session: &db.Session{
+				Id:        "sess-1",
+				UserId:    "user-1",
+				ExpiresAt: time.Now().UTC().Add(-time.Minute),
+			},
+		}
 		manager := NewSessionManager(sessions, &fakeUsers{user: &db.User{Id: "user-1", IsActive: true}})
 
 		_, _, err := manager.ValidateSession("token")
@@ -65,18 +71,32 @@ func TestUnitSessionManager(t *testing.T) {
 	})
 
 	t.Run("validate rejects a session whose user is gone or inactive", func(t *testing.T) {
-		live := &fakeSessions{session: &db.Session{Id: "sess-1", UserId: "user-1", ExpiresAt: time.Now().UTC().Add(time.Hour)}}
+		live := &fakeSessions{
+			session: &db.Session{
+				Id:        "sess-1",
+				UserId:    "user-1",
+				ExpiresAt: time.Now().UTC().Add(time.Hour),
+			},
+		}
 
 		_, _, err := NewSessionManager(live, &fakeUsers{}).ValidateSession("token")
 		assert.EqualError(t, err, "user not found")
 
-		_, _, err = NewSessionManager(live, &fakeUsers{user: &db.User{Id: "user-1", IsActive: false}}).ValidateSession("token")
+		_, _, err = NewSessionManager(live, &fakeUsers{user: &db.User{Id: "user-1", IsActive: false}}).
+			ValidateSession("token")
 		assert.EqualError(t, err, "user is not active")
 	})
 
 	t.Run("validate returns the user and session for a live token", func(t *testing.T) {
-		session := &db.Session{Id: "sess-1", UserId: "user-1", ExpiresAt: time.Now().UTC().Add(time.Hour)}
-		manager := NewSessionManager(&fakeSessions{session: session}, &fakeUsers{user: &db.User{Id: "user-1", IsActive: true}})
+		session := &db.Session{
+			Id:        "sess-1",
+			UserId:    "user-1",
+			ExpiresAt: time.Now().UTC().Add(time.Hour),
+		}
+		manager := NewSessionManager(
+			&fakeSessions{session: session},
+			&fakeUsers{user: &db.User{Id: "user-1", IsActive: true}},
+		)
 
 		user, got, err := manager.ValidateSession("token")
 		require.NoError(t, err)
@@ -104,11 +124,13 @@ func TestUnitSessionManager(t *testing.T) {
 	})
 
 	t.Run("cleanup returns the removed count and wraps no error", func(t *testing.T) {
-		count, err := NewSessionManager(&fakeSessions{expired: 5}, &fakeUsers{}).CleanupExpiredSessions()
+		count, err := NewSessionManager(&fakeSessions{expired: 5}, &fakeUsers{}).
+			CleanupExpiredSessions()
 		require.NoError(t, err)
 		assert.Equal(t, int64(5), count)
 
-		_, err = NewSessionManager(&fakeSessions{err: errors.New("boom")}, &fakeUsers{}).CleanupExpiredSessions()
+		_, err = NewSessionManager(&fakeSessions{err: errors.New("boom")}, &fakeUsers{}).
+			CleanupExpiredSessions()
 		assert.EqualError(t, err, "boom")
 	})
 }
