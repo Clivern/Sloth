@@ -165,6 +165,53 @@ paths:
         "302":
           description: Redirect to app with session cookie set
 
+  /api/v1/public/oauth/token:
+    post:
+      tags: [Identities]
+      summary: Issue an access token for a client credentials identity
+      description: |
+        OAuth 2.0 client credentials grant. `client_id` is the identity id. Send the credentials as
+        HTTP basic auth or as form fields. Only an active `client_credentials` identity can get a token;
+        the token is stored as a SHA-256 hash and expires after the identity's `tokenTtl`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type]
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                client_id:
+                  type: string
+                  format: uuid
+                client_secret:
+                  type: string
+      responses:
+        "200":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+        "400":
+          description: "`unsupported_grant_type`"
+        "401":
+          description: "`invalid_client`: unknown id, wrong secret, disabled or not a client credentials identity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/public/action/stripe/webhook:
     post:
       tags: [Billing]
@@ -2747,11 +2794,16 @@ components:
           maxLength: 100
         type:
           type: string
-          enum: [api_key, basic_auth]
+          enum: [api_key, basic_auth, client_credentials]
         username:
           type: string
           maxLength: 100
-          description: Required for `basic_auth`, not allowed for `api_key`.
+          description: Required for `basic_auth`, not allowed for the other types.
+        tokenTtl:
+          type: integer
+          minimum: 60
+          maximum: 86400
+          description: "`client_credentials` only. Lifetime in seconds of issued tokens. Defaults to 300."
 
     UpdateAgentIdentityRequest:
       type: object
@@ -2769,13 +2821,17 @@ components:
         id:
           type: string
           format: uuid
+          description: Also the `client_id` for `client_credentials`.
         name:
           type: string
         type:
           type: string
-          enum: [api_key, basic_auth]
+          enum: [api_key, basic_auth, client_credentials]
         username:
           type: string
+        tokenTtl:
+          type: integer
+          description: "`client_credentials` only."
         isActive:
           type: boolean
         createdAt:

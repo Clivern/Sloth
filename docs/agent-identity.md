@@ -33,7 +33,23 @@ PUT    /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
 DELETE /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
 ```
 
-`POST` takes `name`, `type` (`api_key` or `basic_auth`) and, for basic auth, `username`. The response carries `secret` once. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
+`POST` takes `name`, `type` (`api_key`, `basic_auth` or `client_credentials`), `username` for basic auth and an optional `tokenTtl` (60–86400 seconds, default 300) for client credentials. The response carries `secret` once. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
+
+A `client_credentials` identity never sends its secret to the gateway. It exchanges the identity id (`client_id`) and secret for a short-lived bearer token, then sends `Authorization: Bearer <token>`:
+
+```http
+POST /api/v1/public/oauth/token
+Authorization: Basic base64(<client_id>:<client_secret>)
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+```
+
+```json
+{ "access_token": "…", "token_type": "Bearer", "expires_in": 300 }
+```
+
+Tokens are stored as SHA-256 hashes in `agent_identity_tokens` and deleted once expired. A wrong secret, a disabled identity or another identity type gets **401** `invalid_client`.
 
 `X-Source-Agent` is only a lookup hint so Cognit does not scan every key: find that agent, then verify the secret against **its** hashes. If the header says `agent1` but the secret is `agent2`’s → **401**. The header never wins.
 
