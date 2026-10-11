@@ -42,6 +42,14 @@ Feature: Workspace access keys
     And no key named "spec-<runId>-bad" exists afterwards
 
   @readonly
+  Scenario: Inviting members is not a permission an access key can hold
+    When the user POSTs a key named "spec-<runId>-inviter" with permissions ["CAN_INVITE_MEMBER"]
+    Then the response is 400
+    And no key named "spec-<runId>-inviter" exists afterwards
+
+  # An invite records the user who sent it and emails in their name, so it needs a person.
+
+  @readonly
   Scenario: A key needs a name of at most 60 characters
     When the user POSTs a key with permissions [] and no name
     Then the response is 400

@@ -893,7 +893,6 @@
     "perm_remove_member": "Remove members",
     "perm_list_workspace_invites": "List invites",
     "perm_get_workspace_invite": "Get invites",
-    "perm_invite_member": "Create invites",
     "perm_remove_invite": "Revoke invites",
     "perm_get_workspace_billing": "Get billing",
     "perm_update_workspace_billing": "Update billing",

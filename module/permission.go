@@ -80,9 +80,9 @@ var AccessKeyPermissions = map[string]bool{
 	CanUpdateMemberRole:     true,
 	CanRemoveMember:         true,
 
+	// CanInviteMember is left out: an invite needs a user to send it
 	CanListWorkspaceInvites: true,
 	CanGetWorkspaceInvite:   true,
-	CanInviteMember:         true,
 	CanRemoveInvite:         true,
 
 	CanGetWorkspaceBilling:    true,

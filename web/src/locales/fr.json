@@ -893,7 +893,6 @@
     "perm_remove_member": "Retirer des membres",
     "perm_list_workspace_invites": "Lister les invitations",
     "perm_get_workspace_invite": "Lire les invitations",
-    "perm_invite_member": "Créer des invitations",
     "perm_remove_invite": "Révoquer les invitations",
     "perm_get_workspace_billing": "Lire la facturation",
     "perm_update_workspace_billing": "Modifier la facturation",

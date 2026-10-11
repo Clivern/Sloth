@@ -23,7 +23,6 @@ export const WORKSPACE_KEY_PERMISSION_GROUPS = [
     permissions: [
       { value: 'CAN_LIST_WORKSPACE_INVITES', labelKey: 'workspace_settings_page.perm_list_workspace_invites' },
       { value: 'CAN_GET_WORKSPACE_INVITE', labelKey: 'workspace_settings_page.perm_get_workspace_invite' },
-      { value: 'CAN_INVITE_MEMBER', labelKey: 'workspace_settings_page.perm_invite_member' },
       { value: 'CAN_REMOVE_INVITE', labelKey: 'workspace_settings_page.perm_remove_invite' },
     ],
   },
