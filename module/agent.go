@@ -4,7 +4,6 @@
 package module
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/clivern/cognit/db"
 	"github.com/samber/lo"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -150,11 +150,11 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		return nil, false, ErrInvalidAgentCard
 	}
 
-	var compact bytes.Buffer
+	var raw map[string]any
 	var body struct {
 		Version string `json:"version"`
 	}
-	if json.Compact(&compact, req.Card) != nil || json.Unmarshal(req.Card, &body) != nil {
+	if json.Unmarshal(req.Card, &raw) != nil || json.Unmarshal(req.Card, &body) != nil {
 		return nil, false, ErrInvalidAgentCard
 	}
 
@@ -163,8 +163,31 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		return nil, false, ErrAgentVersionRequired
 	}
 
-	sum := sha256.Sum256(compact.Bytes())
-	card := compact.String()
+	gateway := fmt.Sprintf(
+		"%s/api/v1/workspaces/%s/a2a/agents/%s",
+		viper.GetString("app.url"),
+		workspaceId,
+		name,
+	)
+
+	interfaces, _ := raw["supportedInterfaces"].([]any)
+	if len(interfaces) == 0 {
+		interfaces = []any{map[string]any{}}
+	}
+
+	for _, iface := range interfaces {
+		iface.(map[string]any)["url"] = gateway
+	}
+
+	raw["supportedInterfaces"] = interfaces
+
+	if lo.HasKey(raw, "url") {
+		raw["url"] = gateway
+	}
+
+	cardJSON, _ := json.Marshal(raw)
+	sum := sha256.Sum256(cardJSON)
+	card := string(cardJSON)
 	checksum := hex.EncodeToString(sum[:])
 
 	existing, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)

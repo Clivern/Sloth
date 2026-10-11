@@ -86,7 +86,7 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
     ],
     "supportedInterfaces": [
       {
-        "url": "https://invoice-worker.internal:8080/a2a/v1",
+        "url": "https://cognit.example.com/api/v1/workspaces/acme/a2a/agents/invoice-extractor",
         "protocolBinding": "HTTP+JSON",
         "protocolVersion": "1.0",
         "tenant": "acme"
@@ -101,6 +101,8 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
   }
 }
 ```
+
+Cognit overwrites every `supportedInterfaces[].url`, and a legacy top-level `url` if present, with the gateway URL (`{app.url}/api/v1/workspaces/{workspace}/a2a/agents/{agent}`) before storing the card, so the stored card, its checksum, and the well-known card all match. The worker's private address stays in `instance`.
 
 `GET .../catalog/agents` returns healthy instances and cards.
 

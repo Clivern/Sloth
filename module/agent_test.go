@@ -10,12 +10,15 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUnitAgent(t *testing.T) {
+	viper.Set("app.url", "https://cognit.test")
+
 	t.Run("list returns an empty page for a missing workspace", func(t *testing.T) {
 		f := newAgentFixture(nil, nil)
 
@@ -249,8 +252,48 @@ func TestUnitAgent(t *testing.T) {
 		assert.Empty(t, f.agents.updated)
 
 		assert.Equal(t, "2.1.0", response.Version)
-		assert.Equal(t, `{"name":"Support","version":"2.1.0"}`, string(response.Card))
+		assert.Equal(
+			t,
+			`{"name":"Support","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"version":"2.1.0"}`,
+			string(response.Card),
+		)
 		assert.Len(t, response.CardChecksum, 64)
+	})
+
+	t.Run("upsert replaces a legacy top-level url with the gateway url", func(t *testing.T) {
+		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
+
+		response, _, err := f.agent.UpsertAgent(
+			"ws-1",
+			"user-directory",
+			&UpsertAgentRequest{
+				Card: json.RawMessage(`{"url":"https://example.com/","name":"user-directory","version":"1.2.0"}`),
+			},
+		)
+		require.NoError(t, err)
+		assert.Equal(
+			t,
+			`{"name":"user-directory","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/user-directory"}],"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/user-directory","version":"1.2.0"}`,
+			string(response.Card),
+		)
+	})
+
+	t.Run("upsert replaces submitted interface urls with the gateway url", func(t *testing.T) {
+		f := newAgentFixture(&db.Workspace{Id: "ws-1"}, nil)
+
+		response, _, err := f.agent.UpsertAgent(
+			"ws-1",
+			"support-assistant",
+			&UpsertAgentRequest{
+				Card: json.RawMessage(`{"version":"1.0.0","supportedInterfaces":[{"url":"http://10.0.12.20:8080/a2a/v1","protocolBinding":"HTTP+JSON","tenant":"acme"}]}`),
+			},
+		)
+		require.NoError(t, err)
+		assert.Equal(
+			t,
+			`{"supportedInterfaces":[{"protocolBinding":"HTTP+JSON","tenant":"acme","url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"version":"1.0.0"}`,
+			string(response.Card),
+		)
 	})
 
 	t.Run("upsert updates an existing agent and prefers the request version", func(t *testing.T) {

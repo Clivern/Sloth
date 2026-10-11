@@ -37,7 +37,7 @@ Content-Type: application/json
     ],
     "supportedInterfaces": [
       {
-        "url": "http://10.0.12.20:8080/a2a/v1",
+        "url": "http://127.0.0.1:8000/api/v1/workspaces/acme/a2a/agents/support-assistant",
         "protocolBinding": "HTTP+JSON",
         "protocolVersion": "1.0",
         "tenant": "acme"
@@ -51,6 +51,8 @@ Content-Type: application/json
   }
 }
 ```
+
+Cognit replaces `supportedInterfaces[].url` (and a legacy top-level `url`, if present) with the gateway URL when it stores the card, so the URL you send is overwritten. Your private address belongs in `instance`.
 
 Then define a heartbeat check on your agent, and report it before its TTL runs out:
 
