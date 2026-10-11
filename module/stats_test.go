@@ -30,7 +30,10 @@ func TestUnitStats(t *testing.T) {
 	})
 
 	t.Run("returns the stats repository error", func(t *testing.T) {
-		stats := NewStats(&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}, &fakeWorkspaceStats{err: errors.New("boom")})
+		stats := NewStats(
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+			&fakeWorkspaceStats{err: errors.New("boom")},
+		)
 
 		_, err := stats.GetWorkspaceStats("ws-1")
 		assert.EqualError(t, err, "boom")
