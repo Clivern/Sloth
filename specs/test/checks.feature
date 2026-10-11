@@ -151,3 +151,87 @@ Feature: Health checks
     Then the response is 200
     When that key PUTs checks/heartbeat with type "ttl" and ttl 30
     Then the response is 403
+
+  # ---------------------------------------------------------------------------
+  # More validation
+  # ---------------------------------------------------------------------------
+
+  @readonly
+  Scenario: A probe's port must be 1 to 65535
+    When the user PUTs checks/port with type "tcp" and port 70000
+    Then the response is 400
+
+  @readonly
+  Scenario: A probe's interval must be 5 to 3600 seconds and its timeout 1 to 60
+    When the user PUTs checks/port with type "tcp", port 9000 and interval 4
+    Then the response is 400
+    When the user PUTs checks/port with type "tcp", port 9000 and interval 3601
+    Then the response is 400
+    When the user PUTs checks/port with type "tcp", port 9000, interval 120 and timeout 61
+    Then the response is 400
+
+  @readonly
+  Scenario: An http check's scheme must be http or https
+    When the user PUTs checks/web with type "http", port 9000, path "/health" and scheme "ftp"
+    Then the response is 400
+
+  @readonly
+  Scenario: Check ids follow the same rules as agent names
+    When the user PUTs checks/-bad with type "ttl" and ttl 60
+    Then the response is 400
+
+  @mutates
+  Scenario: Deleting a template that does not exist returns not found
+    When the user DELETEs checks/spec-<runId>-missing
+    Then the response is 404
+
+  # ---------------------------------------------------------------------------
+  # More on reporting
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: A report's output is kept and shown on the instance
+    Given a ttl check template "heartbeat" with ttl 60 and instance "i-1"
+    When the user POSTs heartbeat/warn for "i-1" with output "disk 91%"
+    Then reading "i-1" shows check "heartbeat" with output "disk 91%"
+
+  @mutates
+  Scenario: A report's output may be at most 4096 characters
+    Given a ttl check template "heartbeat" with ttl 60 and instance "i-1"
+    When the user POSTs heartbeat/pass for "i-1" with a 4097-character output
+    Then the response is 400
+
+  @readonly
+  Scenario: Reporting for an unknown instance or agent returns not found
+    When the user POSTs heartbeat/pass for instance "spec-<runId>-missing"
+    Then the response is 404
+    When the user POSTs heartbeat/pass under agents/spec-<runId>-ghost
+    Then the response is 404
+
+  @mutates
+  Scenario: Changing a template's type starts its checks over
+    Given a ttl check template "probe" with ttl 60 and instance "i-1" reporting pass
+    When the user PUTs checks/probe with type "tcp" and port 9000
+    Then reading "i-1" shows check "probe" with type "tcp", status "unknown"
+      and output "Waiting for the first check"
+
+  # ---------------------------------------------------------------------------
+  # Probes run by the worker
+  # ---------------------------------------------------------------------------
+
+  # These need a running `cognit worker`. Skip them unless the run was told one is up.
+
+  @mutates @worker @slow
+  Scenario: An http check against a healthy endpoint turns passing
+    Given an http check template "web" with port <Cognit's port>, path "/api/v1/public/_health",
+      interval 5 and timeout 2
+    And instance "i-1" registered with Cognit's own address
+    When 15 seconds pass
+    Then reading "i-1" shows check "web" as "passing"
+
+  @mutates @worker @slow
+  Scenario: A tcp check against a closed port turns critical
+    Given a tcp check template "port" with port 1, interval 5 and timeout 2
+    And instance "i-1" registered with address "127.0.0.1"
+    When 15 seconds pass
+    Then reading "i-1" shows check "port" as "critical"

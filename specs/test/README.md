@@ -55,6 +55,7 @@ For example: *"Run specs/test/agents.feature against http://localhost:8000 with 
    - `@destructive`: changes server-wide state. Skip unless you're told to run it.
    - `@admin`: needs the API key's user to be a platform admin. Skip, and report as skipped, if `/me` says otherwise.
    - `@saas` / `@oss`: run only on that edition, as reported by `/api/v1/public/action/setup/status`.
+   - `@worker`: needs a running `cognit worker` to probe http and tcp checks. Skip unless you're told one is up.
 5. **Take the routes from the file.** Each feature lists its routes in the description, and `openapi.yaml` has the request and response shapes. Don't guess routes that aren't there. A path written as `agents/x` is relative to `/api/v1/workspaces/{the run's workspace}/`.
 6. **Follow Then steps exactly.** A Then step passes only if the response matches every part of it: status code, fields and values. "The body has no X field" means the key is absent, not empty. If a step is ambiguous, mark the scenario `unclear` and say why instead of picking a reading.
 7. **Keep scenarios independent.** Each one sets up what it needs, and Background steps run before every scenario. Don't rely on another scenario having run first.

@@ -140,3 +140,61 @@ Feature: Agents
     Then the response is 200
     When that key PUTs the card to agents/spec-<runId>-echo
     Then the response is 403
+
+  # ---------------------------------------------------------------------------
+  # Health and lifecycle
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: An agent with no instances has unknown health
+    Given the agent "spec-<runId>-echo" is registered with no instances
+    When the user GETs the agent
+    Then health is "unknown"
+    And statusCounts is {"passing": 0, "warning": 0, "unknown": 0, "critical": 0}
+
+  @mutates
+  Scenario: An agent is as healthy as its worst instance
+    Given a ttl check template "heartbeat" with ttl 60 on "spec-<runId>-echo"
+    And instances "i-1" and "i-2" are registered
+    And "i-1" reported "heartbeat" as passing and "i-2" as warning
+    When the user GETs the agent
+    Then health is "warning"
+    And statusCounts.passing is 1 and statusCounts.warning is 1
+    When "i-2" reports "heartbeat" as fail
+    Then the agent's health is "critical"
+
+  @readonly
+  Scenario: A version may be at most 40 characters
+    When the user PUTs the card with a top-level version of 41 characters
+    Then the response is 400
+
+  @readonly
+  Scenario: A card must be a JSON object
+    When the user PUTs {"card": "hello"} to agents/spec-<runId>-echo
+    Then the response is 400
+
+  @mutates
+  Scenario: A card's own url field is rewritten to the gateway too
+    When the user PUTs a card that also has "url": "http://127.0.0.1:9000"
+    Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+
+  @mutates
+  Scenario: Deleting an agent takes its checks, identities and protection with it
+    Given "spec-<runId>-echo" has a check template, an identity and a protection
+    When the user DELETEs the agent and registers it again
+    Then it has no check templates, no identities and no protection
+
+  @mutates
+  Scenario: The same agent name in two workspaces is two agents
+    Given a second workspace "spec-<runId>-other"
+    And "spec-<runId>-echo" is registered in both with versions "1.0.0" and "2.0.0"
+    When the user GETs the agent in each workspace
+    Then the versions are "1.0.0" and "2.0.0"
+    And deleting it in one leaves the other
+
+  @mutates
+  Scenario: The agent list pages
+    Given agents "spec-<runId>-p1", "spec-<runId>-p2" and "spec-<runId>-p3" are registered
+    When the user lists agents with limit 2 and offset 0, then offset 2
+    Then the pages hold 2 and at least 1 agents with no name in both
+    And _meta.total is at least 3

@@ -109,3 +109,36 @@ Feature: Agent instances
     Then the response is 200
     When that key PUTs instance "i-9" with address "127.0.0.1" and port 9000
     Then the response is 403
+
+  # ---------------------------------------------------------------------------
+  # More on the passing filter and ownership
+  # ---------------------------------------------------------------------------
+
+  @mutates
+  Scenario: The passing filter keeps instances that are only warning
+    Given a ttl check template "heartbeat" with ttl 60
+    And instance "i-1" reported "heartbeat" as warning
+    When the user lists the agent's instances with passing=true
+    Then instances contains "i-1"
+
+  @readonly
+  Scenario: The passing filter on an unknown agent returns not found
+    When the user lists agents/spec-<runId>-ghost/instances?passing=true
+    Then the response is 404
+
+  @mutates
+  Scenario: An instance cannot be reached through another agent
+    Given instance "i-1" is registered on "spec-<runId>-echo"
+    And a second agent "spec-<runId>-other" is registered
+    When the user GETs agents/spec-<runId>-other/instances/i-1
+    Then the response is 404
+
+  @mutates
+  Scenario: Deregistering an unknown instance returns not found
+    When the user DELETEs instance "spec-<runId>-missing"
+    Then the response is 404
+
+  @readonly
+  Scenario: An address may be at most 255 characters
+    When the user PUTs instance "i-1" with a 256-character address and port 9000
+    Then the response is 400
