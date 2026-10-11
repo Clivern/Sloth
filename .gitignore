@@ -34,7 +34,6 @@ coverage.html
 # Binary
 cognit
 
-# Documentation (clone from git@github.com:cognit/adoc.git)
 .ruff_cache/
 
 # Local commit helper
