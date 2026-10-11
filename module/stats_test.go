@@ -14,13 +14,6 @@ import (
 )
 
 func TestUnitStats(t *testing.T) {
-	t.Run("returns not found for a missing workspace", func(t *testing.T) {
-		stats := NewStats(&fakeWorkspaces{}, &fakeWorkspaceStats{})
-
-		_, err := stats.GetWorkspaceStats("ws-1")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-	})
-
 	t.Run("returns stats for an existing workspace", func(t *testing.T) {
 		stats := NewStats(&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}}, &fakeWorkspaceStats{})
 

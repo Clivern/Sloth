@@ -26,15 +26,8 @@ type WorkspaceStatsResponse struct{}
 
 // GetWorkspaceStats returns dashboard metrics for a workspace. TODO: remove if not used in future.
 func (s *Stats) GetWorkspaceStats(workspaceId db.Id) (*WorkspaceStatsResponse, error) {
-	workspace, err := s.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
-	_, err = s.StatsRepository.GetByWorkspaceId(workspaceId)
+	_, err := s.StatsRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
 		return nil, err
 	}

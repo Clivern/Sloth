@@ -37,16 +37,6 @@ func TestUnitWorkspaceStatsAction(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
-	t.Run("returns 404 for unknown workspace", func(t *testing.T) {
-		api := newAPI(nil, &fakeWorkspaceStats{})
-		w := httptest.NewRecorder()
-		newRouter(api).
-			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/stats", nil))
-
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		assert.Contains(t, w.Body.String(), "workspace_not_found")
-	})
-
 	t.Run("returns 500 when the repository fails", func(t *testing.T) {
 		api := newAPI(&db.Workspace{Id: "ws-1"}, &fakeWorkspaceStats{err: errors.New("boom")})
 		w := httptest.NewRecorder()
