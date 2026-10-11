@@ -4,8 +4,11 @@
 package module
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/util"
@@ -167,5 +170,68 @@ func TestUnitIdentity(t *testing.T) {
 		err := f.identity.DeleteIdentity("ws-1", "support-assistant", "identity-1")
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"identity-1"}, f.identities.deleted)
+	})
+
+	t.Run("create gives client credentials a default token ttl", func(t *testing.T) {
+		f := defaultIdentityFixture()
+
+		got, err := f.identity.CreateIdentity(
+			"ws-1",
+			"support-assistant",
+			&CreateIdentityRequest{Name: "oauth", Type: db.AgentIdentityTypeClientCredentials},
+		)
+		require.NoError(t, err)
+		assert.Equal(t, DefaultIdentityTokenTTL, got.TokenTTL)
+		assert.NotEmpty(t, got.Secret)
+		assert.Contains(t, f.identities.created[0].Config, `"tokenTtl":300`)
+	})
+
+	t.Run("issue token stores only the token hash", func(t *testing.T) {
+		f := defaultIdentityFixture()
+		hash, err := util.HashPassword("client-secret")
+		require.NoError(t, err)
+		f.identities.identity = &db.AgentIdentity{
+			Id:       "0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b",
+			AgentId:  "agent-1",
+			Type:     db.AgentIdentityTypeClientCredentials,
+			Config:   `{"secretHash":"` + hash + `","tokenTtl":120}`,
+			IsActive: true,
+		}
+
+		got, err := f.identity.IssueToken("0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", "client-secret")
+		require.NoError(t, err)
+		assert.Equal(t, "Bearer", got.TokenType)
+		assert.Equal(t, 120, got.ExpiresIn)
+		require.Len(t, f.tokens.created, 1)
+
+		sum := sha256.Sum256([]byte(got.AccessToken))
+		assert.Equal(t, hex.EncodeToString(sum[:]), f.tokens.created[0].TokenHash)
+		assert.WithinDuration(t, time.Now().Add(120*time.Second), f.tokens.created[0].ExpiresAt, 5*time.Second)
+	})
+
+	t.Run("issue token rejects a wrong secret, a disabled identity and other types", func(t *testing.T) {
+		hash, err := util.HashPassword("client-secret")
+		require.NoError(t, err)
+		cases := []*db.AgentIdentity{
+			{Id: "0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", Type: db.AgentIdentityTypeClientCredentials, Config: `{"secretHash":"` + hash + `"}`, IsActive: false},
+			{Id: "0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", Type: db.AgentIdentityTypeAPIKey, Config: `{"secretHash":"` + hash + `"}`, IsActive: true},
+		}
+		for _, identity := range cases {
+			f := defaultIdentityFixture()
+			f.identities.identity = identity
+
+			_, err := f.identity.IssueToken("0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", "client-secret")
+			assert.ErrorIs(t, err, ErrInvalidClient)
+		}
+
+		f := defaultIdentityFixture()
+		f.identities.identity = &db.AgentIdentity{Id: "0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", Type: db.AgentIdentityTypeClientCredentials, Config: `{"secretHash":"` + hash + `"}`, IsActive: true}
+
+		_, err = f.identity.IssueToken("0b9f2a6e-3c1d-4f5a-8e7b-9c0d1e2f3a4b", "wrong")
+		assert.ErrorIs(t, err, ErrInvalidClient)
+
+		_, err = f.identity.IssueToken("not-a-uuid", "client-secret")
+		assert.ErrorIs(t, err, ErrInvalidClient)
+		assert.Empty(t, f.tokens.created)
 	})
 }

@@ -322,6 +322,18 @@ func (f *fakeAgentProtections) Delete(id db.Id) error {
 	return nil
 }
 
+type fakeIdentityTokens struct {
+	db.AgentIdentityTokenRepository
+}
+
+func (f *fakeIdentityTokens) Create(token *db.AgentIdentityToken) error {
+	return nil
+}
+
+func (f *fakeIdentityTokens) DeleteExpired() (int64, error) {
+	return 0, nil
+}
+
 type fakeCheckInstances struct {
 	db.AgentInstanceRepository
 	instance *db.AgentInstance

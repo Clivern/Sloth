@@ -213,6 +213,20 @@ func (f *fakeAgentProtections) Delete(id db.Id) error {
 	return nil
 }
 
+type fakeIdentityTokens struct {
+	db.AgentIdentityTokenRepository
+	created []*db.AgentIdentityToken
+}
+
+func (f *fakeIdentityTokens) Create(token *db.AgentIdentityToken) error {
+	f.created = append(f.created, token)
+	return nil
+}
+
+func (f *fakeIdentityTokens) DeleteExpired() (int64, error) {
+	return 0, nil
+}
+
 type fakeInstances struct {
 	db.AgentInstanceRepository
 	list     []*db.AgentInstance
@@ -492,12 +506,13 @@ func defaultCheckFixture() *checkFixture {
 type identityFixture struct {
 	identity   *Identity
 	identities *fakeAgentIdentities
+	tokens     *fakeIdentityTokens
 }
 
 // newIdentityFixture wires an Identity module to in-memory fakes; a nil agent simulates a missing one.
 func newIdentityFixture(agent *db.Agent) *identityFixture {
-	f := &identityFixture{identities: &fakeAgentIdentities{}}
-	f.identity = NewIdentity(&fakeAgents{agent: agent}, f.identities)
+	f := &identityFixture{identities: &fakeAgentIdentities{}, tokens: &fakeIdentityTokens{}}
+	f.identity = NewIdentity(&fakeAgents{agent: agent}, f.identities, f.tokens)
 
 	return f
 }

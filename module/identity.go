@@ -5,31 +5,42 @@ package module
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/clivern/cognit/db"
 	"github.com/clivern/cognit/pkg/util"
+
+	"github.com/google/uuid"
+	"github.com/samber/lo"
 )
+
+// DefaultIdentityTokenTTL is how long a client credentials token lives, in seconds.
+const DefaultIdentityTokenTTL = 300
 
 var (
 	ErrIdentityNotFound      = errors.New("identity not found")
 	ErrIdentityAlreadyExists = errors.New("identity already exists")
 	ErrInvalidIdentityConfig = errors.New("invalid identity config")
+	ErrInvalidClient         = errors.New("invalid client")
 )
 
 // IdentityConfig is the JSON shape stored in agent_identity.config.
 type IdentityConfig struct {
 	Username   string `json:"username,omitempty"`
 	SecretHash string `json:"secretHash"`
+	TokenTTL   int    `json:"tokenTtl,omitempty"`
 }
 
 // CreateIdentityRequest is the body for creating an agent identity.
 type CreateIdentityRequest struct {
 	Name     string `json:"name" validate:"required,max=100" label:"Name"`
-	Type     string `json:"type" validate:"required,oneof=api_key basic_auth" label:"Type"`
+	Type     string `json:"type" validate:"required,oneof=api_key basic_auth client_credentials" label:"Type"`
 	Username string `json:"username" validate:"omitempty,max=100" label:"Username"`
+	TokenTTL int    `json:"tokenTtl" validate:"omitempty,min=60,max=86400" label:"Token TTL"`
 }
 
 // UpdateIdentityRequest is the body for updating an agent identity.
@@ -44,23 +55,33 @@ type IdentityResponse struct {
 	Name      string `json:"name"`
 	Type      string `json:"type"`
 	Username  string `json:"username,omitempty"`
+	TokenTTL  int    `json:"tokenTtl,omitempty"`
 	IsActive  bool   `json:"isActive"`
 	CreatedAt string `json:"createdAt"`
 	UpdatedAt string `json:"updatedAt"`
 	Secret    string `json:"secret,omitempty"`
 }
 
+// IssueTokenResponse is the OAuth 2.0 token response for the client credentials grant.
+type IssueTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+}
+
 // Identity is the module for the credentials an agent uses to call through the gateway.
 type Identity struct {
 	AgentRepository    db.AgentRepository
 	IdentityRepository db.AgentIdentityRepository
+	TokenRepository    db.AgentIdentityTokenRepository
 }
 
 // NewIdentity creates an identity module with the given repositories.
-func NewIdentity(agents db.AgentRepository, identities db.AgentIdentityRepository) *Identity {
+func NewIdentity(agents db.AgentRepository, identities db.AgentIdentityRepository, tokens db.AgentIdentityTokenRepository) *Identity {
 	return &Identity{
 		AgentRepository:    agents,
 		IdentityRepository: identities,
+		TokenRepository:    tokens,
 	}
 }
 
@@ -89,6 +110,7 @@ func (i *Identity) ListIdentities(workspaceId db.Id, agentName string) ([]*Ident
 			Name:      identity.Name,
 			Type:      identity.Type,
 			Username:  config.Username,
+			TokenTTL:  config.TokenTTL,
 			IsActive:  identity.IsActive,
 			CreatedAt: identity.CreatedAt.UTC().Format(time.RFC3339),
 			UpdatedAt: identity.UpdatedAt.UTC().Format(time.RFC3339),
@@ -127,7 +149,12 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 		return nil, err
 	}
 
-	raw, _ := json.Marshal(IdentityConfig{Username: req.Username, SecretHash: hash})
+	config := IdentityConfig{Username: req.Username, SecretHash: hash}
+	if req.Type == db.AgentIdentityTypeClientCredentials {
+		config.TokenTTL = lo.Ternary(req.TokenTTL == 0, DefaultIdentityTokenTTL, req.TokenTTL)
+	}
+
+	raw, _ := json.Marshal(config)
 
 	identity := &db.AgentIdentity{
 		AgentId:  agent.Id,
@@ -147,6 +174,7 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 		Name:      identity.Name,
 		Type:      identity.Type,
 		Username:  req.Username,
+		TokenTTL:  config.TokenTTL,
 		IsActive:  identity.IsActive,
 		CreatedAt: identity.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: identity.UpdatedAt.UTC().Format(time.RFC3339),
@@ -198,6 +226,7 @@ func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id,
 		Name:      identity.Name,
 		Type:      identity.Type,
 		Username:  config.Username,
+		TokenTTL:  config.TokenTTL,
 		IsActive:  identity.IsActive,
 		CreatedAt: identity.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
@@ -223,4 +252,49 @@ func (i *Identity) DeleteIdentity(workspaceId db.Id, agentName string, id db.Id)
 	}
 
 	return i.IdentityRepository.Delete(identity.Id)
+}
+
+// IssueToken exchanges a client credentials identity's id and secret for a short-lived access token.
+func (i *Identity) IssueToken(clientId, clientSecret string) (*IssueTokenResponse, error) {
+	if uuid.Validate(clientId) != nil {
+		return nil, ErrInvalidClient
+	}
+
+	identity, err := i.IdentityRepository.GetById(db.Id(clientId))
+	if err != nil {
+		return nil, err
+	}
+	if identity == nil || identity.Type != db.AgentIdentityTypeClientCredentials || !identity.IsActive {
+		return nil, ErrInvalidClient
+	}
+
+	var config IdentityConfig
+	_ = json.Unmarshal([]byte(identity.Config), &config)
+
+	if !util.ComparePassword(config.SecretHash, clientSecret) {
+		return nil, ErrInvalidClient
+	}
+
+	_, err = i.TokenRepository.DeleteExpired()
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken := rand.Text()
+	sum := sha256.Sum256([]byte(accessToken))
+
+	err = i.TokenRepository.Create(&db.AgentIdentityToken{
+		IdentityId: identity.Id,
+		TokenHash:  hex.EncodeToString(sum[:]),
+		ExpiresAt:  time.Now().UTC().Add(time.Duration(config.TokenTTL) * time.Second),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &IssueTokenResponse{
+		AccessToken: accessToken,
+		TokenType:   "Bearer",
+		ExpiresIn:   config.TokenTTL,
+	}, nil
 }

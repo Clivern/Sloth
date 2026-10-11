@@ -32,6 +32,7 @@ func TestUnitIdentityActions(t *testing.T) {
 		api := &API{Identity: module.NewIdentity(
 			&fakeAgentCatalog{agent: agent},
 			&fakeAgentIdentities{list: []*db.AgentIdentity{identity}},
+			&fakeIdentityTokens{},
 		)}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, base, nil))
@@ -42,7 +43,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("list returns 404 for unknown agent", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, base, nil))
 
@@ -53,6 +54,7 @@ func TestUnitIdentityActions(t *testing.T) {
 		api := &API{Identity: module.NewIdentity(
 			&fakeAgentCatalog{agent: agent},
 			&fakeAgentIdentities{listErr: errors.New("boom")},
+			&fakeIdentityTokens{},
 		)}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, base, nil))
@@ -61,7 +63,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("create returns 201 with the secret once", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
 			http.MethodPost,
@@ -74,7 +76,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("create returns 400 for an unknown type", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
 			http.MethodPost,
@@ -86,7 +88,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("create returns 400 for basic auth without a username", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
 			http.MethodPost,
@@ -101,6 +103,7 @@ func TestUnitIdentityActions(t *testing.T) {
 		api := &API{Identity: module.NewIdentity(
 			&fakeAgentCatalog{agent: agent},
 			&fakeAgentIdentities{byName: identity},
+			&fakeIdentityTokens{},
 		)}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
@@ -123,6 +126,7 @@ func TestUnitIdentityActions(t *testing.T) {
 				Config:   `{"username":"support","secretHash":"hash"}`,
 				IsActive: true,
 			}},
+			&fakeIdentityTokens{},
 		)}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
@@ -136,7 +140,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("update returns 404 for unknown identity", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
 			http.MethodPut,
@@ -151,6 +155,7 @@ func TestUnitIdentityActions(t *testing.T) {
 		api := &API{Identity: module.NewIdentity(
 			&fakeAgentCatalog{agent: agent},
 			&fakeAgentIdentities{identity: identity},
+			&fakeIdentityTokens{},
 		)}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, base+"/identity-1", nil))
@@ -159,7 +164,7 @@ func TestUnitIdentityActions(t *testing.T) {
 	})
 
 	t.Run("delete returns 404 for unknown identity", func(t *testing.T) {
-		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{})}
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()
 		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodDelete, base+"/identity-1", nil))
 
