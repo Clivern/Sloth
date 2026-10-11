@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/samber/lo"
 )
 
 var (
@@ -176,10 +177,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 			}
 
 			definition.Path = req.Path
-			definition.Scheme = req.Scheme
-			if definition.Scheme == "" {
-				definition.Scheme = "http"
-			}
+			definition.Scheme = lo.CoalesceOrEmpty(req.Scheme, "http")
 		}
 	}
 
