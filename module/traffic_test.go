@@ -33,7 +33,9 @@ func TestUnitTraffic(t *testing.T) {
 
 	t.Run("get returns the call with an empty task id when none is set", func(t *testing.T) {
 		traffic := NewTraffic(
-			&fakeTrafficCalls{item: &db.TrafficCall{Id: "call-1", WorkspaceId: "ws-1", Skill: "invoice.extract"}},
+			&fakeTrafficCalls{
+				item: &db.TrafficCall{Id: "call-1", WorkspaceId: "ws-1", Skill: "invoice.extract"},
+			},
 			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
 		)
 
@@ -46,7 +48,9 @@ func TestUnitTraffic(t *testing.T) {
 	t.Run("get returns the task id when one is set", func(t *testing.T) {
 		taskId := "task-1"
 		traffic := NewTraffic(
-			&fakeTrafficCalls{item: &db.TrafficCall{Id: "call-1", WorkspaceId: "ws-1", TaskId: &taskId}},
+			&fakeTrafficCalls{
+				item: &db.TrafficCall{Id: "call-1", WorkspaceId: "ws-1", TaskId: &taskId},
+			},
 			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
 		)
 
@@ -56,7 +60,10 @@ func TestUnitTraffic(t *testing.T) {
 	})
 
 	t.Run("get wraps the repository error", func(t *testing.T) {
-		traffic := NewTraffic(&fakeTrafficCalls{err: errors.New("boom")}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		traffic := NewTraffic(
+			&fakeTrafficCalls{err: errors.New("boom")},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := traffic.GetTraffic("ws-1", "call-1")
 		assert.ErrorIs(t, err, ErrFailedGetTraffic)
@@ -64,7 +71,13 @@ func TestUnitTraffic(t *testing.T) {
 
 	t.Run("list returns the calls and the total", func(t *testing.T) {
 		traffic := NewTraffic(
-			&fakeTrafficCalls{list: []*db.TrafficCall{{Id: "call-1", WorkspaceId: "ws-1"}, {Id: "call-2", WorkspaceId: "ws-1"}}, total: 9},
+			&fakeTrafficCalls{
+				list: []*db.TrafficCall{
+					{Id: "call-1", WorkspaceId: "ws-1"},
+					{Id: "call-2", WorkspaceId: "ws-1"},
+				},
+				total: 9,
+			},
 			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
 		)
 
@@ -75,7 +88,10 @@ func TestUnitTraffic(t *testing.T) {
 	})
 
 	t.Run("list wraps the repository error", func(t *testing.T) {
-		traffic := NewTraffic(&fakeTrafficCalls{err: errors.New("boom")}, &fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}})
+		traffic := NewTraffic(
+			&fakeTrafficCalls{err: errors.New("boom")},
+			&fakeWorkspaces{workspace: &db.Workspace{Id: "ws-1"}},
+		)
 
 		_, err := traffic.ListTraffic("ws-1", 20, 0)
 		assert.ErrorIs(t, err, ErrFailedListTraffic)
