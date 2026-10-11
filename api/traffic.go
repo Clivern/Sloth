@@ -29,12 +29,6 @@ func (a *API) ListTrafficAction(w http.ResponseWriter, r *http.Request) {
 
 	result, err := a.Traffic.ListTraffic(db.Id(wid), limit, offset)
 	if err != nil {
-		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
-		}) {
-			return
-		}
-
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
@@ -77,7 +71,6 @@ func (a *API) GetTrafficAction(w http.ResponseWriter, r *http.Request) {
 	call, err := a.Traffic.GetTraffic(db.Id(wid), db.Id(trafficId))
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
-			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrTrafficNotFound, http.StatusNotFound, locale.TR(r, "traffic_not_found")},
 		}) {
 			return

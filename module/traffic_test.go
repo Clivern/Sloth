@@ -14,13 +14,6 @@ import (
 )
 
 func TestUnitTraffic(t *testing.T) {
-	t.Run("get returns not found for a missing workspace", func(t *testing.T) {
-		traffic := NewTraffic(&fakeTrafficCalls{}, &fakeWorkspaces{})
-
-		_, err := traffic.GetTraffic("ws-1", "call-1")
-		assert.ErrorIs(t, err, ErrWorkspaceNotFound)
-	})
-
 	t.Run("get hides calls from another workspace", func(t *testing.T) {
 		traffic := NewTraffic(
 			&fakeTrafficCalls{item: &db.TrafficCall{Id: "call-1", WorkspaceId: "ws-2"}},

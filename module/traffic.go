@@ -54,13 +54,6 @@ func NewTraffic(calls db.TrafficRepository, workspaces db.WorkspaceRepository) *
 
 // ListTraffic returns recorded gateway calls for a workspace.
 func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTrafficResponse, error) {
-	workspace, err := t.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	total, err := t.TrafficRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
@@ -99,13 +92,6 @@ func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTraffi
 
 // GetTraffic returns one gateway call by id.
 func (t *Traffic) GetTraffic(workspaceId, trafficId db.Id) (*TrafficCallResponse, error) {
-	workspace, err := t.WorkspaceRepository.GetById(workspaceId)
-	if err != nil {
-		return nil, err
-	}
-	if workspace == nil {
-		return nil, ErrWorkspaceNotFound
-	}
 
 	call, err := t.TrafficRepository.GetById(trafficId)
 	if err != nil {
