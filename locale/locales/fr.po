@@ -458,3 +458,9 @@ msgstr "Identifiant d'appel invalide."
 
 msgid "failed_traffic_request"
 msgstr "Impossible de traiter la requête de trafic."
+
+msgid "waiting_for_first_check"
+msgstr "En attente de la première vérification"
+
+msgid "waiting_for_first_report"
+msgstr "En attente du premier rapport"

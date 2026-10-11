@@ -470,3 +470,9 @@ msgstr "Invalid gateway call ID."
 
 msgid "failed_traffic_request"
 msgstr "Failed to complete the traffic request."
+
+msgid "waiting_for_first_check"
+msgstr "Waiting for the first check"
+
+msgid "waiting_for_first_report"
+msgstr "Waiting for the first report"

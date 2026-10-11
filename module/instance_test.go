@@ -254,6 +254,7 @@ func TestUnitInstance(t *testing.T) {
 				Port:    8080,
 				Meta:    json.RawMessage(`{"region":"eu"}`),
 			},
+			"en",
 		)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -286,6 +287,7 @@ func TestUnitInstance(t *testing.T) {
 					Address: "10.0.0.13",
 					Port:    9090,
 				},
+				"en",
 			)
 			require.NoError(t, err)
 			assert.False(t, created)
@@ -321,6 +323,7 @@ func TestUnitInstance(t *testing.T) {
 				Address: "10.0.0.12",
 				Port:    8080,
 			},
+			"en",
 		)
 		require.NoError(t, err)
 
@@ -360,6 +363,7 @@ func TestUnitInstance(t *testing.T) {
 				Address: "10.0.0.12",
 				Port:    8080,
 			},
+			"en",
 		)
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"retired"}, f.healthChecks.deleted)
@@ -372,7 +376,7 @@ func TestUnitInstance(t *testing.T) {
 
 			_, _, err := defaultInstanceFixture().
 				instance.
-				RegisterInstance("ws-1", "support-assistant", "bad id!", req)
+				RegisterInstance("ws-1", "support-assistant", "bad id!", req, "en")
 			assert.ErrorIs(t, err, ErrInvalidInstanceId)
 
 			_, _, err = newInstanceFixture(
@@ -384,6 +388,7 @@ func TestUnitInstance(t *testing.T) {
 				"support-assistant",
 				"node-1",
 				req,
+				"en",
 			)
 			assert.ErrorIs(t, err, ErrAgentNotFound)
 		},
@@ -430,7 +435,7 @@ func TestUnitSyncChecks(t *testing.T) {
 				},
 			}
 
-			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1", "en"))
 			require.Len(t, f.healthChecks.created, 2)
 
 			httpCheck := f.healthChecks.created[0]
@@ -468,7 +473,7 @@ func TestUnitSyncChecks(t *testing.T) {
 		}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{existing}
 
-		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1", "en"))
 		assert.Empty(t, f.healthChecks.created)
 		assert.Empty(t, f.healthChecks.deleted)
 		require.Len(t, f.healthChecks.updated, 1)
@@ -497,7 +502,7 @@ func TestUnitSyncChecks(t *testing.T) {
 			},
 		}
 
-		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1", "en"))
 		assert.Equal(t, []db.Id{"check-1"}, f.healthChecks.deleted)
 		require.Len(t, f.healthChecks.created, 1)
 		assert.Equal(t, db.HealthCheckTypeTCP, f.healthChecks.created[0].Type)
@@ -521,7 +526,7 @@ func TestUnitSyncChecks(t *testing.T) {
 				{Id: "manual", CheckId: "manual", Source: "manual"},
 			}
 
-			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1", "en"))
 			assert.Equal(t, []db.Id{"stale"}, f.healthChecks.deleted)
 		},
 	)

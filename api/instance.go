@@ -162,7 +162,13 @@ func (a *API) RegisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 		Str("instance", instanceId).
 		Msg("Registering instance")
 
-	instance, created, err := a.Instance.RegisterInstance(db.Id(wid), agentName, instanceId, &req)
+	instance, created, err := a.Instance.RegisterInstance(
+		db.Id(wid),
+		agentName,
+		instanceId,
+		&req,
+		locale.GetLangFromRequest(r),
+	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},

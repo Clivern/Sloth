@@ -23,6 +23,7 @@ func TestUnitCheck(t *testing.T) {
 			"support-assistant",
 			"bad id!",
 			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30},
+			"en",
 		)
 		assert.ErrorIs(t, err, ErrInvalidCheckId)
 	})
@@ -35,6 +36,7 @@ func TestUnitCheck(t *testing.T) {
 			"support-assistant",
 			"heartbeat",
 			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL},
+			"en",
 		)
 		assert.ErrorIs(t, err, ErrInvalidCheckTiming)
 	})
@@ -47,6 +49,7 @@ func TestUnitCheck(t *testing.T) {
 			"support-assistant",
 			"http",
 			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "healthz"},
+			"en",
 		)
 		assert.ErrorIs(t, err, ErrInvalidCheckPath)
 	})
@@ -64,6 +67,7 @@ func TestUnitCheck(t *testing.T) {
 				Interval: 10,
 				Timeout:  10,
 			},
+			"en",
 		)
 		assert.ErrorIs(t, err, ErrInvalidCheckTiming)
 	})
@@ -76,6 +80,7 @@ func TestUnitCheck(t *testing.T) {
 			"support-assistant",
 			"heartbeat",
 			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeTTL, TTL: 30},
+			"en",
 		)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
@@ -92,6 +97,7 @@ func TestUnitCheck(t *testing.T) {
 				Type: db.HealthCheckTypeHTTP,
 				Path: "/healthz",
 			},
+			"en",
 		)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -108,7 +114,7 @@ func TestUnitCheck(t *testing.T) {
 			assert.Equal(t, db.HealthCheckSourceAgent, check.Source)
 			assert.NotNil(t, check.NextRunAt)
 			require.NotNil(t, check.Output)
-			assert.Equal(t, "Waiting for the first check", *check.Output)
+			assert.Equal(t, "waiting_for_first_check", *check.Output)
 		}
 		assert.Equal(t, db.Id("inst-1"), f.healthChecks.created[0].InstanceId)
 		assert.Equal(t, db.Id("inst-2"), f.healthChecks.created[1].InstanceId)
@@ -126,6 +132,7 @@ func TestUnitCheck(t *testing.T) {
 				Type: db.HealthCheckTypeTTL,
 				TTL:  30,
 			},
+			"en",
 		)
 		require.NoError(t, err)
 
@@ -150,6 +157,7 @@ func TestUnitCheck(t *testing.T) {
 			"support-assistant",
 			"heartbeat",
 			&UpsertAgentCheckRequest{Type: db.HealthCheckTypeHTTP, Path: "/healthz"},
+			"en",
 		)
 		require.NoError(t, err)
 
@@ -183,6 +191,7 @@ func TestUnitCheck(t *testing.T) {
 				Path: "/ready",
 				Name: "  Readiness  ",
 			},
+			"en",
 		)
 		require.NoError(t, err)
 		assert.False(t, created)

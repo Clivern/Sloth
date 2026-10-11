@@ -92,7 +92,13 @@ func (a *API) UpsertAgentCheckAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check, created, err := a.Check.UpsertAgentCheck(db.Id(wid), agentName, checkId, &req)
+	check, created, err := a.Check.UpsertAgentCheck(
+		db.Id(wid),
+		agentName,
+		checkId,
+		&req,
+		locale.GetLangFromRequest(r),
+	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},

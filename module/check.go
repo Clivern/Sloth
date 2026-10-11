@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/locale"
 	"github.com/samber/lo"
 )
 
@@ -143,7 +144,7 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offs
 }
 
 // UpsertAgentCheck creates or replaces a check template and applies it to every instance.
-func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, req *UpsertAgentCheckRequest) (*AgentCheckResponse, bool, error) {
+func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, req *UpsertAgentCheckRequest, lang string) (*AgentCheckResponse, bool, error) {
 	if !InstanceIdPattern.MatchString(checkId) {
 		return nil, false, ErrInvalidCheckId
 	}
@@ -154,7 +155,6 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		if req.TTL == 0 {
 			return nil, false, ErrInvalidCheckTiming
 		}
-
 		definition.TTL = req.TTL
 
 	case db.HealthCheckTypeHTTP, db.HealthCheckTypeTCP:
@@ -224,7 +224,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 	}
 
 	for _, instance := range instances {
-		err = c.SyncInstanceCheck(instance.Id, template)
+		err = c.SyncInstanceCheck(instance.Id, template, lang)
 		if err != nil {
 			return nil, false, err
 		}
@@ -246,7 +246,7 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 }
 
 // SyncInstanceCheck makes one instance's copy of a check template match the template.
-func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck) error {
+func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lang string) error {
 	now := time.Now().UTC()
 	isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
 
@@ -289,12 +289,13 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck) err
 		Status:     db.HealthCheckStatusUnknown,
 		Definition: &stored,
 	}
+
 	if isPull {
-		output := "Waiting for the first check"
+		output := locale.T(lang, "waiting_for_first_check")
 		check.Output = &output
 		check.NextRunAt = &now
 	} else {
-		output := "Waiting for the first report"
+		output := locale.T(lang, "waiting_for_first_report")
 		expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
 		check.Output = &output
 		check.TTLExpiresAt = &expiresAt
@@ -383,9 +384,7 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 		Status:       status,
 		TTLExpiresAt: &expiresAt,
 		LastRunAt:    &now,
-	}
-	if output != "" {
-		response.Output = &output
+		Output:       lo.EmptyableToPtr(output),
 	}
 
 	return response, nil

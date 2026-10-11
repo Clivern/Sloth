@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/clivern/cognit/db"
+	"github.com/clivern/cognit/locale"
 	"github.com/clivern/cognit/pkg/util"
 
 	"github.com/samber/lo"
@@ -218,7 +219,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 }
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
-func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest) (*InstanceResponse, bool, error) {
+func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest, lang string) (*InstanceResponse, bool, error) {
 	if !InstanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
@@ -260,7 +261,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
-	err = i.SyncChecks(instance.Id, agent.Id)
+	err = i.SyncChecks(instance.Id, agent.Id, lang)
 	if err != nil {
 		return nil, false, err
 	}
@@ -288,7 +289,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 }
 
 // SyncChecks makes an instance's copied checks match its agent's templates.
-func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
+func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 	now := time.Now().UTC()
 
 	templates, err := i.AgentCheckRepository.ListByAgentId(agentId)
@@ -328,6 +329,7 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 		// http and tcp are pulled on a schedule. Anything else waits for a report within its TTL.
 		isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
 		stored := template.Definition
+
 		if existing != nil {
 			// Same type: keep status and output, and copy the template's name and definition.
 			existing.Name = template.Name
@@ -350,13 +352,13 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id) error {
 				Definition: &stored,
 			}
 			if isPull {
-				output := "Waiting for the first check"
+				output := locale.T(lang, "waiting_for_first_check")
 				check.Output = &output
 				check.NextRunAt = &now
 			} else {
 				var templateDefinition CheckDefinition
 				_ = json.Unmarshal([]byte(template.Definition), &templateDefinition)
-				output := "Waiting for the first report"
+				output := locale.T(lang, "waiting_for_first_report")
 				expiresAt := now.Add(time.Duration(templateDefinition.TTL) * time.Second)
 				check.Output = &output
 				check.TTLExpiresAt = &expiresAt
