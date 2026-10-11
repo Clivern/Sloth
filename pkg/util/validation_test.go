@@ -15,15 +15,15 @@ import (
 )
 
 type testValidationStruct struct {
-	Email    string `json:"email" validate:"required,email"`
-	URL      string `json:"url" validate:"required,url"`
+	Email    string `json:"email"    validate:"required,email"`
+	URL      string `json:"url"      validate:"required,url"`
 	Password string `json:"password" validate:"required,strong_password"`
-	Name     string `json:"name" validate:"required,min=2,max=50"`
-	Age      int    `json:"age" validate:"omitempty,gte=0,lte=150"`
+	Name     string `json:"name"     validate:"required,min=2,max=50"`
+	Age      int    `json:"age"      validate:"omitempty,gte=0,lte=150"`
 }
 
 type jsonFieldStruct struct {
-	JSON       string `json:"json" validate:"json"`
+	JSON       string `json:"json"        validate:"json"`
 	JSONObject string `json:"json_object" validate:"json_object"`
 }
 
@@ -164,10 +164,18 @@ func TestUnitValidation(t *testing.T) {
 			data  jsonFieldStruct
 			valid bool
 		}{
-			{name: "valid json and object", data: jsonFieldStruct{JSON: `["a"]`, JSONObject: `{"k":"v"}`}, valid: true},
+			{
+				name:  "valid json and object",
+				data:  jsonFieldStruct{JSON: `["a"]`, JSONObject: `{"k":"v"}`},
+				valid: true,
+			},
 			{name: "empty strings allowed", data: jsonFieldStruct{}, valid: true},
 			{name: "invalid json", data: jsonFieldStruct{JSON: `{bad`}, valid: false},
-			{name: "json array not object", data: jsonFieldStruct{JSONObject: `["a"]`}, valid: false},
+			{
+				name:  "json array not object",
+				data:  jsonFieldStruct{JSONObject: `["a"]`},
+				valid: false,
+			},
 		}
 
 		for _, tc := range cases {
@@ -185,12 +193,16 @@ func TestUnitValidation(t *testing.T) {
 
 type testRequestBody struct {
 	Email string `json:"email" validate:"required,email"`
-	Name  string `json:"name" validate:"required,min=2,max=50"`
+	Name  string `json:"name"  validate:"required,min=2,max=50"`
 }
 
 func TestUnitHTTPValidation(t *testing.T) {
 	t.Run("DecodeAndValidate", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"email":"test@example.com","name":"John"}`))
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/",
+			strings.NewReader(`{"email":"test@example.com","name":"John"}`),
+		)
 		var data testRequestBody
 		assert.NoError(t, DecodeAndValidate(req, &data))
 		assert.Equal(t, "test@example.com", data.Email)
