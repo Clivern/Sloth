@@ -146,6 +146,19 @@ paths:
       tags: [Public]
       summary: GitHub OAuth callback
       security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from GitHub
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Must match the state cookie set when the flow started
       responses:
         "302":
           description: Redirect to app with session cookie set
@@ -164,6 +177,19 @@ paths:
       tags: [Public]
       summary: Google OAuth callback
       security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Must match the state cookie set when the flow started
       responses:
         "302":
           description: Redirect to app with session cookie set
@@ -1900,6 +1926,11 @@ paths:
       summary: List workspace keys
       parameters:
         - $ref: "#/components/parameters/workspaceId"
+        - name: prefix
+          in: query
+          schema:
+            type: string
+          description: Return only non-expired keys that start with this text, matched literally (`%` and `_` are not wildcards).
       responses:
         "200":
           description: OK
