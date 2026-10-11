@@ -225,59 +225,8 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		return nil, false, err
 	}
 
-	// Copy the template onto every instance. Pull checks run right away and a
-	// TTL check gets one TTL window for its first report.
-	now := time.Now().UTC()
-	isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
 	for _, instance := range instances {
-		existing, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, template.CheckId)
-		if err != nil {
-			return nil, false, err
-		}
-
-		// A type change resets the check, since its old status no longer means anything.
-		if existing != nil && existing.Type != template.Type {
-			err = c.HealthCheckRepository.Delete(existing.Id)
-			if err != nil {
-				return nil, false, err
-			}
-
-			existing = nil
-		}
-
-		stored := template.Definition
-		if existing != nil {
-			existing.Name = template.Name
-			existing.Definition = &stored
-			existing.NextRunAt = nil
-			if isPull {
-				existing.NextRunAt = &now
-			}
-
-			err = c.HealthCheckRepository.Update(existing)
-		} else {
-			check := &db.HealthCheck{
-				InstanceId: instance.Id,
-				CheckId:    template.CheckId,
-				Name:       template.Name,
-				Type:       template.Type,
-				Source:     db.HealthCheckSourceAgent,
-				Status:     db.HealthCheckStatusUnknown,
-				Definition: &stored,
-			}
-			if isPull {
-				output := "Waiting for the first check"
-				check.Output = &output
-				check.NextRunAt = &now
-			} else {
-				output := "Waiting for the first report"
-				expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
-				check.Output = &output
-				check.TTLExpiresAt = &expiresAt
-			}
-
-			err = c.HealthCheckRepository.Create(check)
-		}
+		err = c.SyncInstanceCheck(instance.Id, template)
 		if err != nil {
 			return nil, false, err
 		}
@@ -296,6 +245,64 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		CreatedAt: template.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: template.UpdatedAt.UTC().Format(time.RFC3339),
 	}, created, nil
+}
+
+// SyncInstanceCheck makes one instance's copy of a check template match the template.
+func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck) error {
+	now := time.Now().UTC()
+	isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
+
+	var definition CheckDefinition
+	_ = json.Unmarshal([]byte(template.Definition), &definition)
+
+	existing, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instanceId, template.CheckId)
+	if err != nil {
+		return err
+	}
+
+	// A type change resets the check, since its old status no longer means anything.
+	if existing != nil && existing.Type != template.Type {
+		err = c.HealthCheckRepository.Delete(existing.Id)
+		if err != nil {
+			return err
+		}
+
+		existing = nil
+	}
+
+	stored := template.Definition
+	if existing != nil {
+		existing.Name = template.Name
+		existing.Definition = &stored
+		existing.NextRunAt = nil
+		if isPull {
+			existing.NextRunAt = &now
+		}
+
+		return c.HealthCheckRepository.Update(existing)
+	}
+
+	check := &db.HealthCheck{
+		InstanceId: instanceId,
+		CheckId:    template.CheckId,
+		Name:       template.Name,
+		Type:       template.Type,
+		Source:     db.HealthCheckSourceAgent,
+		Status:     db.HealthCheckStatusUnknown,
+		Definition: &stored,
+	}
+	if isPull {
+		output := "Waiting for the first check"
+		check.Output = &output
+		check.NextRunAt = &now
+	} else {
+		output := "Waiting for the first report"
+		expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
+		check.Output = &output
+		check.TTLExpiresAt = &expiresAt
+	}
+
+	return c.HealthCheckRepository.Create(check)
 }
 
 // DeleteAgentCheck removes an agent check template and its copies on every instance.
