@@ -23,6 +23,7 @@ var (
 	ErrFailedGetAccessKey          = errors.New("failed get access key")
 	ErrFailedDeleteAccessKey       = errors.New("failed delete access key")
 	ErrInvalidAccessKeyPermissions = errors.New("invalid access key permissions")
+	ErrAccessKeyPermissionDenied   = errors.New("access key permission denied")
 )
 
 // Access is the module for workspace access key CRUD.
@@ -69,8 +70,8 @@ type AccessKeyMeta struct {
 	Permissions []string `json:"permissions"`
 }
 
-// CreateAccessKey creates an access key; the raw key is returned once.
-func (a *Access) CreateAccessKey(workspaceId db.Id, req *CreateAccessKeyRequest) (*AccessKeyResponse, error) {
+// CreateAccessKey creates an access key
+func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *CreateAccessKeyRequest) (*AccessKeyResponse, error) {
 	if !ValidAccessKeyPermissions(req.Permissions) {
 		return nil, ErrInvalidAccessKeyPermissions
 	}
@@ -81,6 +82,23 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, req *CreateAccessKeyRequest)
 	}
 	if workspace == nil {
 		return nil, ErrWorkspaceNotFound
+	}
+
+	perm := (&Perm{WorkspaceRepository: a.WorkspaceRepository}).WithWorkspace(workspace)
+	if principal.IsUser() {
+		perm = perm.WithUser(principal.User)
+	} else {
+		perm = perm.WithAccessKey(principal.AccessKey)
+	}
+
+	for _, permission := range req.Permissions {
+		allowed, err := perm.Can(permission)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrFailedCreateAccessKey, err)
+		}
+		if !allowed {
+			return nil, ErrAccessKeyPermissionDenied
+		}
 	}
 
 	var expiresAt *time.Time

@@ -54,12 +54,20 @@ func (f *fakeAccessKeys) Delete(id db.Id) error {
 
 func newAccessKeyAPI(workspace *db.Workspace, keys *fakeAccessKeys) *API {
 	return &API{
-		Access: module.NewAccess(keys, &fakeWorkspaceRecords{workspace: workspace}),
+		Access: module.NewAccess(keys, &fakeWorkspaceRecords{
+			workspace:  workspace,
+			membership: &db.WorkspaceUser{Role: db.UserRoleAdmin},
+		}),
 	}
 }
 
 func newAccessKeyRouter(api *API) *chi.Mux {
 	router := chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, requestWithUser(r, &db.User{Id: "user-1"}))
+		})
+	})
 	router.Post("/api/v1/workspaces/{workspaceId}/access-keys", api.CreateAccessKeyAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/access-keys", api.ListAccessKeysAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/access-keys/{keyId}", api.GetAccessKeyAction)

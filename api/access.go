@@ -35,12 +35,15 @@ func (a *API) CreateAccessKeyAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := a.Access.CreateAccessKey(db.Id(wid), &req)
+	principal, _ := module.PrincipalFrom(r.Context())
+
+	key, err := a.Access.CreateAccessKey(db.Id(wid), principal, &req)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrWorkspaceNotFound, http.StatusNotFound, locale.TR(r, "workspace_not_found")},
 			{module.ErrInvalidExpiresAt, http.StatusBadRequest, locale.TR(r, "invalid_expires_at_format")},
 			{module.ErrInvalidAccessKeyPermissions, http.StatusBadRequest, locale.TR(r, "invalid_access_key_permissions")},
+			{module.ErrAccessKeyPermissionDenied, http.StatusForbidden, locale.TR(r, "access_key_permission_denied")},
 		}) {
 			return
 		}
