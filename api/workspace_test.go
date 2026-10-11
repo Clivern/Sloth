@@ -124,13 +124,14 @@ func TestUnitWorkspaceActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "workspace_not_found")
 	})
 
-	t.Run("get returns 401 without a user", func(t *testing.T) {
+	t.Run("get works for an access key with no user and gives no role", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
 		newWorkspaceRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1", nil))
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `"role":""`)
 	})
 
 	t.Run("get returns 500 when the repository fails", func(t *testing.T) {
@@ -194,13 +195,13 @@ func TestUnitWorkspaceActions(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("update returns 401 without a user", func(t *testing.T) {
+	t.Run("update works for an access key with no user", func(t *testing.T) {
 		api := newWorkspaceAPI(&fakeWorkspaceRecords{workspace: stored})
 		w := httptest.NewRecorder()
 		newWorkspaceRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodPut, "/api/v1/workspaces/ws-1", strings.NewReader(body)))
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("delete returns 204", func(t *testing.T) {

@@ -17,14 +17,6 @@ import (
 
 // ListWorkspaceMembersAction returns workspace members for managers.
 func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := a.GetUser(r)
-	if !ok || user == nil {
-		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-			"errorMessage": locale.TR(r, "not_authenticated"),
-		})
-		return
-	}
-
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
 		a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -35,7 +27,6 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 
 	log.Info().
 		Str("workspaceId", wid).
-		Str("userId", user.Id.String()).
 		Msg("Listing workspace members")
 
 	limit, offset := a.ParsePagination(r)
@@ -55,7 +46,6 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
-			Str("userId", user.Id.String()).
 			Msg("Failed to list workspace members")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_list_workspace_members"),
@@ -76,14 +66,6 @@ func (a *API) ListWorkspaceMembersAction(w http.ResponseWriter, r *http.Request)
 
 // UpdateWorkspaceMemberRoleAction updates a workspace member role.
 func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := a.GetUser(r)
-	if !ok || user == nil {
-		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-			"errorMessage": locale.TR(r, "not_authenticated"),
-		})
-		return
-	}
-
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
 		a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -110,7 +92,6 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 	log.Info().
 		Str("workspaceId", wid).
 		Str("memberUserId", memberUserId).
-		Str("userId", user.Id.String()).
 		Str("role", req.Role).
 		Msg("Updating workspace member role")
 
@@ -132,7 +113,6 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 			Err(err).
 			Str("workspaceId", wid).
 			Str("memberUserId", memberUserId).
-			Str("userId", user.Id.String()).
 			Msg("Failed to update workspace member role")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_update_workspace_member"),
@@ -146,14 +126,6 @@ func (a *API) UpdateWorkspaceMemberRoleAction(w http.ResponseWriter, r *http.Req
 
 // DeleteWorkspaceMemberAction removes a user from a workspace.
 func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := a.GetUser(r)
-	if !ok || user == nil {
-		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-			"errorMessage": locale.TR(r, "not_authenticated"),
-		})
-		return
-	}
-
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
 		a.WriteJSON(w, http.StatusBadRequest, map[string]any{
@@ -173,7 +145,6 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 	log.Info().
 		Str("workspaceId", wid).
 		Str("memberUserId", memberUserId).
-		Str("userId", user.Id.String()).
 		Msg("Removing workspace member")
 
 	err := a.Workspace.DeleteWorkspaceMember(
@@ -192,7 +163,6 @@ func (a *API) DeleteWorkspaceMemberAction(w http.ResponseWriter, r *http.Request
 			Err(err).
 			Str("workspaceId", wid).
 			Str("memberUserId", memberUserId).
-			Str("userId", user.Id.String()).
 			Msg("Failed to delete workspace member")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_delete_workspace_member"),

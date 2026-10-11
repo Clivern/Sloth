@@ -179,9 +179,13 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 		return nil, ErrWorkspaceNotFound
 	}
 
-	membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
-	if err != nil {
-		return nil, err
+	// An access key has no user, so it gets no role
+	var membership *db.WorkspaceUser
+	if user != nil {
+		membership, err = w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
@@ -220,9 +224,13 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 		return nil, err
 	}
 
-	membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
-	if err != nil {
-		return nil, err
+	// An access key has no user, so it gets no role
+	var membership *db.WorkspaceUser
+	if user != nil {
+		membership, err = w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)

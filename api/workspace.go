@@ -96,13 +96,8 @@ func (a *API) ListWorkspacesAction(w http.ResponseWriter, r *http.Request) {
 
 // GetWorkspaceAction returns one workspace by Id.
 func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := a.GetUser(r)
-	if !ok || user == nil {
-		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-			"errorMessage": locale.TR(r, "not_authenticated"),
-		})
-		return
-	}
+	// Access keys pass the permission check too, so there may be no user
+	user, _ := a.GetUser(r)
 
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
@@ -114,7 +109,6 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().
 		Str("workspaceId", wid).
-		Str("userId", user.Id.String()).
 		Msg("Getting workspace")
 
 	workspace, err := a.Workspace.GetWorkspace(db.Id(wid), user)
@@ -128,7 +122,6 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
-			Str("userId", user.Id.String()).
 			Msg("Failed to get workspace")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_get_workspace"),
@@ -141,13 +134,8 @@ func (a *API) GetWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 // UpdateWorkspaceAction updates a workspace.
 func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
-	user, ok := a.GetUser(r)
-	if !ok || user == nil {
-		a.WriteJSON(w, http.StatusUnauthorized, map[string]any{
-			"errorMessage": locale.TR(r, "not_authenticated"),
-		})
-		return
-	}
+	// Access keys pass the permission check too, so there may be no user
+	user, _ := a.GetUser(r)
 
 	wid := chi.URLParam(r, "workspaceId")
 	if lo.IsEmpty(wid) {
@@ -159,7 +147,6 @@ func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().
 		Str("workspaceId", wid).
-		Str("userId", user.Id.String()).
 		Msg("Updating workspace")
 
 	var req module.UpdateWorkspaceRequest
@@ -180,7 +167,6 @@ func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 		log.Error().
 			Err(err).
 			Str("workspaceId", wid).
-			Str("userId", user.Id.String()).
 			Msg("Failed to update workspace")
 		a.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"errorMessage": locale.TR(r, "failed_update_workspace"),
@@ -190,7 +176,6 @@ func (a *API) UpdateWorkspaceAction(w http.ResponseWriter, r *http.Request) {
 
 	log.Info().
 		Str("workspaceId", workspace.Id.String()).
-		Str("userId", user.Id.String()).
 		Msg("Workspace updated")
 
 	a.WriteJSON(w, http.StatusOK, workspace)

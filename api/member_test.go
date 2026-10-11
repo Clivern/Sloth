@@ -71,13 +71,17 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"total":1`)
 	})
 
-	t.Run("list returns 401 without a user", func(t *testing.T) {
-		api := newAPI(workspace, &fakeWorkspaceMembers{}, &fakeUsers{})
+	t.Run("list works for an access key with no user", func(t *testing.T) {
+		api := newAPI(
+			workspace,
+			&fakeWorkspaceMembers{list: []*db.WorkspaceUser{member}, count: 1},
+			&fakeUsers{user: profile},
+		)
 		w := httptest.NewRecorder()
 		newRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/members", nil))
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("list returns 404 for unknown workspace", func(t *testing.T) {
@@ -168,7 +172,7 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("update returns 401 without a user", func(t *testing.T) {
+	t.Run("update works for an access key with no user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
 		newRouter(api).
@@ -181,7 +185,7 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 				),
 			)
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("update returns 409 for the owner", func(t *testing.T) {
@@ -243,13 +247,13 @@ func TestUnitWorkspaceMemberActions(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code)
 	})
 
-	t.Run("delete returns 401 without a user", func(t *testing.T) {
+	t.Run("delete works for an access key with no user", func(t *testing.T) {
 		api := newAPI(workspace, &fakeWorkspaceMembers{member: member}, &fakeUsers{user: profile})
 		w := httptest.NewRecorder()
 		newRouter(api).
 			ServeHTTP(w, httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/ws-1/members/user-2", nil))
 
-		assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusNoContent, w.Code)
 	})
 
 	t.Run("delete returns 409 for the owner", func(t *testing.T) {
