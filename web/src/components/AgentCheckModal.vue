@@ -144,7 +144,7 @@
               <button type="button" class="btn-secondary" :disabled="saving" @click="close">
                 {{ $t('common.cancel') }}
               </button>
-              <button type="submit" class="btn-primary" :disabled="saving || !form.checkId.trim()">
+              <button type="submit" class="btn-primary" :disabled="saving">
                 {{ saving ? $t('agents_page.saving') : $t('common.save') }}
               </button>
             </div>

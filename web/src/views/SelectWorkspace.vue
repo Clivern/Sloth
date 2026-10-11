@@ -92,7 +92,7 @@
               </div>
               <div class="flex gap-3 justify-end">
                 <button type="button" @click="closeCreateModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
-                <button type="submit" :disabled="createLoading || !newWorkspaceName.trim()" class="btn-primary">
+                <button type="submit" :disabled="createLoading" class="btn-primary">
                   {{ createLoading ? $t('common.loading') : $t('common.create') }}
                 </button>
               </div>

@@ -192,7 +192,7 @@
             <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
               {{ $t('common.cancel') }}
             </button>
-            <button type="submit" class="btn-primary" :disabled="saving || !form.source.trim() || !form.destination.trim()">
+            <button type="submit" class="btn-primary" :disabled="saving">
               {{ saving ? $t('intentions_page.saving') : $t('common.save') }}
             </button>
           </div>

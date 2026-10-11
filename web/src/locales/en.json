@@ -846,6 +846,8 @@
     "key_name_placeholder": "e.g. CI, integrations",
     "expires_at_optional": "Expires at (optional)",
     "permissions": "Permissions",
+    "key_name_required": "Key name is required.",
+    "permissions_required": "Select at least one permission.",
     "view_permissions": "{count} permissions",
     "permissions_title": "Key permissions",
     "permissions_for": "Permissions for \"{name}\"",

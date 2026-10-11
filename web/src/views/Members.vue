@@ -43,7 +43,7 @@
               <button
                 type="submit"
                 class="btn-primary w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="inviteLoading || !inviteForm.email.trim()"
+                :disabled="inviteLoading"
               >
                 {{ inviteLoading ? $t('members_page.sending') : $t('members_page.send_invite') }}
               </button>

@@ -137,7 +137,7 @@
             <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
               {{ $t('common.cancel') }}
             </button>
-            <button type="submit" class="btn-primary" :disabled="saving || !form.key.trim() || !form.value.trim()">
+            <button type="submit" class="btn-primary" :disabled="saving">
               {{ saving ? $t('kv_page.saving') : $t('common.save') }}
             </button>
           </div>

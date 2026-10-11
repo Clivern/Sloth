@@ -106,7 +106,7 @@
           </div>
 
           <div class="p-6 space-y-6">
-            <div class="rounded-lg border border-theme-border bg-theme-bg/40 p-5 space-y-5">
+            <form class="rounded-lg border border-theme-border bg-theme-bg/40 p-5 space-y-5" @submit.prevent="handleCreateKey">
               <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_14rem] gap-4 items-end">
                 <div class="min-w-0">
                   <label for="new-access-key-name" class="form-label">{{ $t('workspace_settings_page.key_name') }}</label>
@@ -114,6 +114,7 @@
                     id="new-access-key-name"
                     v-model="newKeyName"
                     type="text"
+                    required
                     class="input-field"
                     :placeholder="$t('workspace_settings_page.key_name_placeholder')"
                     :disabled="accessKeysLoading || creatingKey"
@@ -166,10 +167,9 @@
 
               <div class="pt-1">
                 <button
-                  type="button"
+                  type="submit"
                   class="btn-primary"
-                  :disabled="accessKeysLoading || creatingKey || !newKeyName.trim() || (WORKSPACE_KEY_PERMISSIONS.length > 0 && selectedPermissions.length === 0)"
-                  @click="handleCreateKey"
+                  :disabled="accessKeysLoading || creatingKey"
                 >
                   <span v-if="!creatingKey">{{ $t('workspace_settings_page.create_key') }}</span>
                   <span v-else class="inline-flex items-center gap-2">
@@ -181,7 +181,7 @@
                   </span>
                 </button>
               </div>
-            </div>
+            </form>
 
             <div
               v-if="newlyCreatedKey"
@@ -388,8 +388,7 @@ const minExpiresAt = computed(() => {
 })
 
 const canSaveWorkspace = computed(() => {
-  const name = workspaceName.value.trim()
-  return name.length >= 3 && name !== workspace.value?.name
+  return workspaceName.value.trim() !== workspace.value?.name
 })
 
 function formatDate(iso) {
@@ -520,7 +519,14 @@ async function loadAccessKeys() {
 
 async function handleCreateKey() {
   const name = newKeyName.value.trim()
-  if (!name || (WORKSPACE_KEY_PERMISSIONS.length > 0 && selectedPermissions.value.length === 0)) return
+  if (!name) {
+    errorMessage.value = t('workspace_settings_page.key_name_required')
+    return
+  }
+  if (WORKSPACE_KEY_PERMISSIONS.length > 0 && selectedPermissions.value.length === 0) {
+    errorMessage.value = t('workspace_settings_page.permissions_required')
+    return
+  }
 
   creatingKey.value = true
   errorMessage.value = null

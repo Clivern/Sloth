@@ -205,7 +205,7 @@
                 </button>
                 <button
                   type="submit"
-                  :disabled="createLoading || !newWorkspaceName.trim()"
+                  :disabled="createLoading"
                   class="btn-primary"
                 >
                   {{ createLoading ? $t('workspaces_page.creating') : $t('common.create') }}
@@ -262,7 +262,7 @@
                 </button>
                 <button
                   type="submit"
-                  :disabled="updateLoadingId || !editWorkspaceName.trim() || editWorkspaceName.trim() === editModalWorkspace?.name"
+                  :disabled="updateLoadingId || editWorkspaceName.trim() === editModalWorkspace?.name"
                   class="btn-primary"
                 >
                   {{ updateLoadingId ? $t('workspaces_page.saving') : $t('common.save') }}
