@@ -16,13 +16,18 @@ import (
 
 func TestUnitInstance(t *testing.T) {
 	t.Run("list returns not found for a missing agent", func(t *testing.T) {
-		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.ListInstances("ws-1", "-bad", 50, 0)
+		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).
+			instance.
+			ListInstances("ws-1", "-bad", 50, 0)
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
 	t.Run("list healthy returns only live instances", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
+		f.instances.list = []*db.AgentInstance{
+			{Id: "inst-1", InstanceId: "node-1"},
+			{Id: "inst-2", InstanceId: "node-2"},
+		}
 		f.instances.live = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 
 		all, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
@@ -38,7 +43,11 @@ func TestUnitInstance(t *testing.T) {
 
 	t.Run("list returns one page and the total across pages", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}, {Id: "inst-3", InstanceId: "node-3"}}
+		f.instances.list = []*db.AgentInstance{
+			{Id: "inst-1", InstanceId: "node-1"},
+			{Id: "inst-2", InstanceId: "node-2"},
+			{Id: "inst-3", InstanceId: "node-3"},
+		}
 
 		first, err := f.instance.ListInstances("ws-1", "support-assistant", 2, 0)
 		require.NoError(t, err)
@@ -66,7 +75,13 @@ func TestUnitInstance(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical},
+			{
+				CheckId: "http",
+				Name:    "http",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusCritical,
+			},
 		}
 
 		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
@@ -78,8 +93,20 @@ func TestUnitInstance(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing},
-			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
+			{
+				CheckId: "http",
+				Name:    "http",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusPassing,
+			},
+			{
+				CheckId: "tcp",
+				Name:    "tcp",
+				Type:    db.HealthCheckTypeTCP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusWarning,
+			},
 		}
 
 		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
@@ -90,14 +117,41 @@ func TestUnitInstance(t *testing.T) {
 
 	t.Run("list ranks unknown between critical and warning", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}, {Id: "inst-2", InstanceId: "node-2"}}
+		f.instances.list = []*db.AgentInstance{
+			{Id: "inst-1", InstanceId: "node-1"},
+			{Id: "inst-2", InstanceId: "node-2"},
+		}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
-			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
+			{
+				CheckId: "http",
+				Name:    "http",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusWarning,
+			},
+			{
+				CheckId: "tcp",
+				Name:    "tcp",
+				Type:    db.HealthCheckTypeTCP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusUnknown,
+			},
 		}
 		f.healthChecks.checks["inst-2"] = []*db.HealthCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
-			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusCritical},
+			{
+				CheckId: "http",
+				Name:    "http",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusUnknown,
+			},
+			{
+				CheckId: "tcp",
+				Name:    "tcp",
+				Type:    db.HealthCheckTypeTCP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusCritical,
+			},
 		}
 
 		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
@@ -111,7 +165,14 @@ func TestUnitInstance(t *testing.T) {
 		f.instances.list = []*db.AgentInstance{{Id: "inst-1", InstanceId: "node-1"}}
 		expired := time.Now().UTC().Add(-time.Minute)
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{CheckId: "heartbeat", Name: "heartbeat", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing, TTLExpiresAt: &expired},
+			{
+				CheckId:      "heartbeat",
+				Name:         "heartbeat",
+				Type:         db.HealthCheckTypeTTL,
+				Source:       db.HealthCheckSourceAgent,
+				Status:       db.HealthCheckStatusPassing,
+				TTLExpiresAt: &expired,
+			},
 		}
 
 		list, err := f.instance.ListInstances("ws-1", "support-assistant", 50, 0)
@@ -122,8 +183,20 @@ func TestUnitInstance(t *testing.T) {
 	t.Run("get health returns the worst check status and its checks", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusWarning},
-			{CheckId: "tcp", Name: "tcp", Type: db.HealthCheckTypeTCP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusUnknown},
+			{
+				CheckId: "http",
+				Name:    "http",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusWarning,
+			},
+			{
+				CheckId: "tcp",
+				Name:    "tcp",
+				Type:    db.HealthCheckTypeTCP,
+				Source:  db.HealthCheckSourceAgent,
+				Status:  db.HealthCheckStatusUnknown,
+			},
 		}
 
 		status, checks, err := f.instance.GetHealth("inst-1")
@@ -139,7 +212,13 @@ func TestUnitInstance(t *testing.T) {
 
 	t.Run("get returns the instance with its checks", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1", InstanceId: "node-1", Address: "10.0.0.12", Port: 8080}
+		f.instances.instance = &db.AgentInstance{
+			Id:         "inst-1",
+			AgentId:    "agent-1",
+			InstanceId: "node-1",
+			Address:    "10.0.0.12",
+			Port:       8080,
+		}
 
 		item, err := f.instance.GetInstance("ws-1", "support-assistant", "node-1")
 		require.NoError(t, err)
@@ -150,23 +229,32 @@ func TestUnitInstance(t *testing.T) {
 	})
 
 	t.Run("get returns not found for an unknown agent", func(t *testing.T) {
-		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.GetInstance("ws-1", "-bad", "node-1")
+		_, err := newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).
+			instance.
+			GetInstance("ws-1", "-bad", "node-1")
 		assert.ErrorIs(t, err, ErrAgentNotFound)
 	})
 
 	t.Run("get returns not found for a missing instance", func(t *testing.T) {
-		_, err := defaultInstanceFixture().instance.GetInstance("ws-1", "support-assistant", "node-1")
+		_, err := defaultInstanceFixture().
+			instance.
+			GetInstance("ws-1", "support-assistant", "node-1")
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 	})
 
 	t.Run("register creates the instance without a lease check", func(t *testing.T) {
 		f := defaultInstanceFixture()
 
-		item, created, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{
-			Address: "10.0.0.12",
-			Port:    8080,
-			Meta:    json.RawMessage(`{"region":"eu"}`),
-		})
+		item, created, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{
+				Address: "10.0.0.12",
+				Port:    8080,
+				Meta:    json.RawMessage(`{"region":"eu"}`),
+			},
+		)
 		require.NoError(t, err)
 		assert.True(t, created)
 		assert.Equal(t, "10.0.0.12", item.Address)
@@ -180,27 +268,60 @@ func TestUnitInstance(t *testing.T) {
 		assert.Empty(t, f.healthChecks.created)
 	})
 
-	t.Run("register updates an existing instance without touching checks it does not own", func(t *testing.T) {
-		f := defaultInstanceFixture()
-		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1", InstanceId: "node-1"}
+	t.Run(
+		"register updates an existing instance without touching checks it does not own",
+		func(t *testing.T) {
+			f := defaultInstanceFixture()
+			f.instances.instance = &db.AgentInstance{
+				Id:         "inst-1",
+				AgentId:    "agent-1",
+				InstanceId: "node-1",
+			}
 
-		_, created, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.13", Port: 9090})
-		require.NoError(t, err)
-		assert.False(t, created)
-		require.Len(t, f.instances.updated, 1)
-		assert.Equal(t, "10.0.0.13", f.instances.updated[0].Address)
-		assert.Empty(t, f.instances.created)
-		assert.Empty(t, f.healthChecks.created)
-	})
+			_, created, err := f.instance.RegisterInstance(
+				"ws-1",
+				"support-assistant",
+				"node-1",
+				&RegisterInstanceRequest{
+					Address: "10.0.0.13",
+					Port:    9090,
+				},
+			)
+			require.NoError(t, err)
+			assert.False(t, created)
+			require.Len(t, f.instances.updated, 1)
+			assert.Equal(t, "10.0.0.13", f.instances.updated[0].Address)
+			assert.Empty(t, f.instances.created)
+			assert.Empty(t, f.healthChecks.created)
+		},
+	)
 
 	t.Run("register copies agent templates onto the new instance", func(t *testing.T) {
 		f := defaultInstanceFixture()
 		f.agentChecks.list = []*db.AgentCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/healthz","interval":10,"timeout":2}`},
-			{CheckId: "heartbeat", Name: "heartbeat", Type: db.HealthCheckTypeTTL, Definition: `{"ttl":30}`},
+			{
+				CheckId:    "http",
+				Name:       "http",
+				Type:       db.HealthCheckTypeHTTP,
+				Definition: `{"path":"/healthz","interval":10,"timeout":2}`,
+			},
+			{
+				CheckId:    "heartbeat",
+				Name:       "heartbeat",
+				Type:       db.HealthCheckTypeTTL,
+				Definition: `{"ttl":30}`,
+			},
 		}
 
-		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080})
+		_, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{
+				Address: "10.0.0.12",
+				Port:    8080,
+			},
+		)
 		require.NoError(t, err)
 
 		require.Len(t, f.healthChecks.created, 2)
@@ -217,34 +338,71 @@ func TestUnitInstance(t *testing.T) {
 
 	t.Run("register removes agent copies that no template wants anymore", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1", InstanceId: "node-1"}
+		f.instances.instance = &db.AgentInstance{
+			Id:         "inst-1",
+			AgentId:    "agent-1",
+			InstanceId: "node-1",
+		}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{Id: "retired", CheckId: "retired", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent},
+			{
+				Id:      "retired",
+				CheckId: "retired",
+				Type:    db.HealthCheckTypeHTTP,
+				Source:  db.HealthCheckSourceAgent,
+			},
 		}
 
-		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080})
+		_, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{
+				Address: "10.0.0.12",
+				Port:    8080,
+			},
+		)
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"retired"}, f.healthChecks.deleted)
 	})
 
-	t.Run("register rejects invalid ids and returns not found for a missing agent", func(t *testing.T) {
-		req := &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}
+	t.Run(
+		"register rejects invalid ids and returns not found for a missing agent",
+		func(t *testing.T) {
+			req := &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}
 
-		_, _, err := defaultInstanceFixture().instance.RegisterInstance("ws-1", "support-assistant", "bad id!", req)
-		assert.ErrorIs(t, err, ErrInvalidInstanceId)
+			_, _, err := defaultInstanceFixture().
+				instance.
+				RegisterInstance("ws-1", "support-assistant", "bad id!", req)
+			assert.ErrorIs(t, err, ErrInvalidInstanceId)
 
-		_, _, err = newInstanceFixture(&db.Workspace{Id: "ws-1"}, nil).instance.RegisterInstance("ws-1", "support-assistant", "node-1", req)
-		assert.ErrorIs(t, err, ErrAgentNotFound)
-	})
+			_, _, err = newInstanceFixture(
+				&db.Workspace{Id: "ws-1"},
+				nil,
+			).
+				instance.RegisterInstance(
+				"ws-1",
+				"support-assistant",
+				"node-1",
+				req,
+			)
+			assert.ErrorIs(t, err, ErrAgentNotFound)
+		},
+	)
 
 	t.Run("deregister returns not found for a missing instance", func(t *testing.T) {
-		err := defaultInstanceFixture().instance.DeregisterInstance("ws-1", "support-assistant", "node-1")
+		err := defaultInstanceFixture().
+			instance.
+			DeregisterInstance("ws-1", "support-assistant", "node-1")
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 	})
 
 	t.Run("deregister removes the instance", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1", InstanceId: "node-1"}
+		f.instances.instance = &db.AgentInstance{
+			Id:         "inst-1",
+			AgentId:    "agent-1",
+			InstanceId: "node-1",
+		}
 
 		err := f.instance.DeregisterInstance("ws-1", "support-assistant", "node-1")
 		require.NoError(t, err)
@@ -253,33 +411,61 @@ func TestUnitInstance(t *testing.T) {
 }
 
 func TestUnitSyncChecks(t *testing.T) {
-	t.Run("creates missing copies with pull checks due now and ttl checks expiring later", func(t *testing.T) {
-		f := defaultInstanceFixture()
-		f.agentChecks.list = []*db.AgentCheck{
-			{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/healthz"}`},
-			{CheckId: "heartbeat", Name: "heartbeat", Type: db.HealthCheckTypeTTL, Definition: `{"ttl":30}`},
-		}
+	t.Run(
+		"creates missing copies with pull checks due now and ttl checks expiring later",
+		func(t *testing.T) {
+			f := defaultInstanceFixture()
+			f.agentChecks.list = []*db.AgentCheck{
+				{
+					CheckId:    "http",
+					Name:       "http",
+					Type:       db.HealthCheckTypeHTTP,
+					Definition: `{"path":"/healthz"}`,
+				},
+				{
+					CheckId:    "heartbeat",
+					Name:       "heartbeat",
+					Type:       db.HealthCheckTypeTTL,
+					Definition: `{"ttl":30}`,
+				},
+			}
 
-		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
-		require.Len(t, f.healthChecks.created, 2)
+			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+			require.Len(t, f.healthChecks.created, 2)
 
-		httpCheck := f.healthChecks.created[0]
-		assert.Equal(t, db.HealthCheckStatusUnknown, httpCheck.Status)
-		assert.Equal(t, db.HealthCheckSourceAgent, httpCheck.Source)
-		assert.NotNil(t, httpCheck.NextRunAt)
-		assert.Nil(t, httpCheck.TTLExpiresAt)
+			httpCheck := f.healthChecks.created[0]
+			assert.Equal(t, db.HealthCheckStatusUnknown, httpCheck.Status)
+			assert.Equal(t, db.HealthCheckSourceAgent, httpCheck.Source)
+			assert.NotNil(t, httpCheck.NextRunAt)
+			assert.Nil(t, httpCheck.TTLExpiresAt)
 
-		ttlCheck := f.healthChecks.created[1]
-		assert.Equal(t, db.HealthCheckStatusUnknown, ttlCheck.Status)
-		assert.Nil(t, ttlCheck.NextRunAt)
-		require.NotNil(t, ttlCheck.TTLExpiresAt)
-		assert.WithinDuration(t, time.Now().Add(30*time.Second), *ttlCheck.TTLExpiresAt, 5*time.Second)
-	})
+			ttlCheck := f.healthChecks.created[1]
+			assert.Equal(t, db.HealthCheckStatusUnknown, ttlCheck.Status)
+			assert.Nil(t, ttlCheck.NextRunAt)
+			require.NotNil(t, ttlCheck.TTLExpiresAt)
+			assert.WithinDuration(t, time.Now().Add(30*time.Second), *ttlCheck.TTLExpiresAt, 5*time.Second)
+		},
+	)
 
 	t.Run("updates an existing copy of the same type and keeps its status", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.agentChecks.list = []*db.AgentCheck{{CheckId: "http", Name: "health", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/v2"}`}}
-		existing := &db.HealthCheck{Id: "check-1", InstanceId: "inst-1", CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Source: db.HealthCheckSourceAgent, Status: db.HealthCheckStatusPassing}
+		f.agentChecks.list = []*db.AgentCheck{
+			{
+				CheckId:    "http",
+				Name:       "health",
+				Type:       db.HealthCheckTypeHTTP,
+				Definition: `{"path":"/v2"}`,
+			},
+		}
+		existing := &db.HealthCheck{
+			Id:         "check-1",
+			InstanceId: "inst-1",
+			CheckId:    "http",
+			Name:       "http",
+			Type:       db.HealthCheckTypeHTTP,
+			Source:     db.HealthCheckSourceAgent,
+			Status:     db.HealthCheckStatusPassing,
+		}
 		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{existing}
 
 		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
@@ -294,8 +480,22 @@ func TestUnitSyncChecks(t *testing.T) {
 
 	t.Run("replaces a copy whose type changed", func(t *testing.T) {
 		f := defaultInstanceFixture()
-		f.agentChecks.list = []*db.AgentCheck{{CheckId: "check", Name: "check", Type: db.HealthCheckTypeTCP, Definition: `{"port":5432}`}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{{Id: "check-1", CheckId: "check", Type: db.HealthCheckTypeTTL, Source: db.HealthCheckSourceAgent}}
+		f.agentChecks.list = []*db.AgentCheck{
+			{
+				CheckId:    "check",
+				Name:       "check",
+				Type:       db.HealthCheckTypeTCP,
+				Definition: `{"port":5432}`,
+			},
+		}
+		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+			{
+				Id:      "check-1",
+				CheckId: "check",
+				Type:    db.HealthCheckTypeTTL,
+				Source:  db.HealthCheckSourceAgent,
+			},
+		}
 
 		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
 		assert.Equal(t, []db.Id{"check-1"}, f.healthChecks.deleted)
@@ -304,15 +504,25 @@ func TestUnitSyncChecks(t *testing.T) {
 		assert.Equal(t, db.HealthCheckStatusUnknown, f.healthChecks.created[0].Status)
 	})
 
-	t.Run("removes agent copies no template wants and keeps checks added by hand", func(t *testing.T) {
-		f := defaultInstanceFixture()
-		f.agentChecks.list = []*db.AgentCheck{{CheckId: "http", Name: "http", Type: db.HealthCheckTypeHTTP, Definition: `{"path":"/healthz"}`}}
-		f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
-			{Id: "stale", CheckId: "old", Source: db.HealthCheckSourceAgent},
-			{Id: "manual", CheckId: "manual", Source: "manual"},
-		}
+	t.Run(
+		"removes agent copies no template wants and keeps checks added by hand",
+		func(t *testing.T) {
+			f := defaultInstanceFixture()
+			f.agentChecks.list = []*db.AgentCheck{
+				{
+					CheckId:    "http",
+					Name:       "http",
+					Type:       db.HealthCheckTypeHTTP,
+					Definition: `{"path":"/healthz"}`,
+				},
+			}
+			f.healthChecks.checks["inst-1"] = []*db.HealthCheck{
+				{Id: "stale", CheckId: "old", Source: db.HealthCheckSourceAgent},
+				{Id: "manual", CheckId: "manual", Source: "manual"},
+			}
 
-		require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
-		assert.Equal(t, []db.Id{"stale"}, f.healthChecks.deleted)
-	})
+			require.NoError(t, f.instance.SyncChecks("inst-1", "agent-1"))
+			assert.Equal(t, []db.Id{"stale"}, f.healthChecks.deleted)
+		},
+	)
 }
