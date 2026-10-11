@@ -357,6 +357,21 @@ Change feed for `GET /watch/catalog`. Uses a `BIGSERIAL` id instead of a UUID so
 - Unique: `(agent_id, name)`
 - Index: `idx_agent_identity_agent_id` on `(agent_id)`
 
+### `agent_identity_tokens`
+
+Access tokens issued to `client_credentials` identities by `POST /api/v1/public/oauth/token`.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | UUID | no |  | primary key |
+| `identity_id` | UUID | no |  | → `agent_identity.id` (cascade) |
+| `token_hash` | VARCHAR(64) | no |  | SHA-256 hex of the token, unique |
+| `expires_at` | TIMESTAMP | no |  |  |
+| `created_at` | TIMESTAMP | yes | `now() UTC` |  |
+
+- Index: `idx_agent_identity_tokens_identity_id` on `(identity_id)`
+- Index: `idx_agent_identity_tokens_expires_at` on `(expires_at)`
+
 ### `agent_protection`
 
 | Column | Type | Nullable | Default | Notes |
@@ -636,6 +651,7 @@ erDiagram
     agents ||--o{ agent_instances : runs
     agents ||--o{ agent_checks : defines
     agents ||--o{ agent_identity : has
+    agent_identity ||--o{ agent_identity_tokens : issues
     agents ||--o| agent_protection : has
     agent_protection ||--o{ agent_protection_tokens : issues
     agents ||--o{ agent_skills : has

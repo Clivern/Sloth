@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	AgentIdentityTypeAPIKey    = "api_key"
-	AgentIdentityTypeBasicAuth = "basic_auth"
+	AgentIdentityTypeAPIKey            = "api_key"
+	AgentIdentityTypeBasicAuth         = "basic_auth"
+	AgentIdentityTypeClientCredentials = "client_credentials"
 )
 
 // AgentIdentity is a single row in the agent_identity table.
@@ -38,6 +39,26 @@ type AgentIdentityRepository interface {
 }
 
 type AgentIdentityRepositoryPostgres struct {
+	db *sql.DB
+}
+
+// AgentIdentityToken is a single row in the agent_identity_tokens table.
+type AgentIdentityToken struct {
+	Id         Id
+	IdentityId Id
+	TokenHash  string
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+}
+
+// AgentIdentityTokenRepository is the interface for tokens issued to client credentials identities.
+type AgentIdentityTokenRepository interface {
+	Create(token *AgentIdentityToken) error
+	GetByTokenHash(tokenHash string) (*AgentIdentityToken, error)
+	DeleteExpired() (int64, error)
+}
+
+type AgentIdentityTokenRepositoryPostgres struct {
 	db *sql.DB
 }
 
@@ -217,4 +238,64 @@ func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*Ag
 	}
 
 	return list, rows.Err()
+}
+
+// NewAgentIdentityTokenRepository returns the repository for the agent_identity_tokens table.
+func NewAgentIdentityTokenRepository(db *sql.DB) AgentIdentityTokenRepository {
+	return &AgentIdentityTokenRepositoryPostgres{db: db}
+}
+
+// Create inserts an issued token row.
+func (r *AgentIdentityTokenRepositoryPostgres) Create(token *AgentIdentityToken) error {
+	id, err := NewId()
+	if err != nil {
+		return err
+	}
+
+	token.Id = id
+
+	return r.db.QueryRow(
+		`INSERT INTO agent_identity_tokens (id, identity_id, token_hash, expires_at)
+		VALUES ($1, $2, $3, $4)
+		RETURNING created_at`,
+		token.Id.String(),
+		token.IdentityId.String(),
+		token.TokenHash,
+		token.ExpiresAt,
+	).Scan(&token.CreatedAt)
+}
+
+// GetByTokenHash returns an issued token by the SHA-256 hash of its value.
+func (r *AgentIdentityTokenRepositoryPostgres) GetByTokenHash(tokenHash string) (*AgentIdentityToken, error) {
+	token := &AgentIdentityToken{}
+	err := r.db.QueryRow(
+		`SELECT id, identity_id, token_hash, expires_at, created_at
+		FROM agent_identity_tokens
+		WHERE token_hash = $1`,
+		tokenHash,
+	).Scan(
+		&token.Id,
+		&token.IdentityId,
+		&token.TokenHash,
+		&token.ExpiresAt,
+		&token.CreatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	return token, err
+}
+
+// DeleteExpired removes issued tokens past their expiry.
+func (r *AgentIdentityTokenRepositoryPostgres) DeleteExpired() (int64, error) {
+	result, err := r.db.Exec(
+		`DELETE FROM agent_identity_tokens WHERE expires_at <= $1`,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
 }
