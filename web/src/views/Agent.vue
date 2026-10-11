@@ -20,17 +20,7 @@
       </div>
 
       <template v-else>
-        <router-link
-          to="/agents"
-          class="inline-flex items-center gap-1 text-sm text-theme-textLight hover:text-theme-text"
-        >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          {{ $t('agents_page.title') }}
-        </router-link>
-
-        <div class="mt-3 mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-3">
               <h1 class="text-3xl font-semibold text-theme-text font-mono break-all">{{ agent.name }}</h1>
@@ -322,15 +312,15 @@
                 <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_desc') }}</p>
               </div>
               <div v-if="!agent.card" class="p-5">
-                <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <div class="flex items-start gap-3 rounded-lg border border-dashed border-theme-border p-4">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-theme-hover text-theme-textLight">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
                     </svg>
                   </span>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.card_pending') }}</p>
-                    <p class="mt-1 text-sm text-amber-800">{{ $t('agents_page.card_pending_desc') }}</p>
+                    <p class="text-sm font-medium text-theme-text">{{ $t('agents_page.card_pending') }}</p>
+                    <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_pending_desc') }}</p>
                   </div>
                 </div>
                 <dl class="mt-4 text-sm">
@@ -434,16 +424,16 @@
                 {{ $t('agents_page.loading_protection') }}
               </div>
               <div v-else-if="!protection" class="p-5">
-                <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                <div class="flex items-start gap-3 rounded-lg border border-dashed border-theme-border p-4">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-theme-hover text-theme-textLight">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M10.3 3.9L2.5 17.4A2 2 0 004.2 20.4h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z" />
                     </svg>
                   </span>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.no_protection') }}</p>
-                    <p class="mt-1 text-sm text-amber-800">{{ $t('agents_page.no_protection_hint') }}</p>
-                    <button v-if="canManage" type="button" class="btn-primary mt-3 text-sm" @click="protectionModalOpen = true">
+                    <p class="text-sm font-medium text-theme-text">{{ $t('agents_page.no_protection') }}</p>
+                    <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.no_protection_hint') }}</p>
+                    <button v-if="canManage" type="button" class="btn-secondary mt-3 text-sm" @click="protectionModalOpen = true">
                       {{ $t('agents_page.protection_add') }}
                     </button>
                   </div>
