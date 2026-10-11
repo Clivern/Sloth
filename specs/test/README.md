@@ -62,7 +62,7 @@ For example: *"Run specs/test/agents.feature against http://localhost:8000 with 
 
 ## Report
 
-Write the results to `specs/test/reports/<YYYY-MM-DD>-<runId>.md` (the folder is gitignored):
+Write the results to `specs/reports/<YYYY-MM-DD>-<runId>.md` (the folder is gitignored):
 
 ```markdown
 # Spec run 2026-10-16 a1b2c3

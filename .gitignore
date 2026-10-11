@@ -51,6 +51,3 @@ events/*
 !events/.gitkeep
 .secrets
 test_server.py
-
-# Agent spec run reports
-specs/test/reports/
