@@ -141,6 +141,7 @@ func TestUnitPermission(t *testing.T) {
 
 	t.Run("valid access key permissions accept the allowed set only", func(t *testing.T) {
 		assert.True(t, ValidAccessKeyPermissions([]string{CanRegisterInstance}))
+		assert.True(t, ValidAccessKeyPermissions([]string{CanReportCheck}))
 		assert.False(t, ValidAccessKeyPermissions([]string{"CAN_FLY"}))
 		assert.False(t, ValidAccessKeyPermissions(nil))
 	})

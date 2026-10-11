@@ -47,6 +47,7 @@ const (
 	CanListInstances    = "CAN_LIST_INSTANCES"
 	CanGetInstance      = "CAN_GET_INSTANCE"
 	CanRegisterInstance = "CAN_REGISTER_INSTANCE"
+	CanReportCheck      = "CAN_REPORT_CHECK"
 
 	CanListIntentions  = "CAN_LIST_INTENTIONS"
 	CanGetIntention    = "CAN_GET_INTENTION"
@@ -103,6 +104,7 @@ var AccessKeyPermissions = map[string]bool{
 	CanListInstances:    true,
 	CanGetInstance:      true,
 	CanRegisterInstance: true,
+	CanReportCheck:      true,
 
 	CanListIntentions:  true,
 	CanGetIntention:    true,
@@ -226,6 +228,7 @@ func (p *Perm) CanAsUser(permission string) (bool, error) {
 		CanUpsertAgent,
 		CanDeleteAgent,
 		CanRegisterInstance,
+		CanReportCheck,
 		CanCreateIntention,
 		CanUpdateIntention,
 		CanDeleteIntention,
