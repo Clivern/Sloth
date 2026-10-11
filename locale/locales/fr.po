@@ -467,3 +467,12 @@ msgstr "En attente de la première vérification"
 
 msgid "waiting_for_first_report"
 msgstr "En attente du premier rapport"
+
+msgid "protection_not_found"
+msgstr "Protection d'agent introuvable."
+
+msgid "invalid_protection_config"
+msgstr "Les protections en authentification basique exigent un nom d'utilisateur, les autres types n'en ont pas."
+
+msgid "failed_protection_request"
+msgstr "Échec de la requête de protection d'agent."

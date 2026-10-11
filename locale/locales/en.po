@@ -479,3 +479,12 @@ msgstr "Waiting for the first check"
 
 msgid "waiting_for_first_report"
 msgstr "Waiting for the first report"
+
+msgid "protection_not_found"
+msgstr "Agent protection not found."
+
+msgid "invalid_protection_config"
+msgstr "Basic auth protections need a username, and other protection types must not have one."
+
+msgid "failed_protection_request"
+msgstr "Failed to complete the agent protection request."
