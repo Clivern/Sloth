@@ -1,6 +1,6 @@
 module github.com/clivern/sloth
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/OpenRouterTeam/go-sdk v0.9.64
