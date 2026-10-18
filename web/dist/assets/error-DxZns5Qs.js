@@ -1,0 +1,1 @@
+function e(e,t){return e.response?.data?.errorMessage||t}export{e as t};
