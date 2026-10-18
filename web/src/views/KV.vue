@@ -61,7 +61,7 @@
                     <button
                       type="button"
                       class="ml-4 font-medium text-red-600 hover:underline"
-                      @click="askDelete(item)"
+                      @click="deleteTarget = item"
                     >
                       {{ $t('kv_page.delete') }}
                     </button>
@@ -145,43 +145,17 @@
       </div>
     </div>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="deleteTarget"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="kv-delete-title"
-          @click.self="closeDelete"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="kv-delete-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('kv_page.delete_title') }}
-            </h2>
-            <div v-if="deleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ deleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('kv_page.delete_confirm', { key: deleteTarget?.key }) }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="deleting" @click="closeDelete">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deleting"
-                @click="confirmDelete"
-              >
-                {{ deleting ? $t('kv_page.deleting') : $t('kv_page.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!deleteTarget"
+      :title="$t('kv_page.delete_title')"
+      :message="$t('kv_page.delete_confirm', { key: deleteTarget?.key })"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('kv_page.delete')"
+      :busy-label="$t('kv_page.deleting')"
+      @cancel="closeDelete"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -189,9 +163,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { kv_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { formatRelative } from '@/utils/date'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const { currentWorkspace, canManage } = useWorkspaceContext()
@@ -232,7 +208,7 @@ async function loadKeys() {
     const res = await kv_api.list(currentWorkspace.id)
     items.value = res.data.items || []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('kv_page.failed_load')
+    errorMessage.value = errorText(err, t('kv_page.failed_load'))
     items.value = []
   } finally {
     loading.value = false
@@ -267,19 +243,15 @@ async function submit() {
     showForm.value = false
     await loadKeys()
   } catch (err) {
-    formError.value = err.response?.data?.errorMessage || t('kv_page.failed_save')
+    formError.value = errorText(err, t('kv_page.failed_save'))
   } finally {
     saving.value = false
   }
 }
 
-function askDelete(item) {
-  deleteTarget.value = item
-  deleteError.value = null
-}
-
 function closeDelete() {
   deleteTarget.value = null
+  deleteError.value = null
 }
 
 async function confirmDelete() {
@@ -291,7 +263,7 @@ async function confirmDelete() {
     deleteTarget.value = null
     await loadKeys()
   } catch (err) {
-    deleteError.value = err.response?.data?.errorMessage || t('kv_page.failed_delete')
+    deleteError.value = errorText(err, t('kv_page.failed_delete'))
   } finally {
     deleting.value = false
   }

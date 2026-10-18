@@ -74,6 +74,7 @@ import { auth_api, setup_api } from '@/api'
 import { saveUser } from '@/lib/auth'
 import { applyUserPreferences } from '@/lib/preferences'
 import AppLogo from '@/components/AppLogo.vue'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -114,7 +115,7 @@ const finishOAuthLogin = async () => {
     applyUserPreferences(response.data?.user)
     router.replace(getRedirectTarget())
   } catch (err) {
-    error.value = err.response?.data?.errorMessage || t('login.oauth_failed')
+    error.value = errorText(err, t('login.oauth_failed'))
     loading.value = false
     loadingProvider.value = null
   }

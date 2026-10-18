@@ -45,7 +45,7 @@
             <button
               type="button"
               class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-              @click="openDeleteModal"
+              @click="showDeleteModal = true"
             >
               {{ $t('agents_page.delete') }}
             </button>
@@ -144,7 +144,7 @@
                           type="button"
                           class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline"
                           :aria-expanded="!!expanded[instance.id]"
-                          @click="toggleInstance(instance.id)"
+                          @click="expanded[instance.id] = !expanded[instance.id]"
                         >
                           <StatusBreakdown :counts="countByStatus(instance.checks)" hide-zero />
                           <svg class="h-3.5 w-3.5 transition-transform" :class="expanded[instance.id] ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -156,7 +156,7 @@
                         <button
                           type="button"
                           class="text-red-600 hover:text-red-700 hover:underline"
-                          @click="askDeregister(instance)"
+                          @click="deregisterTarget = instance"
                         >
                           {{ $t('agents_page.deregister') }}
                         </button>
@@ -266,7 +266,7 @@
                           <button
                             type="button"
                             class="text-red-600 hover:text-red-700 hover:underline"
-                            @click="askDeleteCheck(check)"
+                            @click="checkDeleteTarget = check"
                           >
                             {{ $t('agents_page.delete') }}
                           </button>
@@ -333,8 +333,8 @@
                   <dt class="text-theme-textLight">{{ $t('agents_page.gateway_url') }}</dt>
                   <dd class="mt-1 flex items-start gap-2">
                     <code class="min-w-0 flex-1 break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text">{{ card.url }}</code>
-                    <button type="button" class="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700" @click="copyUrl">
-                      {{ urlCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                    <button type="button" class="shrink-0 text-xs font-medium text-primary-600 hover:text-primary-700" @click="copy(card.url, 'url')">
+                      {{ copiedField === 'url' ? $t('agents_page.copied') : $t('agents_page.copy') }}
                     </button>
                   </dd>
                 </div>
@@ -407,14 +407,14 @@
                 <p class="text-sm font-medium text-amber-900">{{ $t('agents_page.protection_secret_title') }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                   <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newProtectionSecret }}</code>
-                  <button type="button" class="btn-secondary shrink-0" @click="copyProtectionSecret">
-                    {{ protectionSecretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                  <button type="button" class="btn-secondary shrink-0" @click="copy(newProtectionSecret, 'protection')">
+                    {{ copiedField === 'protection' ? $t('agents_page.copied') : $t('agents_page.copy') }}
                   </button>
                 </div>
                 <button
                   type="button"
                   class="text-sm text-amber-800 hover:text-amber-900 font-medium"
-                  @click="newProtectionSecret = null; protectionSecretCopied = false"
+                  @click="newProtectionSecret = null"
                 >
                   {{ $t('common.close') }}
                 </button>
@@ -481,7 +481,7 @@
                   <button
                     type="button"
                     class="text-red-600 hover:text-red-700 hover:underline"
-                    @click="protectionDeleteOpen = true; protectionDeleteError = null"
+                    @click="protectionDeleteOpen = true"
                   >
                     {{ $t('agents_page.protection_remove') }}
                   </button>
@@ -510,14 +510,14 @@
                 </p>
                 <div class="flex flex-wrap items-center gap-2">
                   <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
-                  <button type="button" class="btn-secondary shrink-0" @click="copySecret">
-                    {{ secretCopied ? $t('agents_page.copied') : $t('agents_page.copy') }}
+                  <button type="button" class="btn-secondary shrink-0" @click="copy(newIdentity.secret, 'identity')">
+                    {{ copiedField === 'identity' ? $t('agents_page.copied') : $t('agents_page.copy') }}
                   </button>
                 </div>
                 <button
                   type="button"
                   class="text-sm text-amber-800 hover:text-amber-900 font-medium"
-                  @click="newIdentity = null; secretCopied = false"
+                  @click="newIdentity = null"
                 >
                   {{ $t('common.close') }}
                 </button>
@@ -573,7 +573,7 @@
                     <button
                       type="button"
                       class="text-red-600 hover:text-red-700 hover:underline"
-                      @click="askDeleteIdentity(identity)"
+                      @click="identityDeleteTarget = identity"
                     >
                       {{ $t('agents_page.identity_revoke') }}
                     </button>
@@ -625,209 +625,81 @@
       @saved="onCardSaved"
     />
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="deregisterTarget"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="deregister-instance-title"
-          @click.self="closeDeregister"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="deregister-instance-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('agents_page.deregister_title') }}
-            </h2>
-            <div v-if="deregisterError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ deregisterError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('agents_page.deregister_confirm', { id: deregisterTarget?.instanceId }) }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="deregistering" @click="closeDeregister">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deregistering"
-                @click="confirmDeregister"
-              >
-                {{ deregistering ? $t('agents_page.deregistering') : $t('agents_page.deregister') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!deregisterTarget"
+      :title="$t('agents_page.deregister_title')"
+      :message="$t('agents_page.deregister_confirm', { id: deregisterTarget?.instanceId })"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('agents_page.deregister')"
+      :busy-label="$t('agents_page.deregistering')"
+      @cancel="closeConfirm"
+      @confirm="confirmDeregister"
+    />
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="checkDeleteTarget"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-check-title"
-          @click.self="closeDeleteCheck"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="delete-check-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('agents_page.check_delete_title') }}
-            </h2>
-            <div v-if="checkDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ checkDeleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('agents_page.check_delete_confirm', { name: checkDeleteTarget?.name }) }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="checkDeleting" @click="closeDeleteCheck">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="checkDeleting"
-                @click="confirmDeleteCheck"
-              >
-                {{ checkDeleting ? $t('agents_page.deleting') : $t('agents_page.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!checkDeleteTarget"
+      :title="$t('agents_page.check_delete_title')"
+      :message="$t('agents_page.check_delete_confirm', { name: checkDeleteTarget?.name })"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('agents_page.delete')"
+      :busy-label="$t('agents_page.deleting')"
+      @cancel="closeConfirm"
+      @confirm="confirmDeleteCheck"
+    />
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="protectionDeleteOpen"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-protection-title"
-          @click.self="closeDeleteProtection"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="delete-protection-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('agents_page.protection_delete_title') }}
-            </h2>
-            <div v-if="protectionDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ protectionDeleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('agents_page.protection_delete_confirm') }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="protectionDeleting" @click="closeDeleteProtection">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="protectionDeleting"
-                @click="confirmDeleteProtection"
-              >
-                {{ protectionDeleting ? $t('agents_page.deleting') : $t('agents_page.protection_remove') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="protectionDeleteOpen"
+      :title="$t('agents_page.protection_delete_title')"
+      :message="$t('agents_page.protection_delete_confirm')"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('agents_page.protection_remove')"
+      :busy-label="$t('agents_page.deleting')"
+      @cancel="closeConfirm"
+      @confirm="confirmDeleteProtection"
+    />
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="identityDeleteTarget"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-identity-title"
-          @click.self="closeDeleteIdentity"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="delete-identity-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('agents_page.identity_delete_title') }}
-            </h2>
-            <div v-if="identityDeleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ identityDeleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('agents_page.identity_delete_confirm', { name: identityDeleteTarget?.name }) }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="identityDeleting" @click="closeDeleteIdentity">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="identityDeleting"
-                @click="confirmDeleteIdentity"
-              >
-                {{ identityDeleting ? $t('agents_page.deleting') : $t('agents_page.identity_revoke') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!identityDeleteTarget"
+      :title="$t('agents_page.identity_delete_title')"
+      :message="$t('agents_page.identity_delete_confirm', { name: identityDeleteTarget?.name })"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('agents_page.identity_revoke')"
+      :busy-label="$t('agents_page.deleting')"
+      @cancel="closeConfirm"
+      @confirm="confirmDeleteIdentity"
+    />
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="showDeleteModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-agent-title"
-          @click.self="closeDeleteModal"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="delete-agent-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('agents_page.delete_title') }}
-            </h2>
-            <div v-if="deleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ deleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('agents_page.delete_agent_confirm', { name: agent?.name }) }}
-            </p>
-            <div class="mt-4">
-              <label for="delete-agent-confirm" class="block text-sm font-medium text-theme-text mb-1.5">
-                {{ $t('agents_page.type_to_confirm', { name: agent?.name }) }}
-              </label>
-              <input
-                id="delete-agent-confirm"
-                v-model="deleteConfirmName"
-                type="text"
-                class="input-field font-mono"
-                :placeholder="agent?.name"
-                autocomplete="off"
-                :disabled="deleting"
-              />
-            </div>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="deleting" @click="closeDeleteModal">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deleting || deleteConfirmName.trim() !== agent?.name"
-                @click="confirmDelete"
-              >
-                {{ deleting ? $t('agents_page.deleting') : $t('agents_page.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="showDeleteModal"
+      :title="$t('agents_page.delete_title')"
+      :message="$t('agents_page.delete_agent_confirm', { name: agent?.name })"
+      :error="deleteError"
+      :busy="deleting"
+      :disabled="deleteConfirmName.trim() !== agent?.name"
+      :confirm-label="$t('agents_page.delete')"
+      :busy-label="$t('agents_page.deleting')"
+      @cancel="closeConfirm"
+      @confirm="confirmDelete"
+    >
+      <div class="mt-4">
+        <label for="delete-agent-confirm" class="block text-sm font-medium text-theme-text mb-1.5">
+          {{ $t('agents_page.type_to_confirm', { name: agent?.name }) }}
+        </label>
+        <input
+          id="delete-agent-confirm"
+          v-model="deleteConfirmName"
+          type="text"
+          class="input-field font-mono"
+          :placeholder="agent?.name"
+          autocomplete="off"
+          :disabled="deleting"
+        />
+      </div>
+    </ConfirmModal>
   </div>
 </template>
 
@@ -841,11 +713,13 @@ import AgentCardModal from '@/components/AgentCardModal.vue'
 import AgentCheckModal from '@/components/AgentCheckModal.vue'
 import AgentIdentityModal from '@/components/AgentIdentityModal.vue'
 import AgentProtectionModal from '@/components/AgentProtectionModal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { agent_api, agent_check_api, agent_identity_api, agent_instance_api, agent_protection_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'
 import { countByStatus, healthClass, healthDotClass, parseCard } from '@/lib/agent'
 import { formatRelative } from '@/utils/date'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -861,41 +735,33 @@ const loading = ref(false)
 const loadingInstances = ref(false)
 const notFound = ref(false)
 const errorMessage = ref(null)
-const deregisterTarget = ref(null)
-const deregistering = ref(false)
-const deregisterError = ref(null)
 
 const checks = ref([])
 const loadingChecks = ref(false)
 const checkModalOpen = ref(false)
 const editingCheck = ref(null)
-const checkDeleteTarget = ref(null)
-const checkDeleting = ref(false)
-const checkDeleteError = ref(null)
 const expanded = reactive({})
-const urlCopied = ref(false)
 
 const protection = ref(null)
 const loadingProtection = ref(false)
 const protectionModalOpen = ref(false)
 const newProtectionSecret = ref(null)
-const protectionSecretCopied = ref(false)
 const togglingProtection = ref(false)
-const protectionDeleteOpen = ref(false)
-const protectionDeleting = ref(false)
-const protectionDeleteError = ref(null)
 
 const identities = ref([])
 const loadingIdentities = ref(false)
 const identityModalOpen = ref(false)
 const newIdentity = ref(null)
-const secretCopied = ref(false)
 const togglingIdentity = ref(null)
-const identityDeleteTarget = ref(null)
-const identityDeleting = ref(false)
-const identityDeleteError = ref(null)
 
 const showEditModal = ref(false)
+const copiedField = ref(null)
+
+// Only one confirmation is open at a time, so they share the busy and error state
+const deregisterTarget = ref(null)
+const checkDeleteTarget = ref(null)
+const identityDeleteTarget = ref(null)
+const protectionDeleteOpen = ref(false)
 const showDeleteModal = ref(false)
 const deleteConfirmName = ref('')
 const deleting = ref(false)
@@ -930,7 +796,7 @@ async function loadAgent() {
     if (err.response?.status === 404) {
       notFound.value = true
     } else {
-      errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_agent')
+      errorMessage.value = errorText(err, t('agents_page.failed_load_agent'))
     }
   } finally {
     loading.value = false
@@ -954,7 +820,7 @@ async function loadInstances() {
       await loadInstances()
     }
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_instances')
+    errorMessage.value = errorText(err, t('agents_page.failed_load_instances'))
   } finally {
     loadingInstances.value = false
   }
@@ -967,7 +833,7 @@ async function loadChecks() {
     const res = await agent_check_api.list(currentWorkspace.id, agentName.value)
     checks.value = res.data.checks || []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_checks')
+    errorMessage.value = errorText(err, t('agents_page.failed_load_checks'))
   } finally {
     loadingChecks.value = false
   }
@@ -984,7 +850,7 @@ async function loadProtection() {
       protection.value = null
       return
     }
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_protection')
+    errorMessage.value = errorText(err, t('agents_page.failed_load_protection'))
   } finally {
     loadingProtection.value = false
   }
@@ -993,16 +859,8 @@ async function loadProtection() {
 function onProtectionSaved(saved) {
   protectionModalOpen.value = false
   newProtectionSecret.value = saved.secret || null
-  protectionSecretCopied.value = false
   protection.value = { ...saved, secret: undefined }
   showFlash(t('common.saved'))
-}
-
-function copyProtectionSecret() {
-  navigator.clipboard.writeText(newProtectionSecret.value).then(() => {
-    protectionSecretCopied.value = true
-    setTimeout(() => { protectionSecretCopied.value = false }, 2000)
-  })
 }
 
 async function toggleProtection() {
@@ -1015,30 +873,26 @@ async function toggleProtection() {
     protection.value = res.data
     showFlash(t('common.saved'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.protection_failed_save')
+    errorMessage.value = errorText(err, t('agents_page.protection_failed_save'))
   } finally {
     togglingProtection.value = false
   }
 }
 
-function closeDeleteProtection() {
-  protectionDeleteOpen.value = false
-}
-
 async function confirmDeleteProtection() {
-  protectionDeleting.value = true
-  protectionDeleteError.value = null
+  deleting.value = true
+  deleteError.value = null
 
   try {
     await agent_protection_api.delete(currentWorkspace.id, agentName.value)
     protection.value = null
     newProtectionSecret.value = null
-    protectionDeleteOpen.value = false
+    closeConfirm()
     showFlash(t('common.deleted'))
   } catch (err) {
-    protectionDeleteError.value = err.response?.data?.errorMessage || t('agents_page.protection_failed_delete')
+    deleteError.value = errorText(err, t('agents_page.protection_failed_delete'))
   } finally {
-    protectionDeleting.value = false
+    deleting.value = false
   }
 }
 
@@ -1049,7 +903,7 @@ async function loadIdentities() {
     const res = await agent_identity_api.list(currentWorkspace.id, agentName.value)
     identities.value = res.data.identities || []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_identities')
+    errorMessage.value = errorText(err, t('agents_page.failed_load_identities'))
   } finally {
     loadingIdentities.value = false
   }
@@ -1058,15 +912,7 @@ async function loadIdentities() {
 async function onIdentitySaved(identity) {
   identityModalOpen.value = false
   newIdentity.value = identity
-  secretCopied.value = false
   await loadIdentities()
-}
-
-function copySecret() {
-  navigator.clipboard.writeText(newIdentity.value.secret).then(() => {
-    secretCopied.value = true
-    setTimeout(() => { secretCopied.value = false }, 2000)
-  })
 }
 
 async function toggleIdentity(identity) {
@@ -1080,35 +926,26 @@ async function toggleIdentity(identity) {
     Object.assign(identity, res.data)
     showFlash(t('common.saved'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.identity_failed_save')
+    errorMessage.value = errorText(err, t('agents_page.identity_failed_save'))
   } finally {
     togglingIdentity.value = null
   }
 }
 
-function askDeleteIdentity(identity) {
-  identityDeleteTarget.value = identity
-  identityDeleteError.value = null
-}
-
-function closeDeleteIdentity() {
-  identityDeleteTarget.value = null
-}
-
 async function confirmDeleteIdentity() {
-  identityDeleting.value = true
-  identityDeleteError.value = null
+  deleting.value = true
+  deleteError.value = null
 
   try {
     await agent_identity_api.delete(currentWorkspace.id, agentName.value, identityDeleteTarget.value.id)
     if (newIdentity.value?.id === identityDeleteTarget.value.id) newIdentity.value = null
-    identityDeleteTarget.value = null
+    closeConfirm()
     showFlash(t('common.deleted'))
     await loadIdentities()
   } catch (err) {
-    identityDeleteError.value = err.response?.data?.errorMessage || t('agents_page.identity_failed_delete')
+    deleteError.value = errorText(err, t('agents_page.identity_failed_delete'))
   } finally {
-    identityDeleting.value = false
+    deleting.value = false
   }
 }
 
@@ -1130,32 +967,29 @@ async function onCheckSaved() {
   try {
     await refreshHealth()
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load_agent')
+    errorMessage.value = errorText(err, t('agents_page.failed_load_agent'))
   }
 }
 
-function askDeleteCheck(check) {
-  checkDeleteTarget.value = check
-  checkDeleteError.value = null
-}
-
-function closeDeleteCheck() {
-  checkDeleteTarget.value = null
-}
-
 async function confirmDeleteCheck() {
-  checkDeleting.value = true
-  checkDeleteError.value = null
+  deleting.value = true
+  deleteError.value = null
 
   try {
     await agent_check_api.delete(currentWorkspace.id, agentName.value, checkDeleteTarget.value.checkId)
-    checkDeleteTarget.value = null
-    showFlash(t('common.deleted'))
+  } catch (err) {
+    deleteError.value = errorText(err, t('agents_page.check_failed_delete'))
+    return
+  } finally {
+    deleting.value = false
+  }
+
+  closeConfirm()
+  showFlash(t('common.deleted'))
+  try {
     await refreshHealth()
   } catch (err) {
-    checkDeleteError.value = err.response?.data?.errorMessage || t('agents_page.check_failed_delete')
-  } finally {
-    checkDeleting.value = false
+    errorMessage.value = errorText(err, t('agents_page.failed_load_agent'))
   }
 }
 
@@ -1168,11 +1002,12 @@ function describeCheck(check) {
   return t('agents_page.check_describe_probe', { target, interval: check.interval, timeout: check.timeout })
 }
 
-function copyUrl() {
-  navigator.clipboard.writeText(card.value.url).then(() => {
-    urlCopied.value = true
-    setTimeout(() => { urlCopied.value = false }, 2000)
-  })
+async function copy(text, field) {
+  await navigator.clipboard.writeText(text)
+  copiedField.value = field
+  setTimeout(() => {
+    if (copiedField.value === field) copiedField.value = null
+  }, 2000)
 }
 
 function goToInstancesPage(newOffset) {
@@ -1181,55 +1016,45 @@ function goToInstancesPage(newOffset) {
   loadInstances()
 }
 
-function toggleInstance(id) {
-  expanded[id] = !expanded[id]
-}
-
 function onCardSaved(updated) {
   showEditModal.value = false
   agent.value = updated
   showFlash(t('common.saved'))
 }
 
-function askDeregister(instance) {
-  deregisterTarget.value = instance
-  deregisterError.value = null
-}
-
-function closeDeregister() {
+function closeConfirm() {
   deregisterTarget.value = null
-}
-
-async function confirmDeregister() {
-  deregistering.value = true
-  deregisterError.value = null
-
-  try {
-    await agent_instance_api.delete(currentWorkspace.id, agentName.value, deregisterTarget.value.instanceId)
-    deregisterTarget.value = null
-    // Refresh the agent too, since its health is derived from the remaining instances
-    const res = await agent_api.get(currentWorkspace.id, agentName.value)
-    agent.value = res.data
-    await loadInstances()
-    showFlash(t('common.deleted'))
-  } catch (err) {
-    deregisterError.value = err.response?.data?.errorMessage || t('agents_page.failed_deregister')
-  } finally {
-    deregistering.value = false
-  }
-}
-
-function openDeleteModal() {
-  deleteConfirmName.value = ''
-  deleteError.value = null
-  showDeleteModal.value = true
-}
-
-function closeDeleteModal() {
-  if (deleting.value) return
+  checkDeleteTarget.value = null
+  identityDeleteTarget.value = null
+  protectionDeleteOpen.value = false
   showDeleteModal.value = false
   deleteConfirmName.value = ''
   deleteError.value = null
+}
+
+async function confirmDeregister() {
+  deleting.value = true
+  deleteError.value = null
+
+  try {
+    await agent_instance_api.delete(currentWorkspace.id, agentName.value, deregisterTarget.value.instanceId)
+  } catch (err) {
+    deleteError.value = errorText(err, t('agents_page.failed_deregister'))
+    return
+  } finally {
+    deleting.value = false
+  }
+
+  closeConfirm()
+  showFlash(t('common.deleted'))
+  // Refresh the agent too, since its health is derived from the remaining instances
+  try {
+    const res = await agent_api.get(currentWorkspace.id, agentName.value)
+    agent.value = res.data
+    await loadInstances()
+  } catch (err) {
+    errorMessage.value = errorText(err, t('agents_page.failed_load_agent'))
+  }
 }
 
 async function confirmDelete() {
@@ -1239,11 +1064,11 @@ async function confirmDelete() {
 
   try {
     await agent_api.delete(currentWorkspace.id, agent.value.name)
-    showDeleteModal.value = false
+    closeConfirm()
     showFlash(t('common.deleted'))
     router.push('/agents')
   } catch (err) {
-    deleteError.value = err.response?.data?.errorMessage || t('agents_page.failed_delete')
+    deleteError.value = errorText(err, t('agents_page.failed_delete'))
   } finally {
     deleting.value = false
   }

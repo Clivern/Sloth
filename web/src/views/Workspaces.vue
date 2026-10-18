@@ -116,7 +116,7 @@
                   <button
                     v-if="canManage(workspace)"
                     type="button"
-                    @click="openDeleteModal(workspace)"
+                    @click="deleteModalWorkspace = workspace"
                     class="text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
                     :disabled="deletingId === workspace.id"
                     :title="$t('workspaces_page.delete_title')"
@@ -274,62 +274,33 @@
       </Transition>
     </Teleport>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="deleteModalWorkspace"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-workspace-title"
-          @click.self="closeDeleteModal"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="delete-workspace-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('workspaces_page.delete_title') }}
-            </h2>
-            <div v-if="deleteModalError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ deleteModalError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('workspaces_page.delete_confirm', { name: deleteModalWorkspace?.name }) }}
-            </p>
-            <div class="mt-4">
-              <label for="delete-confirm-name" class="block text-sm font-medium text-theme-text mb-1.5">
-                {{ $t('workspaces_page.type_to_confirm', { name: deleteModalWorkspace?.name }) }}
-              </label>
-              <input
-                id="delete-confirm-name"
-                v-model="deleteConfirmName"
-                type="text"
-                class="input-field"
-                :placeholder="deleteModalWorkspace?.name"
-                autocomplete="off"
-                :disabled="deleting"
-              />
-            </div>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button
-                type="button"
-                @click="closeDeleteModal"
-                class="btn-secondary"
-                :disabled="deleting"
-              >
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                @click="confirmDelete"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deleting || !canConfirmDelete"
-              >
-                {{ deleting ? $t('workspaces_page.deleting') : $t('workspaces_page.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!deleteModalWorkspace"
+      :title="$t('workspaces_page.delete_title')"
+      :message="$t('workspaces_page.delete_confirm', { name: deleteModalWorkspace?.name })"
+      :error="deleteModalError"
+      :busy="deleting"
+      :disabled="!canConfirmDelete"
+      :confirm-label="$t('workspaces_page.delete')"
+      :busy-label="$t('workspaces_page.deleting')"
+      @cancel="closeDeleteModal"
+      @confirm="confirmDelete"
+    >
+      <div class="mt-4">
+        <label for="delete-confirm-name" class="block text-sm font-medium text-theme-text mb-1.5">
+          {{ $t('workspaces_page.type_to_confirm', { name: deleteModalWorkspace?.name }) }}
+        </label>
+        <input
+          id="delete-confirm-name"
+          v-model="deleteConfirmName"
+          type="text"
+          class="input-field"
+          :placeholder="deleteModalWorkspace?.name"
+          autocomplete="off"
+          :disabled="deleting"
+        />
+      </div>
+    </ConfirmModal>
   </div>
 </template>
 
@@ -338,11 +309,13 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { showFlash } from '@/lib/flash'
 import { useUrlPagination } from '@/lib/pagination'
 import { workspace_api } from '@/api'
 import { saveWorkspaceToStorage, removeWorkspaceFromStorage } from '@/utils/storage'
 import { canManageWorkspace, useWorkspaceContext } from '@/lib/permission'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -379,7 +352,7 @@ async function switchToWorkspace(workspace) {
     saveWorkspaceToStorage({ ...workspace, ...res.data, role: res.data.role })
     router.push('/dashboard')
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspaces_page.failed_switch')
+    errorMessage.value = errorText(err, t('workspaces_page.failed_switch'))
   } finally {
     switchLoadingId.value = null
   }
@@ -426,7 +399,7 @@ async function handleCreate() {
     await loadPage()
     showFlash(t('common.created'))
   } catch (err) {
-    createModalError.value = err.response?.data?.errorMessage || t('workspaces_page.failed_create')
+    createModalError.value = errorText(err, t('workspaces_page.failed_create'))
   } finally {
     createLoading.value = false
   }
@@ -452,7 +425,7 @@ async function handleUpdate() {
     await loadPage()
     showFlash(t('common.saved'))
   } catch (err) {
-    editModalError.value = err.response?.data?.errorMessage || t('workspaces_page.failed_update')
+    editModalError.value = errorText(err, t('workspaces_page.failed_update'))
   } finally {
     updateLoadingId.value = null
   }
@@ -493,7 +466,7 @@ async function loadPage() {
     workspaces.value = res.data.workspaces
     total.value = res.data._meta.total
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspaces_page.failed_load')
+    errorMessage.value = errorText(err, t('workspaces_page.failed_load'))
     workspaces.value = []
   } finally {
     loading.value = false
@@ -508,18 +481,10 @@ function goToPage(newOffset) {
 
 watch(() => route.query.page, loadPage)
 
-function openDeleteModal(workspace) {
-  deleteModalWorkspace.value = workspace
+function closeDeleteModal() {
+  deleteModalWorkspace.value = null
   deleteConfirmName.value = ''
   deleteModalError.value = null
-}
-
-function closeDeleteModal() {
-  if (!deleting.value) {
-    deleteModalWorkspace.value = null
-    deleteConfirmName.value = ''
-    deleteModalError.value = null
-  }
 }
 
 async function confirmDelete() {
@@ -535,13 +500,11 @@ async function confirmDelete() {
     if (currentWorkspace.id === workspace.id) {
       removeWorkspaceFromStorage()
     }
-    deleteModalWorkspace.value = null
-    deleteConfirmName.value = ''
-    deleteModalError.value = null
+    closeDeleteModal()
     await loadPage()
     showFlash(t('common.deleted'))
   } catch (err) {
-    deleteModalError.value = err.response?.data?.errorMessage || t('workspaces_page.failed_delete')
+    deleteModalError.value = errorText(err, t('workspaces_page.failed_delete'))
   } finally {
     deleting.value = false
     deletingId.value = null

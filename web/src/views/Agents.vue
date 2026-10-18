@@ -146,6 +146,7 @@ import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
 import { healthClass, healthDotClass, parseCard } from '@/lib/agent'
 import { formatRelative } from '@/utils/date'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -183,7 +184,7 @@ async function loadPage() {
     agents.value = res.data.agents || []
     total.value = res.data._meta?.total || 0
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('agents_page.failed_load')
+    errorMessage.value = errorText(err, t('agents_page.failed_load'))
     agents.value = []
     total.value = 0
   } finally {

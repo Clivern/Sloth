@@ -66,6 +66,7 @@ import { useRouter } from 'vue-router'
 import { setup_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import AppLogo from '@/components/AppLogo.vue'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -102,7 +103,7 @@ const handleSetup = async () => {
       router.push('/login')
     }, 2000)
   } catch (err) {
-    error.value = err.response?.data?.errorMessage || t('setup.error_default')
+    error.value = errorText(err, t('setup.error_default'))
   } finally {
     loading.value = false
   }

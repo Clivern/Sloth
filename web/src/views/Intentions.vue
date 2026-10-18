@@ -70,7 +70,7 @@
                     <button
                       type="button"
                       class="ml-4 font-medium text-red-600 hover:underline"
-                      @click="askDelete(rule)"
+                      @click="deleteTarget = rule"
                     >
                       {{ $t('intentions_page.delete') }}
                     </button>
@@ -200,43 +200,17 @@
       </div>
     </div>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="deleteTarget"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="intention-delete-title"
-          @click.self="closeDelete"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="intention-delete-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('intentions_page.delete_title') }}
-            </h2>
-            <div v-if="deleteError" class="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ deleteError }}
-            </div>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('intentions_page.delete_confirm', { source: deleteTarget?.source, destination: deleteTarget?.destination }) }}
-            </p>
-            <div class="mt-6 flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="deleting" @click="closeDelete">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deleting"
-                @click="confirmDelete"
-              >
-                {{ deleting ? $t('intentions_page.deleting') : $t('intentions_page.delete') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!deleteTarget"
+      :title="$t('intentions_page.delete_title')"
+      :message="$t('intentions_page.delete_confirm', { source: deleteTarget?.source, destination: deleteTarget?.destination })"
+      :error="deleteError"
+      :busy="deleting"
+      :confirm-label="$t('intentions_page.delete')"
+      :busy-label="$t('intentions_page.deleting')"
+      @cancel="closeDelete"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -245,9 +219,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { agent_api, intention_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -307,7 +283,7 @@ async function loadRules() {
     rules.value = res.data.intentions || []
     total.value = res.data._meta?.total || 0
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('intentions_page.failed_load')
+    errorMessage.value = errorText(err, t('intentions_page.failed_load'))
     rules.value = []
     total.value = 0
   } finally {
@@ -350,19 +326,15 @@ async function submit() {
     showForm.value = false
     await loadRules()
   } catch (err) {
-    formError.value = err.response?.data?.errorMessage || t('intentions_page.failed_save')
+    formError.value = errorText(err, t('intentions_page.failed_save'))
   } finally {
     saving.value = false
   }
 }
 
-function askDelete(rule) {
-  deleteTarget.value = rule
-  deleteError.value = null
-}
-
 function closeDelete() {
   deleteTarget.value = null
+  deleteError.value = null
 }
 
 async function confirmDelete() {
@@ -374,7 +346,7 @@ async function confirmDelete() {
     deleteTarget.value = null
     await loadRules()
   } catch (err) {
-    deleteError.value = err.response?.data?.errorMessage || t('intentions_page.failed_delete')
+    deleteError.value = errorText(err, t('intentions_page.failed_delete'))
   } finally {
     deleting.value = false
   }

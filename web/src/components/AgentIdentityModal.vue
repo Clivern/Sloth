@@ -95,6 +95,7 @@
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { agent_identity_api } from '@/api'
+import { errorText } from '@/lib/error'
 
 const props = defineProps({
   open: {
@@ -149,7 +150,7 @@ async function submit() {
     const res = await agent_identity_api.create(props.workspaceId, props.agentName, body)
     emit('saved', res.data)
   } catch (err) {
-    error.value = err.response?.data?.errorMessage || t('agents_page.identity_failed_save')
+    error.value = errorText(err, t('agents_page.identity_failed_save'))
   } finally {
     saving.value = false
   }

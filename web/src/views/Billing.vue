@@ -184,6 +184,7 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
 import { billing_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
+import { errorText } from '@/lib/error'
 
 const { t, locale } = useI18n()
 const { currentWorkspace } = useWorkspaceContext()
@@ -360,7 +361,7 @@ const loadBilling = async () => {
     billingStatus.value = statusRes.data
     usageData.value = usageRes.data
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('billing_page.failed_load')
+    errorMessage.value = errorText(err, t('billing_page.failed_load'))
   } finally {
     billingLoading.value = false
   }
@@ -373,7 +374,7 @@ const buyCredits = async () => {
     const res = await billing_api.checkout(currentWorkspace.id, { amountCents: amountCents.value })
     window.location.href = res.data.url
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('billing_page.failed_checkout')
+    errorMessage.value = errorText(err, t('billing_page.failed_checkout'))
   } finally {
     checkoutLoading.value = false
   }
@@ -388,7 +389,7 @@ const openPortal = async () => {
     const res = await billing_api.portal(currentWorkspace.id)
     window.location.href = res.data.url
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('billing_page.failed_portal')
+    errorMessage.value = errorText(err, t('billing_page.failed_portal'))
   } finally {
     portalLoading.value = false
   }

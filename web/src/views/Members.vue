@@ -169,6 +169,7 @@ import { showFlash } from '@/lib/flash'
 import { workspace_invite_api, workspace_member_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { useI18n } from 'vue-i18n'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const { currentUser, currentWorkspace } = useWorkspaceContext()
@@ -218,7 +219,7 @@ async function loadMembers() {
     const res = await workspace_member_api.list(currentWorkspace.id, { limit: 100, offset: 0 })
     members.value = res.data.members || []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_load_members')
+    errorMessage.value = errorText(err, t('members_page.failed_load_members'))
     members.value = []
   } finally {
     loadingMembers.value = false
@@ -233,7 +234,7 @@ async function loadInvites() {
     const res = await workspace_invite_api.list(currentWorkspace.id, { limit: 100, offset: 0 })
     invites.value = (res.data.invites || []).filter((invite) => invite.status === 'pending')
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_load_invites')
+    errorMessage.value = errorText(err, t('members_page.failed_load_invites'))
     invites.value = []
   } finally {
     loadingInvites.value = false
@@ -254,7 +255,7 @@ async function createInvite() {
     await loadInvites()
     showFlash(t('common.sent'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_create_invite')
+    errorMessage.value = errorText(err, t('members_page.failed_create_invite'))
   } finally {
     inviteLoading.value = false
   }
@@ -270,7 +271,7 @@ async function updateMemberRole(member, role) {
     await loadMembers()
     showFlash(t('common.saved'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_update_member')
+    errorMessage.value = errorText(err, t('members_page.failed_update_member'))
     await loadMembers()
   } finally {
     updatingMemberId.value = null
@@ -287,7 +288,7 @@ async function deleteMember(member) {
     await loadMembers()
     showFlash(t('common.deleted'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_remove_member')
+    errorMessage.value = errorText(err, t('members_page.failed_remove_member'))
   } finally {
     deletingMemberId.value = null
   }
@@ -303,7 +304,7 @@ async function deleteInvite(invite) {
     await loadInvites()
     showFlash(t('common.cancelled'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('members_page.failed_cancel_invite')
+    errorMessage.value = errorText(err, t('members_page.failed_cancel_invite'))
   } finally {
     deletingInviteId.value = null
   }

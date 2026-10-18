@@ -160,6 +160,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { agent_check_api } from '@/api'
 import { AGENT_NAME_PATTERN } from '@/lib/agent'
+import { errorText } from '@/lib/error'
 
 const props = defineProps({
   open: {
@@ -266,7 +267,7 @@ async function submit() {
     const res = await agent_check_api.upsert(props.workspaceId, props.agentName, checkId, payload())
     emit('saved', res.data)
   } catch (err) {
-    error.value = err.response?.data?.errorMessage || t('agents_page.check_failed_save')
+    error.value = errorText(err, t('agents_page.check_failed_save'))
   } finally {
     saving.value = false
   }

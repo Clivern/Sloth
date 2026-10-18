@@ -247,7 +247,7 @@
                         type="button"
                         class="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
                         :disabled="deletingId === key.id"
-                        @click="openRevokeModal(key)"
+                        @click="revokeModalKey = key"
                       >
                         {{ deletingId === key.id ? $t('workspace_settings_page.revoking') : $t('workspace_settings_page.revoke') }}
                       </button>
@@ -261,47 +261,18 @@
       </div>
     </main>
 
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="revokeModalKey"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="revoke-access-key-title"
-          @click.self="closeRevokeModal"
-        >
-          <div class="w-full max-w-md rounded-xl bg-white border border-theme-border shadow-xl p-6">
-            <h2 id="revoke-access-key-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('workspace_settings_page.revoke_title') }}
-            </h2>
-            <p class="mt-2 text-sm text-theme-textLight">
-              {{ $t('workspace_settings_page.revoke_confirm', { name: revokeModalKey.name }) }}
-            </p>
-            <div class="mt-6 flex flex-row-reverse gap-3">
-              <button
-                type="button"
-                class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                :disabled="deletingId === revokeModalKey?.id"
-                @click="confirmRevokeKey"
-              >
-                {{ deletingId === revokeModalKey?.id ? $t('workspace_settings_page.revoking') : $t('workspace_settings_page.revoke') }}
-              </button>
-              <button type="button" class="btn-secondary" :disabled="deletingId === revokeModalKey?.id" @click="closeRevokeModal">
-                {{ $t('common.cancel') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
+    <ConfirmModal
+      :open="!!revokeModalKey"
+      :title="$t('workspace_settings_page.revoke_title')"
+      :message="$t('workspace_settings_page.revoke_confirm', { name: revokeModalKey?.name })"
+      :busy="!!deletingId"
+      :confirm-label="$t('workspace_settings_page.revoke')"
+      :busy-label="$t('workspace_settings_page.revoking')"
+      @cancel="revokeModalKey = null"
+      @confirm="confirmRevokeKey"
+    />
 
+    <Teleport to="body">
       <Transition
         enter-active-class="transition ease-out duration-200"
         enter-from-class="opacity-0"
@@ -354,10 +325,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/components/AppNav.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { workspace_api, workspace_access_key_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { WORKSPACE_KEY_PERMISSION_GROUPS, WORKSPACE_KEY_PERMISSIONS, useWorkspaceContext } from '@/lib/permission'
 import { saveWorkspaceToStorage } from '@/utils/storage'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 
@@ -429,14 +402,6 @@ function closePermissionsModal() {
   permissionsModalKey.value = null
 }
 
-function openRevokeModal(key) {
-  revokeModalKey.value = key
-}
-
-function closeRevokeModal() {
-  if (!deletingId.value) revokeModalKey.value = null
-}
-
 async function confirmRevokeKey() {
   const key = revokeModalKey.value
   if (!key) return
@@ -450,7 +415,7 @@ async function confirmRevokeKey() {
     newlyCreatedKey.value = null
     revokeModalKey.value = null
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspace_settings_page.failed_revoke_key')
+    errorMessage.value = errorText(err, t('workspace_settings_page.failed_revoke_key'))
   } finally {
     deletingId.value = null
   }
@@ -478,7 +443,7 @@ async function loadWorkspace() {
     workspaceName.value = res.data.name ?? ''
     saveWorkspaceToStorage({ ...currentWorkspace, ...res.data, role: res.data.role ?? currentWorkspace.role })
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspace_settings_page.failed_load_workspace')
+    errorMessage.value = errorText(err, t('workspace_settings_page.failed_load_workspace'))
   } finally {
     workspaceLoading.value = false
   }
@@ -497,7 +462,7 @@ async function handleSaveWorkspace() {
     saveWorkspaceToStorage({ ...currentWorkspace, ...res.data, role: res.data.role ?? currentWorkspace.role })
     showFlash(t('workspace_settings_page.workspace_saved'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspace_settings_page.failed_save_workspace')
+    errorMessage.value = errorText(err, t('workspace_settings_page.failed_save_workspace'))
   } finally {
     savingWorkspace.value = false
   }
@@ -511,7 +476,7 @@ async function loadAccessKeys() {
     const res = await workspace_access_key_api.list(currentWorkspace.id, { limit: 100, offset: 0 })
     accessKeys.value = res.data.keys ?? []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspace_settings_page.failed_load_keys')
+    errorMessage.value = errorText(err, t('workspace_settings_page.failed_load_keys'))
   } finally {
     accessKeysLoading.value = false
   }
@@ -543,7 +508,7 @@ async function handleCreateKey() {
     newKeyExpiresAt.value = ''
     await loadAccessKeys()
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('workspace_settings_page.failed_create_key')
+    errorMessage.value = errorText(err, t('workspace_settings_page.failed_create_key'))
   } finally {
     creatingKey.value = false
   }

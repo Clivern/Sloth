@@ -111,6 +111,7 @@ import { useI18n } from 'vue-i18n'
 import { workspace_api } from '@/api'
 import { loadWorkspaceFromStorage, saveWorkspaceToStorage } from '@/utils/storage'
 import AppLogo from '@/components/AppLogo.vue'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -167,7 +168,7 @@ async function loadWorkspaces() {
     const res = await workspace_api.list({})
     workspaces.value = res.data?.workspaces ?? []
   } catch (err) {
-    error.value = err.response?.data?.errorMessage || t('select_workspace.failed_load')
+    error.value = errorText(err, t('select_workspace.failed_load'))
     workspaces.value = []
   }
 }
@@ -188,7 +189,7 @@ async function handleCreate() {
       createModalError.value = 'Invalid response'
     }
   } catch (err) {
-    createModalError.value = err.response?.data?.errorMessage || 'Failed to create workspace'
+    createModalError.value = errorText(err, 'Failed to create workspace')
   } finally {
     createLoading.value = false
   }

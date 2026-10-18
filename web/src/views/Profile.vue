@@ -221,7 +221,7 @@
                         type="button"
                         class="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
                         :disabled="deletingId === key.id"
-                        @click="openRevokeModal(key)"
+                        @click="revokeModalKey = key"
                       >
                         {{ deletingId === key.id ? $t('profile.revoking') : $t('profile.revoke') }}
                       </button>
@@ -235,75 +235,29 @@
       </main>
     </div>
 
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition ease-out duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition ease-in duration-150"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="revokeModalKey"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="revoke-modal-title"
-          @click.self="closeRevokeModal"
-        >
-          <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-          >
-            <div
-              v-if="revokeModalKey"
-              class="w-full max-w-md rounded-xl bg-white border border-theme-border shadow-xl p-6"
-            >
-              <h2 id="revoke-modal-title" class="text-lg font-semibold text-theme-text">
-                {{ $t('profile.revoke_title') }}
-              </h2>
-              <p class="mt-2 text-sm text-theme-textLight">
-                {{ $t('profile.revoke_confirm', { name: revokeModalKey.name }) }}
-              </p>
-              <div class="mt-6 flex flex-row-reverse gap-3">
-                <button
-                  type="button"
-                  class="btn-primary bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                  :disabled="deletingId === revokeModalKey?.id"
-                  @click="confirmRevokeKey"
-                >
-                  {{ deletingId === revokeModalKey?.id ? $t('profile.revoking') : $t('profile.revoke') }}
-                </button>
-                <button
-                  type="button"
-                  class="btn-secondary"
-                  :disabled="deletingId === revokeModalKey?.id"
-                  @click="closeRevokeModal"
-                >
-                  {{ $t('common.cancel') }}
-                </button>
-              </div>
-            </div>
-          </Transition>
-        </div>
-      </Transition>
-    </Teleport>
+    <ConfirmModal
+      :open="!!revokeModalKey"
+      :title="$t('profile.revoke_title')"
+      :message="$t('profile.revoke_confirm', { name: revokeModalKey?.name })"
+      :busy="!!deletingId"
+      :confirm-label="$t('profile.revoke')"
+      :busy-label="$t('profile.revoking')"
+      @cancel="revokeModalKey = null"
+      @confirm="confirmRevokeKey"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, watchEffect, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api_keys_api, auth_api } from '@/api'
 import AppNav from '@/components/AppNav.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 import { showFlash } from '@/lib/flash'
 import { user, saveUser } from '@/lib/auth'
 import { applyUserPreferences, USER_LANGUAGE_EN, USER_THEME_DEFAULT } from '@/lib/preferences'
+import { errorText } from '@/lib/error'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -339,20 +293,6 @@ watch(user, (userData) => {
   }
 }, { immediate: true, deep: true })
 
-watchEffect(() => {
-  if (!revokeModalKey.value) {
-    document.body.style.overflow = ''
-    return
-  }
-  document.body.style.overflow = 'hidden'
-  const onEsc = (e) => { if (e.key === 'Escape') closeRevokeModal() }
-  document.addEventListener('keydown', onEsc)
-  return () => {
-    document.body.style.overflow = ''
-    document.removeEventListener('keydown', onEsc)
-  }
-})
-
 function formatDate(iso) {
   if (!iso) return '—'
   try {
@@ -379,7 +319,7 @@ async function loadApiKeys() {
     const res = await api_keys_api.list({ limit: 100, offset: 0 })
     apiKeys.value = res.data.keys ?? []
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('profile.failed_load_api_keys')
+    errorMessage.value = errorText(err, t('profile.failed_load_api_keys'))
   } finally {
     apiKeysLoading.value = false
   }
@@ -407,7 +347,7 @@ async function handleCreateKey() {
     newKeyExpiresAt.value = ''
     await loadApiKeys()
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('profile.failed_create_key')
+    errorMessage.value = errorText(err, t('profile.failed_create_key'))
   } finally {
     creatingKey.value = false
   }
@@ -419,11 +359,6 @@ function copyKeyToClipboard() {
     keyCopied.value = true
     setTimeout(() => { keyCopied.value = false }, 2000)
   })
-}
-
-function openRevokeModal(key) { revokeModalKey.value = key }
-function closeRevokeModal() {
-  if (!deletingId.value) revokeModalKey.value = null
 }
 
 async function confirmRevokeKey() {
@@ -439,7 +374,7 @@ async function confirmRevokeKey() {
     newlyCreatedKey.value = null
     revokeModalKey.value = null
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('profile.failed_revoke_key')
+    errorMessage.value = errorText(err, t('profile.failed_revoke_key'))
   } finally {
     deletingId.value = null
   }
@@ -461,7 +396,7 @@ async function handleSave() {
     applyUserPreferences(res.data.user)
     showFlash(t('common.saved'))
   } catch (err) {
-    errorMessage.value = err.response?.data?.errorMessage || t('profile.update_failed')
+    errorMessage.value = errorText(err, t('profile.update_failed'))
   } finally {
     loading.value = false
   }
