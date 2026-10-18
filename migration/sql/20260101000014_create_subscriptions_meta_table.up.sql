@@ -1,4 +1,4 @@
-CREATE TABLE subscriptions_meta (
+CREATE TABLE IF NOT EXISTS subscriptions_meta (
 	id UUID PRIMARY KEY,
 	subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
 	key VARCHAR(60) NOT NULL,

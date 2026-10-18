@@ -53,5 +53,5 @@ Feature: Who am I
 
   @readonly
   Scenario: A garbage session cookie is refused
-    When a request GETs /api/v1/me with cookie _cognit_session "spec-<runId>-garbage"
+    When a request GETs /api/v1/me with cookie _sloth_session "spec-<runId>-garbage"
     Then the response is 401

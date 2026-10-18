@@ -1,4 +1,4 @@
-CREATE TABLE user_api_keys (
+CREATE TABLE IF NOT EXISTS user_api_keys (
 	id UUID PRIMARY KEY,
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	name VARCHAR(60) NOT NULL,
@@ -7,4 +7,4 @@ CREATE TABLE user_api_keys (
 	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
-CREATE INDEX idx_user_api_keys_token ON user_api_keys(token);
+CREATE INDEX IF NOT EXISTS idx_user_api_keys_token ON user_api_keys(token);

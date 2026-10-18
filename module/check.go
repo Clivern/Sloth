@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/locale"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/locale"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
@@ -103,6 +103,11 @@ func NewCheck(agents db.AgentRepository, agentChecks db.AgentCheckRepository, in
 func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offset int) (*ListAgentChecksResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -111,18 +116,33 @@ func (c *Check) ListAgentChecks(workspaceId db.Id, agentName string, limit, offs
 
 	total, err := c.AgentCheckRepository.CountByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to count agent checks")
 		return nil, err
 	}
 
 	templates, err := c.AgentCheckRepository.ListPageByAgentId(agent.Id, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to list agent checks")
 		return nil, err
 	}
 
 	list := make([]*AgentCheckResponse, 0, len(templates))
 	for _, template := range templates {
 		var definition CheckDefinition
-		_ = json.Unmarshal([]byte(template.Definition), &definition)
+		if err := json.Unmarshal([]byte(template.Definition), &definition); err != nil {
+			log.Warn().
+				Err(err).
+				Str("checkId", template.CheckId).
+				Msg("Failed to decode check definition")
+		}
 
 		list = append(list, &AgentCheckResponse{
 			CheckId:   template.CheckId,
@@ -183,10 +203,23 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		}
 	}
 
-	raw, _ := json.Marshal(definition)
+	raw, err := json.Marshal(definition)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("checkId", checkId).
+			Msg("Failed to encode check definition")
+		return nil, false, err
+	}
 
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, false, err
 	}
 	if agent == nil {
@@ -195,6 +228,12 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 
 	template, err := c.AgentCheckRepository.GetByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("checkId", checkId).
+			Msg("Failed to get agent check")
 		return nil, false, err
 	}
 
@@ -217,20 +256,47 @@ func (c *Check) UpsertAgentCheck(workspaceId db.Id, agentName, checkId string, r
 		err = c.AgentCheckRepository.Update(template)
 	}
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("checkId", checkId).
+			Msg("Failed to save agent check")
 		return nil, false, err
 	}
 
 	instances, err := c.InstanceRepository.ListByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to list agent instances")
 		return nil, false, err
 	}
 
 	for _, instance := range instances {
 		err = c.SyncInstanceCheck(instance.Id, template, lang)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("agentName", agentName).
+				Str("instanceId", instance.Id.String()).
+				Str("checkId", checkId).
+				Msg("Failed to sync instance check")
 			return nil, false, err
 		}
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("checkId", checkId).
+		Str("type", template.Type).
+		Bool("created", created).
+		Int("instances", len(instances)).
+		Msg("Agent check upserted")
 
 	return &AgentCheckResponse{
 		CheckId:   template.CheckId,
@@ -253,10 +319,20 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lan
 	isPull := template.Type == db.HealthCheckTypeHTTP || template.Type == db.HealthCheckTypeTCP
 
 	var definition CheckDefinition
-	_ = json.Unmarshal([]byte(template.Definition), &definition)
+	if err := json.Unmarshal([]byte(template.Definition), &definition); err != nil {
+		log.Warn().
+			Err(err).
+			Str("checkId", template.CheckId).
+			Msg("Failed to decode check definition")
+	}
 
 	existing, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instanceId, template.CheckId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("instanceId", instanceId.String()).
+			Str("checkId", template.CheckId).
+			Msg("Failed to get instance check")
 		return err
 	}
 
@@ -264,6 +340,11 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lan
 	if existing != nil && existing.Type != template.Type {
 		err = c.HealthCheckRepository.Delete(existing.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("instanceId", instanceId.String()).
+				Str("checkId", template.CheckId).
+				Msg("Failed to reset instance check")
 			return err
 		}
 
@@ -286,7 +367,22 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lan
 			existing.NextRunAt = &now
 		}
 
-		return c.HealthCheckRepository.Update(existing)
+		err = c.HealthCheckRepository.Update(existing)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("instanceId", instanceId.String()).
+				Str("checkId", template.CheckId).
+				Msg("Failed to update instance check")
+			return err
+		}
+
+		log.Debug().
+			Str("instanceId", instanceId.String()).
+			Str("checkId", template.CheckId).
+			Msg("Instance check updated")
+
+		return nil
 	}
 
 	check := &db.HealthCheck{
@@ -310,13 +406,33 @@ func (c *Check) SyncInstanceCheck(instanceId db.Id, template *db.AgentCheck, lan
 		check.TTLExpiresAt = &expiresAt
 	}
 
-	return c.HealthCheckRepository.Create(check)
+	err = c.HealthCheckRepository.Create(check)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("instanceId", instanceId.String()).
+			Str("checkId", template.CheckId).
+			Msg("Failed to create instance check")
+		return err
+	}
+
+	log.Debug().
+		Str("instanceId", instanceId.String()).
+		Str("checkId", template.CheckId).
+		Msg("Instance check created")
+
+	return nil
 }
 
 // DeleteAgentCheck removes an agent check template and its copies on every instance.
 func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) error {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return err
 	}
 	if agent == nil {
@@ -325,6 +441,12 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 
 	template, err := c.AgentCheckRepository.GetByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("checkId", checkId).
+			Msg("Failed to get agent check")
 		return err
 	}
 	if template == nil {
@@ -333,16 +455,44 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 
 	err = c.HealthCheckRepository.DeleteByAgentAndCheckId(agent.Id, checkId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("checkId", checkId).
+			Msg("Failed to delete instance checks")
 		return err
 	}
 
-	return c.AgentCheckRepository.Delete(template.Id)
+	err = c.AgentCheckRepository.Delete(template.Id)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("checkId", checkId).
+			Msg("Failed to delete agent check")
+		return err
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("checkId", checkId).
+		Msg("Agent check deleted")
+
+	return nil
 }
 
 // ReportCheck records an instance's report for one of its TTL checks and restarts the TTL.
 func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest) (*HealthCheckResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -351,6 +501,12 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	instance, err := c.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to get agent instance")
 		return nil, err
 	}
 	if instance == nil {
@@ -359,6 +515,13 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	check, err := c.HealthCheckRepository.GetByInstanceAndCheckId(instance.Id, checkId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Str("checkId", checkId).
+			Msg("Failed to get instance check")
 		return nil, err
 	}
 	if check == nil {
@@ -370,7 +533,12 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	var definition CheckDefinition
 	if check.Definition != nil {
-		_ = json.Unmarshal([]byte(*check.Definition), &definition)
+		if err := json.Unmarshal([]byte(*check.Definition), &definition); err != nil {
+			log.Warn().
+				Err(err).
+				Str("checkId", check.CheckId).
+				Msg("Failed to decode check definition")
+		}
 	}
 
 	now := time.Now().UTC()
@@ -382,6 +550,13 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	err = c.HealthCheckRepository.Report(check.Id, status, output, &expiresAt)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Str("checkId", checkId).
+			Msg("Failed to report instance check")
 		return nil, err
 	}
 
@@ -395,6 +570,14 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 		LastRunAt:    &now,
 		Output:       lo.EmptyableToPtr(output),
 	}
+
+	log.Debug().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("instanceId", instanceId).
+		Str("checkId", checkId).
+		Str("status", status).
+		Msg("Instance check reported")
 
 	return response, nil
 }

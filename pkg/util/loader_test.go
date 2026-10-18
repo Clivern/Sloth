@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package util
@@ -35,11 +35,11 @@ func TestUnitLoader(t *testing.T) {
 		t.Cleanup(viper.Reset)
 
 		configPath := filepath.Join(t.TempDir(), "config.yaml")
-		content := []byte("app:\n  name: cognit\n  port: 8080\n")
+		content := []byte("app:\n  name: sloth\n  port: 8080\n")
 		assert.NoError(t, os.WriteFile(configPath, content, 0644))
 
 		assert.NoError(t, LoadConfigs(configPath))
-		assert.Equal(t, "cognit", viper.GetString("app.name"))
+		assert.Equal(t, "sloth", viper.GetString("app.name"))
 		assert.Equal(t, 8080, viper.GetInt("app.port"))
 
 		assert.Error(t, LoadConfigs(filepath.Join(t.TempDir(), "missing.yaml")))

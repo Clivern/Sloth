@@ -1,13 +1,13 @@
-# Cognit API
+# Sloth API
 
-Cognit is a control plane for AI agents that speak the [A2A protocol](https://a2a-protocol.org/v1.0.0/specification/). A2A standardizes how you talk to an agent (Agent Card, messages, tasks). It does not standardize a registry. Cognit fills that gap: workspace-scoped catalog, health, policy, and a gateway in front of A2A.
+Sloth is a control plane for AI agents that speak the [A2A protocol](https://a2a-protocol.org/v1.0.0/specification/). A2A standardizes how you talk to an agent (Agent Card, messages, tasks). It does not standardize a registry. Sloth fills that gap: workspace-scoped catalog, health, policy, and a gateway in front of A2A.
 
 Isolation is a **workspace**. Catalog, health, intentions, KV, and A2A routing never cross that boundary. A2A v1.0 still names its routing key `tenant` on `AgentInterface` and as an operation path parameter — set that field to the workspace id.
 
 Base URL:
 
 ```
-https://cognit.example.com
+https://sloth.example.com
 ```
 
 | Plane | Role |
@@ -67,9 +67,9 @@ GET    /v1/workspaces/{workspace}/catalog/skills/{skill}/agents
 { "version": "1.4.0", "cardPath": "/.well-known/agent-card.json" }
 ```
 
-`cardPath` is optional and defaults to `/.well-known/agent-card.json`. When an instance registers (`PUT .../agents/{agent}/instances/{id}` with `address` and `port`) and the agent has no card yet, Cognit fetches it from `{address}:{port}{cardPath}` over https, falling back to http.
+`cardPath` is optional and defaults to `/.well-known/agent-card.json`. When an instance registers (`PUT .../agents/{agent}/instances/{id}` with `address` and `port`) and the agent has no card yet, Sloth fetches it from `{address}:{port}{cardPath}` over https, falling back to http.
 
-Cognit overwrites every `supportedInterfaces[].url`, and a legacy top-level `url` if present, with the gateway URL (`{app.url}/api/v1/workspaces/{workspace}/a2a/agents/{agent}`) before storing the fetched card, so the stored card, its checksum, and the well-known card all match. The first card stored wins; changing the agent's version or card path clears it so the next instance to register supplies it again. Until then the well-known card returns 404.
+Sloth overwrites every `supportedInterfaces[].url`, and a legacy top-level `url` if present, with the gateway URL (`{app.url}/api/v1/workspaces/{workspace}/a2a/agents/{agent}`) before storing the fetched card, so the stored card, its checksum, and the well-known card all match. The first card stored wins; changing the agent's version or card path clears it so the next instance to register supplies it again. Until then the well-known card returns 404.
 
 `GET .../catalog/agents` returns healthy instances and cards.
 
@@ -122,8 +122,8 @@ An instance's status is the worst status across its checks, in this order: criti
 Check types:
 
 - **TTL heartbeat** — the instance reports pass, warn or fail before the TTL runs out. Use any check ID, such as `heartbeat`.
-- **HTTP** (`http`) — Cognit requests `path` on the instance; 2xx is passing, 429 is warning, anything else is critical.
-- **TCP** (`tcp`) — Cognit opens a connection to the instance address and port.
+- **HTTP** (`http`) — Sloth requests `path` on the instance; 2xx is passing, 429 is warning, anything else is critical.
+- **TCP** (`tcp`) — Sloth opens a connection to the instance address and port.
 
 Planned:
 
@@ -162,7 +162,7 @@ Resolve body:
 }
 ```
 
-Response is the card the caller should use, with `supportedInterfaces[0].url` pointed at Cognit’s gateway (not the raw pod IP). A2A’s `tenant` field is the workspace id:
+Response is the card the caller should use, with `supportedInterfaces[0].url` pointed at Sloth’s gateway (not the raw pod IP). A2A’s `tenant` field is the workspace id:
 
 ```json
 {
@@ -171,7 +171,7 @@ Response is the card the caller should use, with `supportedInterfaces[0].url` po
   "card": {
     "supportedInterfaces": [
       {
-        "url": "https://cognit.example.com/v1/workspaces/acme/a2a/agents/invoice-extractor",
+        "url": "https://sloth.example.com/v1/workspaces/acme/a2a/agents/invoice-extractor",
         "protocolBinding": "HTTP+JSON",
         "protocolVersion": "1.0",
         "tenant": "acme"
@@ -248,12 +248,12 @@ GET  /v1/workspaces/{workspace}/agents/{agent}/extendedAgentCard
 GET  /.well-known/agent-card.json
 ```
 
-The last one is Cognit itself (directory / router agent). Per-agent cards are what callers cache. The per-agent card is served as `application/json` with `Cache-Control: no-cache` and a strong `ETag` set to the card checksum (SHA-256 of the stored card), so `If-None-Match` returns 304 until the card changes. It returns 404 until an instance has supplied the card.
+The last one is Sloth itself (directory / router agent). Per-agent cards are what callers cache. The per-agent card is served as `application/json` with `Cache-Control: no-cache` and a strong `ETag` set to the card checksum (SHA-256 of the stored card), so `If-None-Match` returns 304 until the card changes. It returns 404 until an instance has supplied the card.
 
 If you need a public hostname per agent:
 
 ```
-GET  https://{agent}.{workspace}.cognit.example.com/.well-known/agent-card.json
+GET  https://{agent}.{workspace}.sloth.example.com/.well-known/agent-card.json
 ```
 
 That still resolves to the same card, with `supportedInterfaces` aimed at the gateway.
@@ -311,7 +311,7 @@ POST   /v1/workspaces/{workspace}/a2a/skills/{skill}/tasks/{id}:cancel
 POST   /v1/workspaces/{workspace}/a2a/skills/{skill}/tasks/{id}:subscribe
 ```
 
-`{skill}` is `invoice.extract`. Cognit resolves, checks intentions, picks a healthy instance, and forwards the A2A call. Task IDs stay sticky to the instance that accepted the first message.
+`{skill}` is `invoice.extract`. Sloth resolves, checks intentions, picks a healthy instance, and forwards the A2A call. Task IDs stay sticky to the instance that accepted the first message.
 
 ---
 
@@ -372,4 +372,4 @@ Thin slice that is already a useful A2A core:
 
 KV, watches, saved queries, and skill-addressed routing come after that.
 
-A2A’s job is the card plus message and task verbs. Cognit’s job is who is registered, who is healthy, who is allowed to call, and which instance gets the RPC — with workspace as a hard path boundary.
+A2A’s job is the card plus message and task verbs. Sloth’s job is who is registered, who is healthy, who is allowed to call, and which instance gets the RPC — with workspace as a hard path boundary.

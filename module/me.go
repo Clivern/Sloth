@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -81,6 +82,9 @@ func (m *Me) GetBySession(user *db.User) *MeSessionResponse {
 func (m *Me) GetByAPIKey(key string) (*MeAPIKeyResponse, error) {
 	apiKey, err := m.APIKeyRepository.GetByKey(key)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to get API key")
 		return nil, err
 	}
 	if apiKey == nil {
@@ -89,6 +93,10 @@ func (m *Me) GetByAPIKey(key string) (*MeAPIKeyResponse, error) {
 
 	owner, err := m.UserRepository.GetById(apiKey.UserId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("apiKeyId", apiKey.Id.String()).
+			Msg("Failed to get API key owner")
 		return nil, err
 	}
 	if owner == nil {
@@ -121,6 +129,9 @@ func (m *Me) GetByAPIKey(key string) (*MeAPIKeyResponse, error) {
 func (m *Me) GetByAccessKey(key string) (*MeAccessKeyResponse, error) {
 	accessKey, err := m.AccessKeyRepository.GetByKey(key)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to get access key")
 		return nil, err
 	}
 	if accessKey == nil {
@@ -130,6 +141,10 @@ func (m *Me) GetByAccessKey(key string) (*MeAccessKeyResponse, error) {
 	var meta AccessKeyMeta
 	err = json.Unmarshal([]byte(*accessKey.Meta), &meta)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", accessKey.Id.String()).
+			Msg("Failed to decode access key meta")
 		return nil, err
 	}
 

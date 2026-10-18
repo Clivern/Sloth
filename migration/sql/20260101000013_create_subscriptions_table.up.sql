@@ -1,4 +1,4 @@
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
 	id UUID PRIMARY KEY,
 	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
 	provider_customer_id VARCHAR(200),

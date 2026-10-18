@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/module"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/module"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -136,7 +136,7 @@ func TestUnitLogoutAction(t *testing.T) {
 		)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Header().Get("Set-Cookie"), "_cognit_session=")
+		assert.Contains(t, w.Header().Get("Set-Cookie"), "_sloth_session=")
 	})
 
 	t.Run("still returns 200 when session revocation fails", func(t *testing.T) {

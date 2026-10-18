@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/conf"
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/conf"
+	"github.com/clivern/sloth/db"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -97,6 +97,10 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -105,11 +109,21 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 
 	existingUser, err := i.UserRepository.GetByEmail(req.Email)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("email", req.Email).
+			Msg("Failed to get user by email")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateInvite, err)
 	}
 	if existingUser != nil {
 		membership, err := i.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, existingUser.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("userId", existingUser.Id.String()).
+				Msg("Failed to get workspace membership")
 			return nil, fmt.Errorf("%w: %v", ErrFailedCreateInvite, err)
 		}
 		if membership != nil {
@@ -119,6 +133,11 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 
 	count, err := i.UserInviteRepository.CountPendingByEmailInWorkspace(workspaceId, req.Email)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("email", req.Email).
+			Msg("Failed to count pending invites")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateInvite, err)
 	}
 	if count > 0 {
@@ -127,6 +146,10 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 
 	token, err := uuid.NewRandom()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to generate invite token")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateInvite, err)
 	}
 
@@ -143,8 +166,21 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 
 	err = i.UserInviteRepository.Create(invite)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("email", req.Email).
+			Msg("Failed to create invite")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateInvite, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("inviteId", invite.Id.String()).
+		Str("userId", inviter.Id.String()).
+		Str("email", req.Email).
+		Str("role", req.Role).
+		Msg("Workspace invite created")
 
 	purl := viper.GetString("app.url")
 	pname := viper.GetString("app.name")
@@ -188,7 +224,11 @@ func (i *Invite) CreateInvite(workspaceId db.Id, req *CreateInviteRequest, invit
 // ListInvites returns paginated invites for a workspace.
 func (i *Invite) ListInvites(workspaceId db.Id, limit, offset int) (*ListInvitesResponse, error) {
 	count, err := i.UserInviteRepository.MarkExpiredAsExpired()
-	if err == nil && count > 0 {
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to mark expired invites")
+	} else if count > 0 {
 		log.Info().
 			Int64("count", count).
 			Msg("Expired invites marked")
@@ -196,11 +236,19 @@ func (i *Invite) ListInvites(workspaceId db.Id, limit, offset int) (*ListInvites
 
 	total, err := i.UserInviteRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count invites")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInvites, err)
 	}
 
 	invites, err := i.UserInviteRepository.ListByWorkspaceId(workspaceId, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list invites")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInvites, err)
 	}
 
@@ -232,7 +280,11 @@ func (i *Invite) ListInvites(workspaceId db.Id, limit, offset int) (*ListInvites
 // GetInvite returns one invite by Id within a workspace.
 func (i *Invite) GetInvite(workspaceId, inviteId db.Id) (*InviteResponse, error) {
 	count, err := i.UserInviteRepository.MarkExpiredAsExpired()
-	if err == nil && count > 0 {
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to mark expired invites")
+	} else if count > 0 {
 		log.Info().
 			Int64("count", count).
 			Msg("Expired invites marked")
@@ -240,6 +292,10 @@ func (i *Invite) GetInvite(workspaceId, inviteId db.Id) (*InviteResponse, error)
 
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -248,6 +304,11 @@ func (i *Invite) GetInvite(workspaceId, inviteId db.Id) (*InviteResponse, error)
 
 	invite, err := i.UserInviteRepository.GetById(inviteId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("inviteId", inviteId.String()).
+			Msg("Failed to get invite")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInvite, err)
 	}
 	if invite == nil || invite.WorkspaceId != workspaceId {
@@ -278,6 +339,10 @@ func (i *Invite) GetInvite(workspaceId, inviteId db.Id) (*InviteResponse, error)
 func (i *Invite) DeleteInvite(workspaceId, inviteId db.Id) error {
 	workspace, err := i.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return err
 	}
 	if workspace == nil {
@@ -286,6 +351,11 @@ func (i *Invite) DeleteInvite(workspaceId, inviteId db.Id) error {
 
 	invite, err := i.UserInviteRepository.GetById(inviteId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("inviteId", inviteId.String()).
+			Msg("Failed to get invite")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteInvite, err)
 	}
 	if invite == nil || invite.WorkspaceId != workspaceId {
@@ -294,8 +364,18 @@ func (i *Invite) DeleteInvite(workspaceId, inviteId db.Id) error {
 
 	err = i.UserInviteRepository.Delete(inviteId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("inviteId", inviteId.String()).
+			Msg("Failed to delete invite")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteInvite, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("inviteId", inviteId.String()).
+		Msg("Workspace invite deleted")
 
 	return nil
 }
@@ -304,11 +384,19 @@ func (i *Invite) DeleteInvite(workspaceId, inviteId db.Id) error {
 func (i *Invite) AttachPending(user *db.User) error {
 	_, err := i.UserInviteRepository.MarkExpiredAsExpired()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to mark expired invites")
 		return fmt.Errorf("%w: %v", ErrFailedAttachInvites, err)
 	}
 
 	invites, err := i.UserInviteRepository.ListPendingByEmail(user.Email)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to list pending invites")
 		return fmt.Errorf("%w: %v", ErrFailedAttachInvites, err)
 	}
 
@@ -316,6 +404,11 @@ func (i *Invite) AttachPending(user *db.User) error {
 	for _, invite := range invites {
 		membership, err := i.WorkspaceUserRepository.GetByWorkspaceAndUser(invite.WorkspaceId, user.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("workspaceId", invite.WorkspaceId.String()).
+				Msg("Failed to get workspace membership")
 			return fmt.Errorf("%w: %v", ErrFailedAttachInvites, err)
 		}
 		if membership == nil {
@@ -325,12 +418,22 @@ func (i *Invite) AttachPending(user *db.User) error {
 				Role:        invite.Role,
 			})
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("userId", user.Id.String()).
+					Str("workspaceId", invite.WorkspaceId.String()).
+					Msg("Failed to add workspace member")
 				return fmt.Errorf("%w: %v", ErrFailedAttachInvites, err)
 			}
 		}
 
 		err = i.UserInviteRepository.UpdateStatus(invite.Id, InviteStatusAccepted, &now)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("inviteId", invite.Id.String()).
+				Msg("Failed to accept invite")
 			return fmt.Errorf("%w: %v", ErrFailedAttachInvites, err)
 		}
 

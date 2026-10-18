@@ -1,15 +1,15 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package stripe
 
 import (
-	"github.com/clivern/cognit/conf"
+	"github.com/clivern/sloth/conf"
 	"github.com/spf13/viper"
 	stripesdk "github.com/stripe/stripe-go/v87"
 )
 
-// Client wraps the Stripe SDK using cognit billing configuration.
+// Client wraps the Stripe SDK using sloth billing configuration.
 type Client struct {
 	api    *stripesdk.Client
 	config Config

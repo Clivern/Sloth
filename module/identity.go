@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -11,8 +11,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -29,7 +29,7 @@ var (
 	ErrInvalidClient         = errors.New("invalid client")
 )
 
-// IdentityConfig is the JSON shape stored in agent_identity.config.
+// IdentityConfig is the JSON shape stored in ai_agent_identity.config.
 type IdentityConfig struct {
 	Username   string `json:"username,omitempty"`
 	SecretHash string `json:"secretHash"`
@@ -90,6 +90,11 @@ func NewIdentity(agents db.AgentRepository, identities db.AgentIdentityRepositor
 func (i *Identity) ListIdentities(workspaceId db.Id, agentName string) ([]*IdentityResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -98,13 +103,23 @@ func (i *Identity) ListIdentities(workspaceId db.Id, agentName string) ([]*Ident
 
 	identities, err := i.IdentityRepository.ListByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to list agent identities")
 		return nil, err
 	}
 
 	list := make([]*IdentityResponse, 0, len(identities))
 	for _, identity := range identities {
 		var config IdentityConfig
-		_ = json.Unmarshal([]byte(identity.Config), &config)
+		if err := json.Unmarshal([]byte(identity.Config), &config); err != nil {
+			log.Warn().
+				Err(err).
+				Str("identityId", identity.Id.String()).
+				Msg("Failed to decode identity config")
+		}
 
 		list = append(list, &IdentityResponse{
 			Id:        identity.Id,
@@ -129,6 +144,11 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -137,6 +157,12 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 
 	existing, err := i.IdentityRepository.GetByAgentAndName(agent.Id, req.Name)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("identityName", req.Name).
+			Msg("Failed to get agent identity")
 		return nil, err
 	}
 	if existing != nil {
@@ -147,6 +173,11 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 
 	hash, err := util.HashPassword(secret)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to hash identity secret")
 		return nil, err
 	}
 
@@ -155,7 +186,15 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 		config.TokenTTL = lo.Ternary(req.TokenTTL == 0, DefaultIdentityTokenTTL, req.TokenTTL)
 	}
 
-	raw, _ := json.Marshal(config)
+	raw, err := json.Marshal(config)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to encode identity config")
+		return nil, err
+	}
 
 	identity := &db.AgentIdentity{
 		AgentId:  agent.Id,
@@ -167,8 +206,20 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 
 	err = i.IdentityRepository.Create(identity)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to create agent identity")
 		return nil, err
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("identityId", identity.Id.String()).
+		Str("type", identity.Type).
+		Msg("Agent identity created")
 
 	return &IdentityResponse{
 		Id:        identity.Id,
@@ -187,6 +238,11 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id, req *UpdateIdentityRequest) (*IdentityResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -195,6 +251,12 @@ func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id,
 
 	identity, err := i.IdentityRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("identityId", id.String()).
+			Msg("Failed to get agent identity")
 		return nil, err
 	}
 	if identity == nil || identity.AgentId != agent.Id {
@@ -204,6 +266,12 @@ func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id,
 	if req.Name != identity.Name {
 		existing, err := i.IdentityRepository.GetByAgentAndName(agent.Id, req.Name)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("agentName", agentName).
+				Str("identityName", req.Name).
+				Msg("Failed to get agent identity")
 			return nil, err
 		}
 		if existing != nil {
@@ -216,11 +284,29 @@ func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id,
 
 	err = i.IdentityRepository.Update(identity)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("identityId", id.String()).
+			Msg("Failed to update agent identity")
 		return nil, err
 	}
 
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("identityId", identity.Id.String()).
+		Bool("isActive", identity.IsActive).
+		Msg("Agent identity updated")
+
 	var config IdentityConfig
-	_ = json.Unmarshal([]byte(identity.Config), &config)
+	if err := json.Unmarshal([]byte(identity.Config), &config); err != nil {
+		log.Warn().
+			Err(err).
+			Str("identityId", identity.Id.String()).
+			Msg("Failed to decode identity config")
+	}
 
 	return &IdentityResponse{
 		Id:        identity.Id,
@@ -238,6 +324,11 @@ func (i *Identity) UpdateIdentity(workspaceId db.Id, agentName string, id db.Id,
 func (i *Identity) DeleteIdentity(workspaceId db.Id, agentName string, id db.Id) error {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return err
 	}
 	if agent == nil {
@@ -246,38 +337,81 @@ func (i *Identity) DeleteIdentity(workspaceId db.Id, agentName string, id db.Id)
 
 	identity, err := i.IdentityRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("identityId", id.String()).
+			Msg("Failed to get agent identity")
 		return err
 	}
 	if identity == nil || identity.AgentId != agent.Id {
 		return ErrIdentityNotFound
 	}
 
-	return i.IdentityRepository.Delete(identity.Id)
+	err = i.IdentityRepository.Delete(identity.Id)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("identityId", identity.Id.String()).
+			Msg("Failed to delete agent identity")
+		return err
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("identityId", identity.Id.String()).
+		Msg("Agent identity deleted")
+
+	return nil
 }
 
 // IssueToken exchanges a client credentials identity's id and secret for a short-lived access token.
 func (i *Identity) IssueToken(clientId, clientSecret string) (*IssueTokenResponse, error) {
 	if uuid.Validate(clientId) != nil {
+		log.Warn().
+			Msg("Token request with malformed client id")
 		return nil, ErrInvalidClient
 	}
 
 	identity, err := i.IdentityRepository.GetById(db.Id(clientId))
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("clientId", clientId).
+			Msg("Failed to get agent identity")
 		return nil, err
 	}
 	if identity == nil || identity.Type != db.AgentIdentityTypeClientCredentials || !identity.IsActive {
+		log.Warn().
+			Str("clientId", clientId).
+			Msg("Token request for unknown or inactive client")
 		return nil, ErrInvalidClient
 	}
 
 	var config IdentityConfig
-	_ = json.Unmarshal([]byte(identity.Config), &config)
+	if err := json.Unmarshal([]byte(identity.Config), &config); err != nil {
+		log.Warn().
+			Err(err).
+			Str("identityId", identity.Id.String()).
+			Msg("Failed to decode identity config")
+	}
 
 	if !util.ComparePassword(config.SecretHash, clientSecret) {
+		log.Warn().
+			Str("clientId", clientId).
+			Msg("Token request with invalid client secret")
 		return nil, ErrInvalidClient
 	}
 
 	count, err := i.TokenRepository.DeleteExpired()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to delete expired identity tokens")
 		return nil, err
 	}
 	if count > 0 {
@@ -295,8 +429,17 @@ func (i *Identity) IssueToken(clientId, clientSecret string) (*IssueTokenRespons
 		ExpiresAt:  time.Now().UTC().Add(time.Duration(config.TokenTTL) * time.Second),
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("clientId", clientId).
+			Msg("Failed to create identity token")
 		return nil, err
 	}
+
+	log.Info().
+		Str("clientId", clientId).
+		Int("expiresIn", config.TokenTTL).
+		Msg("Identity token issued")
 
 	return &IssueTokenResponse{
 		AccessToken: accessToken,

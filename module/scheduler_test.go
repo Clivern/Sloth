@@ -1,15 +1,18 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,4 +76,35 @@ func TestUnitScheduler(t *testing.T) {
 	assert.Equal(t, "10.0.12.41", job.Address)
 	assert.Equal(t, 8080, job.Port)
 	assert.JSONEq(t, definition, string(job.Definition))
+}
+
+func TestUnitSchedulerMissedRun(t *testing.T) {
+	var out bytes.Buffer
+	logger := log.Logger
+	log.Logger = zerolog.New(&out)
+	defer func() { log.Logger = logger }()
+
+	now := time.Now().UTC()
+	definition := `{"interval":30}`
+	recent := now.Add(-30 * time.Second)
+	stale := now.Add(-10 * time.Minute)
+	instances := &schedulerInstances{
+		instance: &db.AgentInstance{Address: "10.0.12.41", Port: 8080},
+	}
+
+	checks := &schedulerChecks{due: []*db.HealthCheck{
+		{Id: "fresh", Type: db.HealthCheckTypeHTTP, Definition: &definition, CreatedAt: now},
+		{Id: "recent", Type: db.HealthCheckTypeHTTP, Definition: &definition, CreatedAt: stale, LastRunAt: &recent},
+	}}
+	require.NoError(t, NewScheduler(checks, instances, &schedulerPublisher{}).Tick(now))
+	assert.NotContains(t, out.String(), "missed")
+
+	checks = &schedulerChecks{due: []*db.HealthCheck{
+		{Id: "never", Type: db.HealthCheckTypeHTTP, Definition: &definition, CreatedAt: stale},
+		{Id: "stale", Type: db.HealthCheckTypeTCP, Definition: &definition, CreatedAt: stale, LastRunAt: &stale},
+		{Id: "recent", Type: db.HealthCheckTypeHTTP, Definition: &definition, CreatedAt: stale, LastRunAt: &recent},
+	}}
+	require.NoError(t, NewScheduler(checks, instances, &schedulerPublisher{}).Tick(now))
+	assert.Contains(t, out.String(), `"level":"warn"`)
+	assert.Contains(t, out.String(), `"missed":2`)
 }

@@ -1,6 +1,6 @@
 # Agent guide
 
-You do two jobs: **announce yourself**, then **look up other cards when a user ask needs a skill you do not have**. You never call another agent’s IP. You ask Cognit, then send A2A through the gateway.
+You do two jobs: **announce yourself**, then **look up other cards when a user ask needs a skill you do not have**. You never call another agent’s IP. You ask Sloth, then send A2A through the gateway.
 
 Assume workspace `acme`, you are `support-assistant`, instance `support-assistant-1`.
 
@@ -29,7 +29,7 @@ Content-Type: application/json
 { "address": "10.0.12.20", "port": 8080 }
 ```
 
-While the agent has no card, Cognit fetches it from the registering instance at `https://10.0.12.20:8080{cardPath}`, falling back to `http`. It replaces `supportedInterfaces[].url` (and a legacy top-level `url`, if present) with the gateway URL before storing it, so the URL your card advertises is overwritten. The first card stored wins; bumping the agent's version or card path clears it so the next instance to register supplies a fresh one. A failed fetch does not fail the instance registration.
+While the agent has no card, Sloth fetches it from the registering instance at `https://10.0.12.20:8080{cardPath}`, falling back to `http`. It replaces `supportedInterfaces[].url` (and a legacy top-level `url`, if present) with the gateway URL before storing it, so the URL your card advertises is overwritten. The first card stored wins; bumping the agent's version or card path clears it so the next instance to register supplies a fresh one. A failed fetch does not fail the instance registration.
 
 Then define a heartbeat check on your agent, and report it before its TTL runs out:
 
@@ -40,7 +40,7 @@ PUT /v1/workspaces/acme/agents/support-assistant/checks/heartbeat
 POST /v1/workspaces/acme/agents/support-assistant/instances/support-assistant-1/checks/heartbeat/pass
 ```
 
-If the TTL runs out, Cognit marks you critical and drops you from discovery. Other agents will not see you.
+If the TTL runs out, Sloth marks you critical and drops you from discovery. Other agents will not see you.
 
 You are now listed. You are not allowed to call others until an intention says so. Discovery can still show you cards; the gateway blocks the actual `message:send` if policy denies it.
 
@@ -97,7 +97,7 @@ or:
 GET /v1/workspaces/acme/discover?tags=profile&passing=true
 ```
 
-Fuzzy search over descriptions is your job (or a small local ranker). Cognit returns **structured cards**, not a chatbot answer.
+Fuzzy search over descriptions is your job (or a small local ranker). Sloth returns **structured cards**, not a chatbot answer.
 
 **Read the card before you call.** Either the discover response already includes it, or:
 
@@ -138,7 +138,7 @@ Example of what you learn:
   ],
   "supportedInterfaces": [
     {
-      "url": "https://cognit.example.com/v1/workspaces/acme/a2a/agents/user-directory",
+      "url": "https://sloth.example.com/v1/workspaces/acme/a2a/agents/user-directory",
       "protocolBinding": "HTTP+JSON",
       "protocolVersion": "1.0",
       "tenant": "acme"
@@ -147,7 +147,7 @@ Example of what you learn:
 }
 ```
 
-If you want Cognit to pick a healthy instance for you:
+If you want Sloth to pick a healthy instance for you:
 
 ```http
 POST /v1/workspaces/acme/discover/resolve
@@ -164,7 +164,7 @@ POST /v1/workspaces/acme/discover/resolve
 
 ## 4. Call that agent
 
-Do not use the worker’s private address. Use the URL from the card (Cognit’s gateway), or skip the name and address the skill:
+Do not use the worker’s private address. Use the URL from the card (Sloth’s gateway), or skip the name and address the skill:
 
 ```http
 POST /v1/workspaces/acme/a2a/skills/user.profile.get/message:send

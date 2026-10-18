@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package middleware
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/conf"
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/conf"
+	"github.com/clivern/sloth/db"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

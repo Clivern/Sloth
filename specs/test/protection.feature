@@ -1,8 +1,8 @@
 Feature: Agent protection
 
-  Protection is the credential Cognit's gateway presents to an agent when it
+  Protection is the credential Sloth's gateway presents to an agent when it
   forwards a call: an API key in a header, or basic auth. An agent has at most
-  one. If Cognit generates the secret it is shown once; a secret the user
+  one. If Sloth generates the secret it is shown once; a secret the user
   supplied is never echoed back.
 
   Routes (shapes in openapi.yaml):

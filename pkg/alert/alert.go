@@ -1,37 +1,28 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package alert
 
 import "context"
 
-const (
-	// StatusFiring means the condition is active and needs attention.
-	StatusFiring = "firing"
-	// StatusResolved means a previously firing condition has cleared.
-	StatusResolved = "resolved"
-	// SeverityCritical is for outages that need an immediate response.
-	SeverityCritical = "critical"
-	// SeverityError is for failures that need prompt attention.
-	SeverityError = "error"
-	// SeverityWarning is for degraded conditions that may need attention.
-	SeverityWarning = "warning"
-	// SeverityInfo is for informational events.
-	SeverityInfo = "info"
-)
-
-// Alert is a provider-neutral alert sent to a notifier.
-type Alert struct {
-	Key      string
-	Status   string
-	Severity string
-	Source   string
-	Title    string
-	Message  string
-	Details  map[string]string
+// Event is the workspace event body sent to an integration destination.
+type Event struct {
+	Id           string            `json:"id"`
+	EventId      string            `json:"eventId"`
+	Event        string            `json:"event"`
+	WorkspaceId  string            `json:"workspaceId"`
+	ActorId      string            `json:"actorId,omitempty"`
+	ActorName    string            `json:"actorName,omitempty"`
+	ActorType    string            `json:"actorType,omitempty"`
+	ResourceType string            `json:"resourceType,omitempty"`
+	ResourceId   string            `json:"resourceId,omitempty"`
+	IPAddress    string            `json:"ipAddress,omitempty"`
+	UserAgent    string            `json:"userAgent,omitempty"`
+	OccurredAt   string            `json:"occurredAt"`
+	Data         map[string]string `json:"data"`
 }
 
-// Notifier delivers an alert to one destination.
-type Notifier interface {
-	Send(ctx context.Context, a Alert) error
+// Sender delivers an event to one integration destination.
+type Sender interface {
+	Send(ctx context.Context, e Event) error
 }

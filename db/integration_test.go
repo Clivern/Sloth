@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -19,6 +19,7 @@ func TestIntegrationIntegrationsRepository(t *testing.T) {
 		Type:        "webhook",
 		Name:        "alerts",
 		Config:      stringPtr(`{"url":"https://example.test"}`),
+		IsActive:    true,
 	}
 
 	t.Run("create and get", func(t *testing.T) {
@@ -27,14 +28,17 @@ func TestIntegrationIntegrationsRepository(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, got)
 		assert.Equal(t, "webhook", got.Type)
+		assert.True(t, got.IsActive)
 	})
 
 	t.Run("update", func(t *testing.T) {
 		item.Name = "alerts-prod"
+		item.IsActive = false
 		require.NoError(t, repo.Update(item))
 		got, err := repo.GetById(item.Id)
 		require.NoError(t, err)
 		assert.Equal(t, "alerts-prod", got.Name)
+		assert.False(t, got.IsActive)
 	})
 
 	t.Run("list and count", func(t *testing.T) {
@@ -45,6 +49,28 @@ func TestIntegrationIntegrationsRepository(t *testing.T) {
 		count, err := repo.CountByWorkspaceId(workspace.Id)
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), count)
+	})
+
+	t.Run("list active by event", func(t *testing.T) {
+		subscribed := &Integration{
+			WorkspaceId: workspace.Id,
+			Type:        "slack",
+			Name:        "ops",
+			Config:      stringPtr(`{"url":"https://example.test","events":["catalog.changed","audit.log"]}`),
+			IsActive:    true,
+		}
+		require.NoError(t, repo.Create(subscribed))
+
+		list, err := repo.ListActiveByEvent(workspace.Id, "catalog.changed")
+		require.NoError(t, err)
+		require.Len(t, list, 1)
+		assert.Equal(t, subscribed.Id, list[0].Id)
+
+		list, err = repo.ListActiveByEvent(workspace.Id, "gateway.call.denied")
+		require.NoError(t, err)
+		assert.Empty(t, list)
+
+		require.NoError(t, repo.Delete(subscribed.Id))
 	})
 
 	t.Run("delete", func(t *testing.T) {

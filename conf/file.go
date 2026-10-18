@@ -1,10 +1,10 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package conf
 
 import (
-	"github.com/clivern/cognit/mails"
+	"github.com/clivern/sloth/mails"
 )
 
 var (

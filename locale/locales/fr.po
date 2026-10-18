@@ -447,6 +447,18 @@ msgstr "Action d'intention invalide."
 msgid "failed_intention_request"
 msgstr "Impossible de traiter la requête d'intention."
 
+msgid "integration_not_found"
+msgstr "Intégration introuvable."
+
+msgid "invalid_integration_id"
+msgstr "ID d'intégration invalide."
+
+msgid "invalid_integration_config"
+msgstr "Paramètres d'intégration invalides pour ce type."
+
+msgid "failed_integration_request"
+msgstr "Impossible de traiter la requête d'intégration."
+
 msgid "kv_not_found"
 msgstr "Clé introuvable."
 
@@ -509,3 +521,15 @@ msgstr "Route introuvable."
 
 msgid "invalid_request"
 msgstr "Requête invalide."
+
+msgid "invalid_event_id"
+msgstr "Identifiant d'événement invalide."
+
+msgid "event_not_found"
+msgstr "Événement introuvable."
+
+msgid "failed_list_events"
+msgstr "Échec du listage des événements."
+
+msgid "failed_get_event"
+msgstr "Échec de la lecture de l'événement."

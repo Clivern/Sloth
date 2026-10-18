@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export const CONSENT_STORAGE_KEY = 'cognit_cookie_consent'
+export const CONSENT_STORAGE_KEY = 'sloth_cookie_consent'
 export const CONSENT_VERSION = 1
 
 export const showCookieBanner = ref(false)

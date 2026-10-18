@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -90,11 +91,19 @@ func NewIntention(intentions db.IntentionRepository, workspaces db.WorkspaceRepo
 func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListIntentionsResponse, error) {
 	total, err := i.IntentionRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count intentions")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListIntentions, err)
 	}
 
 	intentions, err := i.IntentionRepository.ListByWorkspaceId(workspaceId, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list intentions")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListIntentions, err)
 	}
 
@@ -119,6 +128,11 @@ func (i *Intention) ListIntentions(workspaceId db.Id, limit, offset int) (*ListI
 func (i *Intention) GetIntention(workspaceId, intentionId db.Id) (*IntentionResponse, error) {
 	intention, err := i.IntentionRepository.GetById(intentionId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to get intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetIntention, err)
 	}
 	if intention == nil || intention.WorkspaceId != workspaceId {
@@ -158,8 +172,20 @@ func (i *Intention) CreateIntention(workspaceId db.Id, req *SaveIntentionRequest
 	}
 	err := i.IntentionRepository.Create(intention)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to create intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateIntention, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("intentionId", intention.Id.String()).
+		Str("source", intention.SourceAgent).
+		Str("destination", intention.DestinationAgent).
+		Str("action", intention.Action).
+		Msg("Intention created")
 
 	return &IntentionResponse{
 		Id:          intention.Id,
@@ -181,6 +207,11 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 
 	intention, err := i.IntentionRepository.GetById(intentionId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to get intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedUpdateIntention, err)
 	}
 	if intention == nil || intention.WorkspaceId != workspaceId {
@@ -199,13 +230,31 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 	intention.Action = req.Action
 	err = i.IntentionRepository.Update(intention)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to update intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedUpdateIntention, err)
 	}
 
 	intention, err = i.IntentionRepository.GetById(intention.Id)
 	if err != nil || intention == nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to reload intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedUpdateIntention, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("intentionId", intention.Id.String()).
+		Str("source", intention.SourceAgent).
+		Str("destination", intention.DestinationAgent).
+		Str("action", intention.Action).
+		Msg("Intention updated")
 
 	return &IntentionResponse{
 		Id:          intention.Id,
@@ -223,6 +272,11 @@ func (i *Intention) UpdateIntention(workspaceId, intentionId db.Id, req *SaveInt
 func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
 	intention, err := i.IntentionRepository.GetById(intentionId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to get intention")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteIntention, err)
 	}
 	if intention == nil || intention.WorkspaceId != workspaceId {
@@ -231,8 +285,18 @@ func (i *Intention) DeleteIntention(workspaceId, intentionId db.Id) error {
 
 	err = i.IntentionRepository.Delete(intention.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("intentionId", intentionId.String()).
+			Msg("Failed to delete intention")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteIntention, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("intentionId", intentionId.String()).
+		Msg("Intention deleted")
 
 	return nil
 }
@@ -246,11 +310,33 @@ func (i *Intention) CheckIntention(workspaceId db.Id, req *CheckIntentionRequest
 		req.Destination.Skill,
 	)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("source", req.Source.Agent).
+			Str("destination", req.Destination.Agent).
+			Str("skill", req.Destination.Skill).
+			Msg("Failed to match intention")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCheckIntention, err)
 	}
 	if intention == nil {
+		log.Debug().
+			Str("workspaceId", workspaceId.String()).
+			Str("source", req.Source.Agent).
+			Str("destination", req.Destination.Agent).
+			Str("skill", req.Destination.Skill).
+			Msg("No intention matched, call denied")
 		return &CheckIntentionResponse{Action: db.IntentionActionDeny}, nil
 	}
+
+	log.Debug().
+		Str("workspaceId", workspaceId.String()).
+		Str("intentionId", intention.Id.String()).
+		Str("source", req.Source.Agent).
+		Str("destination", req.Destination.Agent).
+		Str("skill", req.Destination.Skill).
+		Str("action", intention.Action).
+		Msg("Intention matched")
 
 	return &CheckIntentionResponse{
 		Action: intention.Action,

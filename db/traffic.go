@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -64,7 +64,7 @@ func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 	call.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO traffic (
+		`INSERT INTO ai_traffic (
 			id, workspace_id, source_instance, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta
 		)
@@ -92,7 +92,7 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 			id, workspace_id, source_instance, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
-		FROM traffic
+		FROM ai_traffic
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -124,7 +124,7 @@ func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, off
 			id, workspace_id, source_instance, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
-		FROM traffic
+		FROM ai_traffic
 		WHERE workspace_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3`,
@@ -170,7 +170,7 @@ func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, off
 func (r *TrafficRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM traffic WHERE workspace_id = $1`,
+		`SELECT COUNT(*) FROM ai_traffic WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
 

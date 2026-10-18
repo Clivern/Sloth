@@ -1,4 +1,4 @@
-CREATE TABLE workspaces_meta (
+CREATE TABLE IF NOT EXISTS workspaces_meta (
 	id UUID PRIMARY KEY,
 	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
 	key VARCHAR(60) NOT NULL,

@@ -1,7 +1,7 @@
 [project]
-name = "cognit-agents-poc"
+name = "sloth-agents-poc"
 version = "0.1.0"
-description = "Cognit Agents"
+description = "Sloth Agents"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",

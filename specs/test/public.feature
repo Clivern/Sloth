@@ -72,7 +72,7 @@ Feature: Public routes
     When a request with no credentials POSTs /api/v1/public/action/logout
     Then the response is 200
     And the body has a successMessage
-    And the response clears the _cognit_session cookie
+    And the response clears the _sloth_session cookie
 
   # ---------------------------------------------------------------------------
   # OAuth sign-in
@@ -97,7 +97,7 @@ Feature: Public routes
       with no state cookie
     Then the response is 302
     And Location ends with "/login?oauth_error=<provider>"
-    And the response sets no _cognit_session cookie
+    And the response sets no _sloth_session cookie
 
     Examples:
       | provider |

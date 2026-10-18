@@ -1,4 +1,4 @@
-CREATE TABLE users_meta (
+CREATE TABLE IF NOT EXISTS users_meta (
 	id UUID PRIMARY KEY,
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	key VARCHAR(60) NOT NULL,
@@ -7,4 +7,4 @@ CREATE TABLE users_meta (
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	UNIQUE (user_id, key)
 );
-CREATE INDEX idx_users_meta_user_id_key ON users_meta(user_id, key);
+CREATE INDEX IF NOT EXISTS idx_users_meta_user_id_key ON users_meta(user_id, key);

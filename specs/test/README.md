@@ -1,6 +1,6 @@
 # API Specs
 
-Each `.feature` file describes how one area of the Cognit API must behave. An agent runs them against a live server with real HTTP requests and reports what passed.
+Each `.feature` file describes how one area of the Sloth API must behave. An agent runs them against a live server with real HTTP requests and reports what passed.
 
 ## Running
 

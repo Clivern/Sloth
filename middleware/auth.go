@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package middleware
@@ -7,10 +7,10 @@ import (
 	"crypto/subtle"
 	"net/http"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/module"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/locale"
+	"github.com/clivern/sloth/module"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
@@ -90,7 +90,7 @@ func Auth() func(http.Handler) http.Handler {
 			}
 
 			// Session Token Check
-			sessionToken := util.GetCookie(r, "_cognit_session")
+			sessionToken := util.GetCookie(r, "_sloth_session")
 			if lo.IsEmpty(sessionToken) {
 				log.Info().
 					Str("path", r.URL.Path).
@@ -108,7 +108,7 @@ func Auth() func(http.Handler) http.Handler {
 
 			user, _, err := sessionManager.ValidateSession(sessionToken)
 			if err != nil {
-				util.DeleteCookie(w, "_cognit_session")
+				util.DeleteCookie(w, "_sloth_session")
 				if user != nil {
 					sessionManager.RevokeUserSessions(user.Id)
 				}

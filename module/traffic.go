@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -56,14 +57,21 @@ func NewTraffic(calls db.TrafficRepository, workspaces db.WorkspaceRepository) *
 
 // ListTraffic returns recorded gateway calls for a workspace.
 func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTrafficResponse, error) {
-
 	total, err := t.TrafficRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count traffic")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListTraffic, err)
 	}
 
 	calls, err := t.TrafficRepository.ListByWorkspaceId(workspaceId, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list traffic")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListTraffic, err)
 	}
 
@@ -91,9 +99,13 @@ func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTraffi
 
 // GetTraffic returns one gateway call by id.
 func (t *Traffic) GetTraffic(workspaceId, trafficId db.Id) (*TrafficCallResponse, error) {
-
 	call, err := t.TrafficRepository.GetById(trafficId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("trafficId", trafficId.String()).
+			Msg("Failed to get traffic")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetTraffic, err)
 	}
 	if call == nil || call.WorkspaceId != workspaceId {

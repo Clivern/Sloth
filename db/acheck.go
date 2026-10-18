@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -51,7 +51,7 @@ func (r *AgentCheckRepositoryPostgres) Create(check *AgentCheck) error {
 	check.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_checks (id, agent_id, check_id, name, type, definition)
+		`INSERT INTO ai_agent_checks (id, agent_id, check_id, name, type, definition)
 		VALUES ($1, $2, $3, $4, $5, $6::jsonb)
 		RETURNING created_at, updated_at`,
 		check.Id.String(),
@@ -68,7 +68,7 @@ func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId 
 	check := &AgentCheck{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
-		FROM agent_checks
+		FROM ai_agent_checks
 		WHERE agent_id = $1 AND check_id = $2`,
 		agentId.String(),
 		checkId,
@@ -93,7 +93,7 @@ func (r *AgentCheckRepositoryPostgres) GetByAgentAndCheckId(agentId Id, checkId 
 func (r *AgentCheckRepositoryPostgres) Update(check *AgentCheck) error {
 	check.UpdatedAt = time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_checks
+		`UPDATE ai_agent_checks
 		SET name = $1, type = $2, definition = $3::jsonb, updated_at = $4
 		WHERE id = $5`,
 		check.Name,
@@ -108,7 +108,7 @@ func (r *AgentCheckRepositoryPostgres) Update(check *AgentCheck) error {
 
 // Delete removes an agent check template.
 func (r *AgentCheckRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM agent_checks WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_agent_checks WHERE id = $1`, id.String())
 
 	return err
 }
@@ -117,7 +117,7 @@ func (r *AgentCheckRepositoryPostgres) Delete(id Id) error {
 func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
-		FROM agent_checks
+		FROM ai_agent_checks
 		WHERE agent_id = $1
 		ORDER BY check_id`,
 		agentId.String(),
@@ -155,7 +155,7 @@ func (r *AgentCheckRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentCheck,
 func (r *AgentCheckRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentCheck, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, check_id, name, type, definition, created_at, updated_at
-		FROM agent_checks
+		FROM ai_agent_checks
 		WHERE agent_id = $1
 		ORDER BY check_id
 		LIMIT $2 OFFSET $3`,
@@ -196,7 +196,7 @@ func (r *AgentCheckRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offs
 func (r *AgentCheckRepositoryPostgres) CountByAgentId(agentId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM agent_checks WHERE agent_id = $1`,
+		`SELECT COUNT(*) FROM ai_agent_checks WHERE agent_id = $1`,
 		agentId.String(),
 	).Scan(&count)
 

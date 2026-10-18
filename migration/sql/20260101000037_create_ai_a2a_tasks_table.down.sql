@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS ai_a2a_tasks;

@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -8,8 +8,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -36,9 +37,6 @@ const (
 	CanGetAccessKey    = "CAN_GET_WORKSPACE_ACCESS_KEY"
 	CanDeleteAccessKey = "CAN_DELETE_WORKSPACE_ACCESS_KEY"
 
-	CanListWorkspaceAudits = "CAN_LIST_WORKSPACE_AUDITS"
-	CanGetWorkspaceAudit   = "CAN_GET_WORKSPACE_AUDIT"
-
 	CanListAgents  = "CAN_LIST_AGENTS"
 	CanGetAgent    = "CAN_GET_AGENT"
 	CanUpsertAgent = "CAN_UPSERT_AGENT"
@@ -55,6 +53,15 @@ const (
 	CanUpdateIntention = "CAN_UPDATE_INTENTION"
 	CanDeleteIntention = "CAN_DELETE_INTENTION"
 	CanCheckIntention  = "CAN_CHECK_INTENTION"
+
+	CanListIntegrations  = "CAN_LIST_INTEGRATIONS"
+	CanGetIntegration    = "CAN_GET_INTEGRATION"
+	CanCreateIntegration = "CAN_CREATE_INTEGRATION"
+	CanUpdateIntegration = "CAN_UPDATE_INTEGRATION"
+	CanDeleteIntegration = "CAN_DELETE_INTEGRATION"
+
+	CanListEvents = "CAN_LIST_EVENTS"
+	CanGetEvent   = "CAN_GET_EVENT"
 
 	CanListKeyValue   = "CAN_LIST_KEY_VALUE"
 	CanGetKeyValue    = "CAN_GET_KEY_VALUE"
@@ -93,9 +100,6 @@ var AccessKeyPermissions = map[string]bool{
 	CanGetAccessKey:    true,
 	CanDeleteAccessKey: true,
 
-	CanListWorkspaceAudits: true,
-	CanGetWorkspaceAudit:   true,
-
 	CanListAgents:  true,
 	CanGetAgent:    true,
 	CanUpsertAgent: true,
@@ -112,6 +116,15 @@ var AccessKeyPermissions = map[string]bool{
 	CanUpdateIntention: true,
 	CanDeleteIntention: true,
 	CanCheckIntention:  true,
+
+	CanListIntegrations:  true,
+	CanGetIntegration:    true,
+	CanCreateIntegration: true,
+	CanUpdateIntegration: true,
+	CanDeleteIntegration: true,
+
+	CanListEvents: true,
+	CanGetEvent:   true,
 
 	CanListKeyValue:   true,
 	CanGetKeyValue:    true,
@@ -171,23 +184,46 @@ func (p *Perm) WithWorkspaceId(workspaceId db.Id) *Perm {
 // Can reports whether the configured principal may perform the given permission on the workspace.
 func (p *Perm) Can(permission string) (bool, error) {
 	if p.workspace == nil {
+		log.Error().
+			Str("permission", permission).
+			Msg("Permission check without a workspace")
 		return false, ErrPermissionWorkspaceMissing
 	}
 
+	var allowed bool
+	var err error
 	switch {
 	case p.user != nil:
-		return p.CanAsUser(permission)
+		allowed, err = p.CanAsUser(permission)
 	case p.accessKey != nil:
-		return p.CanAsAccessKey(permission)
+		allowed, err = p.CanAsAccessKey(permission)
 	default:
+		log.Error().
+			Str("workspaceId", p.workspace.Id.String()).
+			Str("permission", permission).
+			Msg("Permission check without a principal")
 		return false, ErrPermissionPrincipalMissing
 	}
+
+	if err == nil && !allowed {
+		log.Debug().
+			Str("workspaceId", p.workspace.Id.String()).
+			Str("permission", permission).
+			Msg("Permission denied")
+	}
+
+	return allowed, err
 }
 
 // CanAsUser checks if the user has the given permission.
 func (p *Perm) CanAsUser(permission string) (bool, error) {
 	membership, err := p.WorkspaceRepository.GetWorkspaceMembership(p.workspace.Id, p.user.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", p.workspace.Id.String()).
+			Str("userId", p.user.Id.String()).
+			Msg("Failed to get workspace membership")
 		return false, err
 	}
 	if membership == nil {
@@ -223,8 +259,6 @@ func (p *Perm) CanAsUser(permission string) (bool, error) {
 		CanCreateAccessKey,
 		CanGetAccessKey,
 		CanDeleteAccessKey,
-		CanListWorkspaceAudits,
-		CanGetWorkspaceAudit,
 		CanUpsertAgent,
 		CanDeleteAgent,
 		CanRegisterInstance,
@@ -232,6 +266,13 @@ func (p *Perm) CanAsUser(permission string) (bool, error) {
 		CanCreateIntention,
 		CanUpdateIntention,
 		CanDeleteIntention,
+		CanListIntegrations,
+		CanGetIntegration,
+		CanCreateIntegration,
+		CanUpdateIntegration,
+		CanDeleteIntegration,
+		CanListEvents,
+		CanGetEvent,
 		CanPutKeyValue,
 		CanDeleteKeyValue:
 		return membership.Role == db.UserRoleAdmin || membership.Role == db.UserRoleOwner, nil
@@ -252,6 +293,10 @@ func (p *Perm) CanAsAccessKey(permission string) (bool, error) {
 	var meta AccessKeyMeta
 	err := json.Unmarshal([]byte(*p.accessKey.Meta), &meta)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", p.accessKey.Id.String()).
+			Msg("Failed to decode access key meta")
 		return false, err
 	}
 

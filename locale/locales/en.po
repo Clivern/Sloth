@@ -15,9 +15,6 @@ msgstr "An account with this email already exists."
 msgid "account_with_email_exists"
 msgstr "An account with this email already exists."
 
-msgid "audit_event_not_found"
-msgstr "Audit event not found."
-
 msgid "access_key_not_found"
 msgstr "Access key not found."
 
@@ -114,9 +111,6 @@ msgstr "Failed to delete user."
 msgid "failed_delete_workspace"
 msgstr "Failed to delete workspace."
 
-msgid "failed_get_audit"
-msgstr "Failed to get audit event."
-
 msgid "failed_get_access_key"
 msgstr "Failed to get access key."
 
@@ -143,9 +137,6 @@ msgstr "Failed to get profile."
 
 msgid "failed_get_me"
 msgstr "Failed to get authenticated principal."
-
-msgid "failed_list_audits"
-msgstr "Failed to list audit events."
 
 msgid "failed_list_access_keys"
 msgstr "Failed to list access keys."
@@ -206,9 +197,6 @@ msgstr "Failed to delete workspace member."
 
 msgid "forgot_password_success"
 msgstr "If an account exists for this email, you will receive a password reset link shortly."
-
-msgid "invalid_audit_id"
-msgstr "Invalid audit id."
 
 msgid "invalid_access_key_id"
 msgstr "Invalid access key ID."
@@ -459,6 +447,18 @@ msgstr "Invalid intention action."
 msgid "failed_intention_request"
 msgstr "Failed to complete the intention request."
 
+msgid "integration_not_found"
+msgstr "Integration not found."
+
+msgid "invalid_integration_id"
+msgstr "Invalid integration ID."
+
+msgid "invalid_integration_config"
+msgstr "Invalid integration settings for this type."
+
+msgid "failed_integration_request"
+msgstr "Failed to complete the integration request."
+
 msgid "kv_not_found"
 msgstr "Key not found."
 
@@ -521,3 +521,15 @@ msgstr "Route not found."
 
 msgid "invalid_request"
 msgstr "Invalid request."
+
+msgid "invalid_event_id"
+msgstr "Invalid event id."
+
+msgid "event_not_found"
+msgstr "Event not found."
+
+msgid "failed_list_events"
+msgstr "Failed to list events."
+
+msgid "failed_get_event"
+msgstr "Failed to get event."

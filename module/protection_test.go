@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/encrypt"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/encrypt"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,11 +67,11 @@ func TestUnitProtection(t *testing.T) {
 		got, err := f.protection.SaveProtection(
 			"ws-1",
 			"support-assistant",
-			&SaveProtectionRequest{Type: db.AgentProtectionTypeBasicAuth, Username: "cognit"},
+			&SaveProtectionRequest{Type: db.AgentProtectionTypeBasicAuth, Username: "sloth"},
 		)
 		require.NoError(t, err)
-		assert.Equal(t, "cognit", got.Username)
-		assert.Contains(t, f.protections.created[0].Config, `"username":"cognit"`)
+		assert.Equal(t, "sloth", got.Username)
+		assert.Contains(t, f.protections.created[0].Config, `"username":"sloth"`)
 	})
 
 	t.Run("save replaces the existing protection and turns it back on", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestUnitProtection(t *testing.T) {
 			Id:       "protection-1",
 			AgentId:  "agent-1",
 			Type:     db.AgentProtectionTypeBasicAuth,
-			Config:   `{"username":"cognit","secretEncrypted":"cipher"}`,
+			Config:   `{"username":"sloth","secretEncrypted":"cipher"}`,
 			IsActive: false,
 		}
 
@@ -115,7 +115,7 @@ func TestUnitProtection(t *testing.T) {
 		_, err := f.protection.SaveProtection(
 			"ws-1",
 			"support-assistant",
-			&SaveProtectionRequest{Type: db.AgentProtectionTypeAPIKey, Username: "cognit"},
+			&SaveProtectionRequest{Type: db.AgentProtectionTypeAPIKey, Username: "sloth"},
 		)
 		assert.ErrorIs(t, err, ErrInvalidProtectionConfig)
 	})

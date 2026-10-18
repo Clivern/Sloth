@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -66,6 +67,11 @@ func NewKeyValue(items db.WorkspaceKeyValueRepository, workspaces db.WorkspaceRe
 func (k *KeyValue) ListKeyValue(workspaceId db.Id, prefix string) (*ListKeyValueResponse, error) {
 	items, err := k.KeyValueRepository.ListByPrefix(workspaceId, strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(prefix))
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("prefix", prefix).
+			Msg("Failed to list workspace keys")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListKeyValue, err)
 	}
 
@@ -94,6 +100,11 @@ func (k *KeyValue) ListKeyValue(workspaceId db.Id, prefix string) (*ListKeyValue
 func (k *KeyValue) GetKeyValue(workspaceId db.Id, key string) (*KeyValueResponse, error) {
 	item, err := k.KeyValueRepository.Get(workspaceId, key)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("key", key).
+			Msg("Failed to get workspace key")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetKeyValue, err)
 	}
 	if item == nil {
@@ -133,6 +144,10 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 
 	workspace, err := k.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -157,8 +172,18 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 	}
 	err = k.KeyValueRepository.Upsert(item)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("key", key).
+			Msg("Failed to write workspace key")
 		return nil, fmt.Errorf("%w: %v", ErrFailedPutKeyValue, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("key", key).
+		Msg("Workspace key written")
 
 	var expiresAtText *string
 	if item.ExpiresAt != nil {
@@ -180,6 +205,11 @@ func (k *KeyValue) PutKeyValue(workspaceId db.Id, key string, req *PutKeyValueRe
 func (k *KeyValue) DeleteKeyValue(workspaceId db.Id, key string) error {
 	item, err := k.KeyValueRepository.Get(workspaceId, key)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("key", key).
+			Msg("Failed to get workspace key")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteKeyValue, err)
 	}
 	if item == nil {
@@ -188,8 +218,18 @@ func (k *KeyValue) DeleteKeyValue(workspaceId db.Id, key string) error {
 
 	err = k.KeyValueRepository.Delete(workspaceId, key)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("key", key).
+			Msg("Failed to delete workspace key")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteKeyValue, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("key", key).
+		Msg("Workspace key deleted")
 
 	return nil
 }

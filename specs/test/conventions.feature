@@ -80,7 +80,7 @@ Feature: API conventions
 
   @readonly
   Scenario: A resource id that is not a UUID is not a server error
-    When the user GETs keys/not-a-uuid, invites/not-a-uuid, audits/not-a-uuid,
+    When the user GETs keys/not-a-uuid, invites/not-a-uuid, events/not-a-uuid,
       traffic/not-a-uuid and intentions/not-a-uuid in the run's workspace
     Then each response is 400 or 404
     And none of them is 500

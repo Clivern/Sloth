@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/middleware"
-	"github.com/clivern/cognit/module"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/middleware"
+	"github.com/clivern/sloth/module"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -186,27 +186,6 @@ func newAPIKeyRouter(api *API) *chi.Mux {
 	router.Get("/api/v1/apiKeys/{apiKeyId}", api.GetUserAPIKeyAction)
 	router.Delete("/api/v1/apiKeys/{apiKeyId}", api.DeleteUserAPIKeyAction)
 	return router
-}
-
-type fakeAuditEvents struct {
-	db.AuditEventRepository
-	event   *db.AuditEvent
-	events  []*db.AuditEvent
-	total   int64
-	getErr  error
-	listErr error
-}
-
-func (f *fakeAuditEvents) GetById(id db.Id) (*db.AuditEvent, error) {
-	return f.event, f.getErr
-}
-
-func (f *fakeAuditEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
-	return f.total, f.listErr
-}
-
-func (f *fakeAuditEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AuditEvent, error) {
-	return f.events, f.listErr
 }
 
 type fakeSubscriptionRecords struct {
@@ -592,6 +571,58 @@ func newIntentionRouter(api *API) *chi.Mux {
 	return router
 }
 
+type fakeIntegrations struct {
+	db.IntegrationRepository
+	integration *db.Integration
+	list        []*db.Integration
+	total       int64
+	getErr      error
+	listErr     error
+	createErr   error
+	updateErr   error
+	deleteErr   error
+}
+
+func (f *fakeIntegrations) Create(integration *db.Integration) error {
+	return f.createErr
+}
+
+func (f *fakeIntegrations) GetById(id db.Id) (*db.Integration, error) {
+	return f.integration, f.getErr
+}
+
+func (f *fakeIntegrations) Update(integration *db.Integration) error {
+	return f.updateErr
+}
+
+func (f *fakeIntegrations) Delete(id db.Id) error {
+	return f.deleteErr
+}
+
+func (f *fakeIntegrations) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
+	return f.total, f.listErr
+}
+
+func (f *fakeIntegrations) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Integration, error) {
+	return f.list, f.listErr
+}
+
+func newIntegrationAPI(integrations *fakeIntegrations) *API {
+	return &API{
+		Integration: module.NewIntegration(integrations),
+	}
+}
+
+func newIntegrationRouter(api *API) *chi.Mux {
+	router := chi.NewRouter()
+	router.Get("/api/v1/workspaces/{workspaceId}/integrations", api.ListIntegrationsAction)
+	router.Post("/api/v1/workspaces/{workspaceId}/integrations", api.CreateIntegrationAction)
+	router.Get("/api/v1/workspaces/{workspaceId}/integrations/{integrationId}", api.GetIntegrationAction)
+	router.Put("/api/v1/workspaces/{workspaceId}/integrations/{integrationId}", api.UpdateIntegrationAction)
+	router.Delete("/api/v1/workspaces/{workspaceId}/integrations/{integrationId}", api.DeleteIntegrationAction)
+	return router
+}
+
 type fakeInvites struct {
 	db.UserInviteRepository
 	invite    *db.UserInvite
@@ -928,5 +959,39 @@ func newProtectionRouter(api *API) *chi.Mux {
 	router.Put("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection", api.SaveProtectionAction)
 	router.Put("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection/status", api.UpdateProtectionStatusAction)
 	router.Delete("/api/v1/workspaces/{workspaceId}/agents/{agentName}/protection", api.DeleteProtectionAction)
+	return router
+}
+
+type fakeEvents struct {
+	db.EventRepository
+	event   *db.Event
+	events  []*db.Event
+	total   int64
+	getErr  error
+	listErr error
+}
+
+func (f *fakeEvents) GetById(id db.Id) (*db.Event, error) {
+	return f.event, f.getErr
+}
+
+func (f *fakeEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
+	return f.total, f.listErr
+}
+
+func (f *fakeEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Event, error) {
+	return f.events, f.listErr
+}
+
+func newEventAPI(events *fakeEvents) *API {
+	return &API{
+		Event: module.NewEvent(events),
+	}
+}
+
+func newEventRouter(api *API) *chi.Mux {
+	router := chi.NewRouter()
+	router.Get("/api/v1/workspaces/{workspaceId}/events", api.ListEventsAction)
+	router.Get("/api/v1/workspaces/{workspaceId}/events/{eventId}", api.GetEventAction)
 	return router
 }

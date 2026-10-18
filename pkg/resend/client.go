@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package resend
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/clivern/cognit/conf"
+	"github.com/clivern/sloth/conf"
 
 	resendgo "github.com/resend/resend-go/v4"
 	"github.com/rs/zerolog/log"

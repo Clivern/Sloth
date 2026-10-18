@@ -2,7 +2,7 @@ Feature: Agents
 
   An agent is registered in a workspace by name and version. Its A2A card is
   not sent on registration: the first instance to register serves it at the
-  agent's card path, and Cognit fetches and stores it, pointing every
+  agent's card path, and Sloth fetches and stores it, pointing every
   interface URL at its own gateway so callers always go through it. Clients
   fetch the card and cache it by ETag, so the checksum must change exactly
   when the card does.

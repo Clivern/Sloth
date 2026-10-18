@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -90,7 +90,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 	}
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_instances
+		`INSERT INTO ai_agent_instances
 		(id, agent_id, instance_id, address, port, meta, status)
 		VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
 		RETURNING created_at, updated_at`,
@@ -109,7 +109,7 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -135,7 +135,7 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1 AND instance_id = $2`,
 		agentId.String(),
 		instanceId,
@@ -160,7 +160,7 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 // Update updates an agent instance address and status.
 func (r *AgentInstanceRepositoryPostgres) Update(instance *AgentInstance) error {
 	_, err := r.db.Exec(
-		`UPDATE agent_instances
+		`UPDATE ai_agent_instances
 		SET address = $1, port = $2, meta = $3::jsonb, status = $4, updated_at = $5
 		WHERE id = $6`,
 		instance.Address,
@@ -176,7 +176,7 @@ func (r *AgentInstanceRepositoryPostgres) Update(instance *AgentInstance) error 
 
 // Delete removes an agent instance row.
 func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM agent_instances WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_agent_instances WHERE id = $1`, id.String())
 
 	return err
 }
@@ -185,7 +185,7 @@ func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id`,
 		agentId.String(),
@@ -224,11 +224,11 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1
 			AND NOT EXISTS (
-				SELECT 1 FROM health_checks hc
-				WHERE hc.instance_id = agent_instances.id
+				SELECT 1 FROM ai_health_checks hc
+				WHERE hc.instance_id = ai_agent_instances.id
 					AND (
 						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
@@ -275,7 +275,7 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time
 func (r *AgentInstanceRepositoryPostgres) CountByAgentId(agentId Id) (int64, error) {
 	var total int64
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM agent_instances WHERE agent_id = $1`,
+		`SELECT COUNT(*) FROM ai_agent_instances WHERE agent_id = $1`,
 		agentId.String(),
 	).Scan(&total)
 
@@ -286,7 +286,7 @@ func (r *AgentInstanceRepositoryPostgres) CountByAgentId(agentId Id) (int64, err
 func (r *AgentInstanceRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id
 		LIMIT $2 OFFSET $3`,
@@ -329,11 +329,11 @@ func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now tim
 	var total int64
 	err := r.db.QueryRow(
 		`SELECT COUNT(*)
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1
 			AND NOT EXISTS (
-				SELECT 1 FROM health_checks hc
-				WHERE hc.instance_id = agent_instances.id
+				SELECT 1 FROM ai_health_checks hc
+				WHERE hc.instance_id = ai_agent_instances.id
 					AND (
 						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
@@ -353,11 +353,11 @@ func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now tim
 func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(agentId Id, now time.Time, limit, offset int) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
-		FROM agent_instances
+		FROM ai_agent_instances
 		WHERE agent_id = $1
 			AND NOT EXISTS (
-				SELECT 1 FROM health_checks hc
-				WHERE hc.instance_id = agent_instances.id
+				SELECT 1 FROM ai_health_checks hc
+				WHERE hc.instance_id = ai_agent_instances.id
 					AND (
 						hc.status IN ($3, $5)
 						OR (hc.type = $4 AND (hc.ttl_expires_at IS NULL OR hc.ttl_expires_at <= $2))
@@ -416,7 +416,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Create(id Id, key, value string) e
 	}
 
 	_, err = r.db.Exec(
-		`INSERT INTO agent_instances_meta (id, agent_instance_id, key, value)
+		`INSERT INTO ai_agent_instances_meta (id, agent_instance_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
 		metaId.String(),
 		id.String(),
@@ -432,7 +432,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInst
 	meta := &AgentInstanceMeta{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_instance_id, key, value #>> '{}', created_at, updated_at
-		FROM agent_instances_meta
+		FROM ai_agent_instances_meta
 		WHERE agent_instance_id = $1 AND key = $2`,
 		id.String(),
 		key,
@@ -454,7 +454,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Get(id Id, key string) (*AgentInst
 // Update updates an existing agent instance metadata row. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
-		`UPDATE agent_instances_meta
+		`UPDATE ai_agent_instances_meta
 		SET value = to_jsonb($1::text), updated_at = $2
 		WHERE agent_instance_id = $3 AND key = $4`,
 		value,
@@ -469,7 +469,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Update(id Id, key, value string) e
 // Delete deletes an agent instance metadata row. TODO: remove if not used in future.
 func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM agent_instances_meta WHERE agent_instance_id = $1 AND key = $2`,
+		`DELETE FROM ai_agent_instances_meta WHERE agent_instance_id = $1 AND key = $2`,
 		id.String(),
 		key,
 	)
@@ -481,7 +481,7 @@ func (r *AgentInstanceMetaRepositoryPostgres) Delete(id Id, key string) error {
 func (r *AgentInstanceMetaRepositoryPostgres) ListByAgentInstanceId(id Id) ([]*AgentInstanceMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_instance_id, key, value #>> '{}', created_at, updated_at
-		FROM agent_instances_meta
+		FROM ai_agent_instances_meta
 		WHERE agent_instance_id = $1
 		ORDER BY key`,
 		id.String(),

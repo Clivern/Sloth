@@ -2,7 +2,7 @@ Feature: Health checks
 
   An agent carries check templates, and every instance of it gets a copy of
   each one. A ttl check is kept alive by the instance reporting pass, warn or
-  fail before its ttl runs out; an http or tcp check is probed by Cognit's
+  fail before its ttl runs out; an http or tcp check is probed by Sloth's
   worker. A ttl check that has not reported in time counts as critical — a
   silent instance must look dead, not healthy.
 
@@ -219,13 +219,13 @@ Feature: Health checks
   # Probes run by the worker
   # ---------------------------------------------------------------------------
 
-  # These need a running `cognit worker`. Skip them unless the run was told one is up.
+  # These need a running `sloth worker`. Skip them unless the run was told one is up.
 
   @mutates @worker @slow
   Scenario: An http check against a healthy endpoint turns passing
-    Given an http check template "web" with port <Cognit's port>, path "/api/v1/public/_health",
+    Given an http check template "web" with port <Sloth's port>, path "/api/v1/public/_health",
       interval 5 and timeout 2
-    And instance "i-1" registered with Cognit's own address
+    And instance "i-1" registered with Sloth's own address
     When 15 seconds pass
     Then reading "i-1" shows check "web" as "passing"
 

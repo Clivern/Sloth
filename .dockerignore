@@ -1,7 +1,7 @@
 .git
 .DS_Store
 
-cognit
+sloth
 *.db
 *.out
 *.test

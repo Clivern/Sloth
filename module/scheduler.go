@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/rs/zerolog/log"
 )
@@ -69,12 +69,17 @@ func (s *Scheduler) Run(ctx context.Context) {
 
 // Tick claims the checks due at now and publishes one job for each.
 func (s *Scheduler) Tick(now time.Time) error {
-	checks, err := s.checks.ClaimDue(now, 100, 2*time.Minute)
+	hold := 2 * time.Minute
+	checks, err := s.checks.ClaimDue(now, 100, hold)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to claim due health checks")
 		return err
 	}
 
 	count := 0
+	missed := 0
 	for _, check := range checks {
 		instance, err := s.instances.GetById(check.InstanceId)
 		if err != nil || instance == nil {
@@ -87,6 +92,25 @@ func (s *Scheduler) Tick(now time.Time) error {
 			def = json.RawMessage(*check.Definition)
 		}
 
+		// A check due again after its interval plus the claim hold
+		//  was published before but never recorded.
+		var definition CheckDefinition
+		if err := json.Unmarshal(def, &definition); err != nil {
+			log.Warn().
+				Err(err).
+				Str("check_id", check.Id.String()).
+				Msg("Failed to decode check definition")
+		}
+
+		since := check.CreatedAt
+		if check.LastRunAt != nil {
+			since = *check.LastRunAt
+		}
+
+		if now.Sub(since) > time.Duration(definition.Interval)*time.Second+hold {
+			missed++
+		}
+
 		raw, err := json.Marshal(HealthCheckJob{
 			CheckId:    check.Id.String(),
 			Type:       check.Type,
@@ -95,11 +119,19 @@ func (s *Scheduler) Tick(now time.Time) error {
 			Definition: def,
 		})
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("check_id", check.Id.String()).
+				Msg("Failed to encode health check job")
 			return err
 		}
 
 		err = s.publisher.Publish(HealthCheckRunSubject, raw)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("check_id", check.Id.String()).
+				Msg("Failed to publish health check job")
 			return err
 		}
 
@@ -112,7 +144,19 @@ func (s *Scheduler) Tick(now time.Time) error {
 
 	err = s.publisher.Flush()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to flush health check jobs")
 		return err
+	}
+
+	if missed > 0 {
+		// TODO: Send Dashboard alert.
+		// TODO: Send Pageduty alert if system health integration is enabled.
+		log.Warn().
+			Int("missed", missed).
+			Str("subject", HealthCheckRunSubject).
+			Msg("Health checks missed their last run, no worker may be consuming")
 	}
 
 	if len(checks) > 0 {

@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package core
@@ -17,13 +17,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/clivern/cognit/api"
-	"github.com/clivern/cognit/conf"
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/middleware"
-	"github.com/clivern/cognit/module"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/api"
+	"github.com/clivern/sloth/conf"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/locale"
+	"github.com/clivern/sloth/middleware"
+	"github.com/clivern/sloth/module"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/go-chi/chi/v5"
 	cmid "github.com/go-chi/chi/v5/middleware"
@@ -127,11 +127,6 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateWorkspaceBilling})).Post("/billing/portal", a.CreateBillingPortalAction)     // open Stripe customer portal
 		}
 
-		r.Route("/audits", func(r chi.Router) {
-			r.With(middleware.Protect(middleware.Config{Perm: module.CanListWorkspaceAudits})).Get("/", a.ListWorkspaceAuditsAction)      // list audit events
-			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetWorkspaceAudit})).Get("/{auditId}", a.GetWorkspaceAuditAction) // get audit event
-		})
-
 		r.Route("/agents", func(r chi.Router) {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/", a.ListAgentsAction)                 // list agents
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/{agentName}", a.UpsertAgentAction)    // register or replace an agent card
@@ -187,6 +182,19 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetIntention})).Get("/{intentionId}", a.GetIntentionAction)          // get an intention
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateIntention})).Put("/{intentionId}", a.UpdateIntentionAction)    // update an intention
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteIntention})).Delete("/{intentionId}", a.DeleteIntentionAction) // delete an intention
+		})
+
+		r.Route("/integrations", func(r chi.Router) {
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListIntegrations})).Get("/", a.ListIntegrationsAction)                     // list event integrations
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanCreateIntegration})).Post("/", a.CreateIntegrationAction)                  // create an integration
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetIntegration})).Get("/{integrationId}", a.GetIntegrationAction)          // get an integration
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpdateIntegration})).Put("/{integrationId}", a.UpdateIntegrationAction)    // update an integration
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteIntegration})).Delete("/{integrationId}", a.DeleteIntegrationAction) // delete an integration
+		})
+
+		r.Route("/events", func(r chi.Router) {
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanListEvents})).Get("/", a.ListEventsAction)      // list workspace events
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetEvent})).Get("/{eventId}", a.GetEventAction) // get a workspace event
 		})
 
 		r.Route("/kv", func(r chi.Router) {

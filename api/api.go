@@ -1,14 +1,14 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
 
 import (
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/module"
-	"github.com/clivern/cognit/pkg/github"
-	"github.com/clivern/cognit/pkg/google"
-	"github.com/clivern/cognit/pkg/resend"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/module"
+	"github.com/clivern/sloth/pkg/github"
+	"github.com/clivern/sloth/pkg/google"
+	"github.com/clivern/sloth/pkg/resend"
 
 	"github.com/spf13/viper"
 )
@@ -18,26 +18,27 @@ var Instance *API
 
 // API holds shared application modules for HTTP handlers.
 type API struct {
-	Auth       *module.Auth
-	Profile    *module.Profile
-	Setup      *module.Setup
-	Settings   *module.Settings
-	APIKey     *module.APIKey
-	Me         *module.Me
-	Workspace  *module.Workspace
-	Invite     *module.Invite
-	Access     *module.Access
-	Billing    *module.Billing
-	Stats      *module.Stats
-	Audit      *module.Audit
-	Agent      *module.Agent
-	Instance   *module.Instance
-	Check      *module.Check
-	Identity   *module.Identity
-	Protection *module.Protection
-	Intention  *module.Intention
-	KeyValue   *module.KeyValue
-	Traffic    *module.Traffic
+	Auth        *module.Auth
+	Profile     *module.Profile
+	Setup       *module.Setup
+	Settings    *module.Settings
+	APIKey      *module.APIKey
+	Me          *module.Me
+	Workspace   *module.Workspace
+	Invite      *module.Invite
+	Access      *module.Access
+	Billing     *module.Billing
+	Stats       *module.Stats
+	Agent       *module.Agent
+	Instance    *module.Instance
+	Check       *module.Check
+	Identity    *module.Identity
+	Protection  *module.Protection
+	Intention   *module.Intention
+	Integration *module.Integration
+	Event       *module.Event
+	KeyValue    *module.KeyValue
+	Traffic     *module.Traffic
 
 	GitHubOAuth *github.OAuth
 	GoogleOAuth *google.OAuth
@@ -61,7 +62,6 @@ func New() *API {
 	subscriptions := db.NewSubscriptionRepository(conn)
 	purchases := db.NewTokenPurchaseRepository(conn)
 	stats := db.NewWorkspaceStatsRepository(conn)
-	audits := db.NewAuditEventRepository(conn)
 	agents := db.NewAgentRepository(conn)
 	instances := db.NewAgentInstanceRepository(conn)
 	healthChecks := db.NewHealthCheckRepository(conn)
@@ -70,31 +70,34 @@ func New() *API {
 	identityTokens := db.NewAgentIdentityTokenRepository(conn)
 	protections := db.NewAgentProtectionRepository(conn)
 	intentions := db.NewIntentionRepository(conn)
+	integrations := db.NewIntegrationRepository(conn)
+	events := db.NewEventRepository(conn)
 	kv := db.NewWorkspaceKeyValueRepository(conn)
 	traffic := db.NewTrafficRepository(conn)
 	usage := db.NewUsageRepository(conn)
 
 	a := &API{
-		Auth:       module.NewAuth(users, sessions, configs),
-		Profile:    module.NewProfile(users),
-		Setup:      module.NewSetup(configs, users),
-		Settings:   module.NewSettings(configs),
-		APIKey:     module.NewAPIKey(apiKeys),
-		Me:         module.NewMe(apiKeys, users, accessKeys),
-		Workspace:  module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
-		Invite:     module.NewInvite(invites, users, configs, workspaces, workspaceUsers, resend.NewMailer()),
-		Access:     module.NewAccess(accessKeys, workspaces),
-		Billing:    module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
-		Stats:      module.NewStats(workspaces, stats),
-		Audit:      module.NewAudit(audits, workspaces),
-		Agent:      module.NewAgent(agents, instances, healthChecks, workspaces),
-		Instance:   module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
-		Check:      module.NewCheck(agents, agentChecks, instances, healthChecks),
-		Identity:   module.NewIdentity(agents, identities, identityTokens),
-		Protection: module.NewProtection(agents, protections),
-		Intention:  module.NewIntention(intentions, workspaces),
-		KeyValue:   module.NewKeyValue(kv, workspaces),
-		Traffic:    module.NewTraffic(traffic, workspaces),
+		Auth:        module.NewAuth(users, sessions, configs),
+		Profile:     module.NewProfile(users),
+		Setup:       module.NewSetup(configs, users),
+		Settings:    module.NewSettings(configs),
+		APIKey:      module.NewAPIKey(apiKeys),
+		Me:          module.NewMe(apiKeys, users, accessKeys),
+		Workspace:   module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
+		Invite:      module.NewInvite(invites, users, configs, workspaces, workspaceUsers, resend.NewMailer()),
+		Access:      module.NewAccess(accessKeys, workspaces),
+		Billing:     module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
+		Stats:       module.NewStats(workspaces, stats),
+		Agent:       module.NewAgent(agents, instances, healthChecks, workspaces),
+		Instance:    module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
+		Check:       module.NewCheck(agents, agentChecks, instances, healthChecks),
+		Identity:    module.NewIdentity(agents, identities, identityTokens),
+		Protection:  module.NewProtection(agents, protections),
+		Intention:   module.NewIntention(intentions, workspaces),
+		Integration: module.NewIntegration(integrations),
+		Event:       module.NewEvent(events),
+		KeyValue:    module.NewKeyValue(kv, workspaces),
+		Traffic:     module.NewTraffic(traffic, workspaces),
 		GitHubOAuth: github.NewOAuth(github.OAuthConfig{
 			ClientID:     viper.GetString("app.oauth.github.client_id"),
 			ClientSecret: viper.GetString("app.oauth.github.client_secret"),

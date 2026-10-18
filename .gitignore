@@ -32,7 +32,7 @@ config.test.yml
 coverage.html
 
 # Binary
-cognit
+sloth
 
 .ruff_cache/
 

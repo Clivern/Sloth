@@ -1,6 +1,6 @@
 Feature: Workspace isolation
 
-  Everything in Cognit lives in a workspace, and nothing may cross from one
+  Everything in Sloth lives in a workspace, and nothing may cross from one
   workspace to another. A key minted for one team must not read, change or
   even confirm the existence of another team's agents, keys, rules or data.
   Each other file checks its own resource; this one sweeps all of them with
@@ -17,7 +17,7 @@ Feature: Workspace isolation
 
   @mutates @smoke
   Scenario: A's key cannot read anything in B
-    When A's key GETs, in B: the workspace, members, invites, keys, audits, traffic,
+    When A's key GETs, in B: the workspace, members, invites, keys, events, traffic,
       agents, agents/spec-<runId>-echo, its instances, instance i-1, its checks,
       its identities, its protection, its well-known card, intentions,
       the rule by id, kv and kv/spec/<runId>/secret

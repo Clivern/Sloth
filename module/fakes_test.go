@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -6,11 +6,12 @@ package module
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/stripe"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/stripe"
 
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
@@ -744,26 +745,6 @@ func (f *fakeAccessKeys) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.err
 }
 
-type fakeAuditEvents struct {
-	db.AuditEventRepository
-	item  *db.AuditEvent
-	list  []*db.AuditEvent
-	total int64
-	err   error
-}
-
-func (f *fakeAuditEvents) GetById(id db.Id) (*db.AuditEvent, error) {
-	return f.item, f.err
-}
-
-func (f *fakeAuditEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.AuditEvent, error) {
-	return f.list, f.err
-}
-
-func (f *fakeAuditEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
-	return f.total, f.err
-}
-
 type fakeTrafficCalls struct {
 	db.TrafficRepository
 	item  *db.TrafficCall
@@ -908,6 +889,48 @@ func (f *fakeIntentions) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 
 func (f *fakeIntentions) Match(workspaceId db.Id, source, destination, skill string) (*db.Intention, error) {
 	return f.match, f.err
+}
+
+type fakeIntegrations struct {
+	db.IntegrationRepository
+	item    *db.Integration
+	list    []*db.Integration
+	total   int64
+	created []*db.Integration
+	updated []*db.Integration
+	deleted []db.Id
+	err     error
+}
+
+func (f *fakeIntegrations) GetById(id db.Id) (*db.Integration, error) {
+	return f.item, f.err
+}
+
+func (f *fakeIntegrations) Create(integration *db.Integration) error {
+	integration.Id = "integration-new"
+	f.created = append(f.created, integration)
+
+	return f.err
+}
+
+func (f *fakeIntegrations) Update(integration *db.Integration) error {
+	f.updated = append(f.updated, integration)
+
+	return f.err
+}
+
+func (f *fakeIntegrations) Delete(id db.Id) error {
+	f.deleted = append(f.deleted, id)
+
+	return f.err
+}
+
+func (f *fakeIntegrations) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Integration, error) {
+	return f.list, f.err
+}
+
+func (f *fakeIntegrations) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
+	return f.total, f.err
 }
 
 type fakeSessions struct {
@@ -1058,7 +1081,7 @@ func (f *fakeTokenPurchases) Create(purchase *db.TokenPurchase) (bool, error) {
 // enableBilling switches the process to the SaaS edition with Stripe, reset after the test.
 func enableBilling(t *testing.T) *stripe.Client {
 	t.Helper()
-	t.Setenv("COGNIT_EDITION", "saas")
+	t.Setenv("SLOTH_EDITION", "saas")
 	viper.Set("app.billing.provider", "stripe")
 	viper.Set("app.billing.secret_key", "sk_test_123")
 	viper.Set("app.billing.webhook_secret", "whsec_test")
@@ -1140,4 +1163,93 @@ func newWorkspaceModule(
 	subscriptions *fakeSubscriptions,
 ) *Workspace {
 	return NewWorkspace(workspaces, members, subscriptions, &fakeUsers{})
+}
+
+type fakeNotifications struct {
+	db.NotificationRepository
+	list      []*db.Notification
+	unread    int64
+	created   []*db.Notification
+	read      []db.Id
+	dismissed []db.Id
+	admin     bool
+	hidden    bool
+	err       error
+}
+
+func (f *fakeNotifications) Create(notification *db.Notification) error {
+	notification.Id = db.Id(fmt.Sprintf("notification-%d", len(f.created)+1))
+	f.created = append(f.created, notification)
+	return f.err
+}
+
+func (f *fakeNotifications) GetLatestMatching(match *db.Notification) (*db.Notification, error) {
+	for i := len(f.created) - 1; i >= 0; i-- {
+		item := f.created[i]
+		if item.Audience == match.Audience &&
+			lo.FromPtr(item.WorkspaceId) == lo.FromPtr(match.WorkspaceId) &&
+			lo.FromPtr(item.UserId) == lo.FromPtr(match.UserId) &&
+			item.Type == match.Type &&
+			lo.FromPtr(item.ResourceType) == lo.FromPtr(match.ResourceType) &&
+			lo.FromPtr(item.ResourceId) == lo.FromPtr(match.ResourceId) {
+			return item, f.err
+		}
+	}
+
+	return nil, f.err
+}
+
+func (f *fakeNotifications) ListForUser(workspaceId, userId db.Id, admin bool, limit, offset int) ([]*db.Notification, error) {
+	f.admin = admin
+	return f.list, f.err
+}
+
+func (f *fakeNotifications) CountUnreadForUser(workspaceId, userId db.Id, admin bool) (int64, error) {
+	f.admin = admin
+	return f.unread, f.err
+}
+
+func (f *fakeNotifications) MarkRead(id, workspaceId, userId db.Id, admin bool) (bool, error) {
+	f.admin = admin
+	if f.hidden {
+		return false, f.err
+	}
+
+	f.read = append(f.read, id)
+	return true, f.err
+}
+
+func (f *fakeNotifications) MarkAllRead(workspaceId, userId db.Id, admin bool) error {
+	f.admin = admin
+	return f.err
+}
+
+func (f *fakeNotifications) Dismiss(id, workspaceId, userId db.Id, admin bool) (bool, error) {
+	f.admin = admin
+	if f.hidden {
+		return false, f.err
+	}
+
+	f.dismissed = append(f.dismissed, id)
+	return true, f.err
+}
+
+type fakeEvents struct {
+	db.EventRepository
+	item  *db.Event
+	list  []*db.Event
+	total int64
+	err   error
+}
+
+func (f *fakeEvents) GetById(id db.Id) (*db.Event, error) {
+	return f.item, f.err
+}
+
+func (f *fakeEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]*db.Event, error) {
+	return f.list, f.err
+}
+
+func (f *fakeEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
+	return f.total, f.err
 }

@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -77,7 +77,7 @@ func (r *AgentIdentityRepositoryPostgres) Create(identity *AgentIdentity) error 
 	identity.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_identity (id, agent_id, name, type, config, is_active)
+		`INSERT INTO ai_agent_identity (id, agent_id, name, type, config, is_active)
 		VALUES ($1, $2, $3, $4, $5::jsonb, $6)
 		RETURNING created_at, updated_at`,
 		identity.Id.String(),
@@ -94,7 +94,7 @@ func (r *AgentIdentityRepositoryPostgres) GetById(id Id) (*AgentIdentity, error)
 	identity := &AgentIdentity{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_identity
+		FROM ai_agent_identity
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -119,7 +119,7 @@ func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name str
 	identity := &AgentIdentity{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_identity
+		FROM ai_agent_identity
 		WHERE agent_id = $1 AND name = $2`,
 		agentId.String(),
 		name,
@@ -143,7 +143,7 @@ func (r *AgentIdentityRepositoryPostgres) GetByAgentAndName(agentId Id, name str
 // Update updates an agent identity row.
 func (r *AgentIdentityRepositoryPostgres) Update(identity *AgentIdentity) error {
 	_, err := r.db.Exec(
-		`UPDATE agent_identity
+		`UPDATE ai_agent_identity
 		SET name = $1, type = $2, config = $3::jsonb, is_active = $4, updated_at = $5
 		WHERE id = $6`,
 		identity.Name,
@@ -159,7 +159,7 @@ func (r *AgentIdentityRepositoryPostgres) Update(identity *AgentIdentity) error 
 
 // Delete removes an agent identity row.
 func (r *AgentIdentityRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM agent_identity WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_agent_identity WHERE id = $1`, id.String())
 
 	return err
 }
@@ -168,7 +168,7 @@ func (r *AgentIdentityRepositoryPostgres) Delete(id Id) error {
 func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIdentity, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_identity
+		FROM ai_agent_identity
 		WHERE agent_id = $1
 		ORDER BY name`,
 		agentId.String(),
@@ -206,7 +206,7 @@ func (r *AgentIdentityRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIde
 func (r *AgentIdentityRepositoryPostgres) ListActiveByAgentId(agentId Id) ([]*AgentIdentity, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, name, type, config, is_active, created_at, updated_at
-		FROM agent_identity
+		FROM ai_agent_identity
 		WHERE agent_id = $1 AND is_active = TRUE
 		ORDER BY name`,
 		agentId.String(),
@@ -255,7 +255,7 @@ func (r *AgentIdentityTokenRepositoryPostgres) Create(token *AgentIdentityToken)
 	token.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_identity_tokens (id, identity_id, token_hash, expires_at)
+		`INSERT INTO ai_agent_identity_tokens (id, identity_id, token_hash, expires_at)
 		VALUES ($1, $2, $3, $4)
 		RETURNING created_at`,
 		token.Id.String(),
@@ -270,7 +270,7 @@ func (r *AgentIdentityTokenRepositoryPostgres) GetByTokenHash(tokenHash string) 
 	token := &AgentIdentityToken{}
 	err := r.db.QueryRow(
 		`SELECT id, identity_id, token_hash, expires_at, created_at
-		FROM agent_identity_tokens
+		FROM ai_agent_identity_tokens
 		WHERE token_hash = $1`,
 		tokenHash,
 	).Scan(
@@ -290,7 +290,7 @@ func (r *AgentIdentityTokenRepositoryPostgres) GetByTokenHash(tokenHash string) 
 // DeleteExpired removes issued tokens past their expiry.
 func (r *AgentIdentityTokenRepositoryPostgres) DeleteExpired() (int64, error) {
 	result, err := r.db.Exec(
-		`DELETE FROM agent_identity_tokens WHERE expires_at <= $1`,
+		`DELETE FROM ai_agent_identity_tokens WHERE expires_at <= $1`,
 		time.Now().UTC(),
 	)
 	if err != nil {

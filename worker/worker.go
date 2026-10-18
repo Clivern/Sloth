@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package worker
@@ -7,9 +7,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/module"
-	"github.com/clivern/cognit/pkg/broker"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/module"
+	"github.com/clivern/sloth/pkg/broker"
 
 	"github.com/rs/zerolog/log"
 )
@@ -30,21 +30,24 @@ var Registrations []Registration
 
 // Dependencies are the services required by worker handlers.
 type Dependencies struct {
-	Tasks  db.AsyncTaskRepository
-	Checks db.HealthCheckRepository
+	Tasks        db.AsyncTaskRepository
+	Checks       db.HealthCheckRepository
+	Integrations db.IntegrationRepository
 }
 
 type handlers struct {
-	tasks  db.AsyncTaskRepository
-	checks db.HealthCheckRepository
+	tasks        db.AsyncTaskRepository
+	checks       db.HealthCheckRepository
+	integrations db.IntegrationRepository
 }
 
 // Register attaches all worker handlers.
 func Register(deps Dependencies) {
-	h := &handlers{tasks: deps.Tasks, checks: deps.Checks}
+	h := &handlers{tasks: deps.Tasks, checks: deps.Checks, integrations: deps.Integrations}
 
 	On(db.AsyncTaskTypeNoop, h.HandleNoop)
 	On(module.HealthCheckRunSubject, h.HandleHealthCheck)
+	On(module.IntegrationDeliverTaskType, h.HandleIntegrationDelivery)
 }
 
 // On registers a queue worker handler for subject.

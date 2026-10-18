@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestUnitSetup(t *testing.T) {
 		assert.Equal(t, db.UserRoleBot, bot.Role)
 		assert.Equal(t, "ops@example.com", bot.Email)
 		assert.NotEmpty(t, bot.Password)
-		assert.NotEqual(t, "cognit-bot-user-no-login", bot.Password)
+		assert.NotEqual(t, "sloth-bot-user-no-login", bot.Password)
 
 		assert.Equal(t, "1", configs.values["is_installed"])
 		assert.Equal(t, "ops@example.com", configs.values["platform_email"])

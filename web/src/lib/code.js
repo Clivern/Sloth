@@ -53,8 +53,8 @@ const goSpecs = [
   { pattern: /^(package|import|func|return|var|ctx)\b/, cls: 'token-keyword' },
   { pattern: /^:=|,|\{|\}|\(|\)/, cls: null },
   { pattern: /^\.[A-Z][A-Za-z0-9_]*/, cls: 'token-fn' },
-  { pattern: /^cognit\.[A-Za-z0-9_]+/, cls: 'token-fn' },
-  { pattern: /^cognit\.[A-Za-z0-9_]+/, cls: 'token-fn' },
+  { pattern: /^sloth\.[A-Za-z0-9_]+/, cls: 'token-fn' },
+  { pattern: /^sloth\.[A-Za-z0-9_]+/, cls: 'token-fn' },
   { pattern: /^\s+/, cls: null },
 ]
 

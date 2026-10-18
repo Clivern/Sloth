@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package cli
@@ -30,7 +30,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number",
 	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf(
-			"Current Cognit version %v commit %v, built @%v by %v, edition %v.\n",
+			"Current Sloth version %v commit %v, built @%v by %v, edition %v.\n",
 			Version,
 			Commit,
 			Date,

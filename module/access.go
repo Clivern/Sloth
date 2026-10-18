@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -78,6 +78,10 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *C
 
 	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -94,6 +98,11 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *C
 	for _, permission := range req.Permissions {
 		allowed, err := perm.Can(permission)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("permission", permission).
+				Msg("Failed to check access key permission")
 			return nil, fmt.Errorf("%w: %v", ErrFailedCreateAccessKey, err)
 		}
 		if !allowed {
@@ -113,11 +122,19 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *C
 
 	raw, err := json.Marshal(AccessKeyMeta{Permissions: req.Permissions})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to encode access key meta")
 		return nil, fmt.Errorf("%w: %v", ErrInvalidAccessKeyPermissions, err)
 	}
 
 	token, err := uuid.NewRandom()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to generate access key")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateAccessKey, err)
 	}
 
@@ -131,8 +148,17 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *C
 
 	err = a.AccessKeyRepository.Create(item)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to create access key")
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateAccessKey, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("accessKeyId", item.Id.String()).
+		Msg("Access key created")
 
 	resp := &AccessKeyResponse{
 		Id:          item.Id,
@@ -156,6 +182,10 @@ func (a *Access) CreateAccessKey(workspaceId db.Id, principal *Principal, req *C
 func (a *Access) ListAccessKeys(workspaceId db.Id, limit, offset int) (*ListAccessKeysResult, error) {
 	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -170,11 +200,19 @@ func (a *Access) ListAccessKeys(workspaceId db.Id, limit, offset int) (*ListAcce
 
 	total, err := a.AccessKeyRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count access keys")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListAccessKeys, err)
 	}
 
 	keys, err := a.AccessKeyRepository.ListByWorkspaceId(workspaceId, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list access keys")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListAccessKeys, err)
 	}
 
@@ -182,6 +220,10 @@ func (a *Access) ListAccessKeys(workspaceId db.Id, limit, offset int) (*ListAcce
 	for _, item := range keys {
 		var meta AccessKeyMeta
 		if err := json.Unmarshal([]byte(*item.Meta), &meta); err != nil {
+			log.Error().
+				Err(err).
+				Str("accessKeyId", item.Id.String()).
+				Msg("Failed to decode access key meta")
 			return nil, fmt.Errorf("%w: %v", ErrFailedListAccessKeys, err)
 		}
 
@@ -208,6 +250,10 @@ func (a *Access) ListAccessKeys(workspaceId db.Id, limit, offset int) (*ListAcce
 func (a *Access) GetAccessKey(workspaceId, id db.Id) (*AccessKeyResponse, error) {
 	workspace, err := a.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -222,6 +268,10 @@ func (a *Access) GetAccessKey(workspaceId, id db.Id) (*AccessKeyResponse, error)
 
 	item, err := a.AccessKeyRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", id.String()).
+			Msg("Failed to get access key")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAccessKey, err)
 	}
 	if item == nil || item.WorkspaceId != workspaceId {
@@ -230,6 +280,10 @@ func (a *Access) GetAccessKey(workspaceId, id db.Id) (*AccessKeyResponse, error)
 
 	var meta AccessKeyMeta
 	if err := json.Unmarshal([]byte(*item.Meta), &meta); err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", item.Id.String()).
+			Msg("Failed to decode access key meta")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAccessKey, err)
 	}
 
@@ -252,9 +306,12 @@ func (a *Access) GetAccessKey(workspaceId, id db.Id) (*AccessKeyResponse, error)
 
 // DeleteAccessKey deletes a workspace access key.
 func (a *Access) DeleteAccessKey(workspaceId, id db.Id) error {
-
 	item, err := a.AccessKeyRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", id.String()).
+			Msg("Failed to get access key")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteAccessKey, err)
 	}
 	if item == nil || item.WorkspaceId != workspaceId {
@@ -263,8 +320,17 @@ func (a *Access) DeleteAccessKey(workspaceId, id db.Id) error {
 
 	err = a.AccessKeyRepository.Delete(item.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("accessKeyId", item.Id.String()).
+			Msg("Failed to delete access key")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteAccessKey, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("accessKeyId", item.Id.String()).
+		Msg("Access key deleted")
 
 	return nil
 }

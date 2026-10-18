@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/util"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -80,11 +81,19 @@ func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, c
 func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsResponse, error) {
 	total, err := a.AgentRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count agents")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 	}
 
 	agents, err := a.AgentRepository.ListByWorkspaceId(workspaceId, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list agents")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 	}
 
@@ -92,6 +101,11 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 	for _, item := range agents {
 		health, counts, err := a.GetHealthStatus(item.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("agentId", item.Id.String()).
+				Msg("Failed to get agent health")
 			return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 		}
 
@@ -117,6 +131,11 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error) {
 	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", name).
+			Msg("Failed to get agent")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 	}
 	if agent == nil {
@@ -125,6 +144,11 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 
 	health, counts, err := a.GetHealthStatus(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentId", agent.Id.String()).
+			Msg("Failed to get agent health")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 	}
 
@@ -160,6 +184,11 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 
 	existing, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", name).
+			Msg("Failed to get agent")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 	}
 
@@ -187,13 +216,31 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		}
 	}
 	if err != nil || existing == nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", name).
+			Msg("Failed to upsert agent")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 	}
 
 	health, counts, err := a.GetHealthStatus(existing.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentId", existing.Id.String()).
+			Msg("Failed to get agent health")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedUpsertAgent, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentId", existing.Id.String()).
+		Str("agentName", name).
+		Str("version", existing.Version).
+		Bool("created", created).
+		Msg("Agent upserted")
 
 	return &AgentResponse{
 		Id:           existing.Id,
@@ -214,6 +261,11 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 func (a *Agent) DeleteAgent(workspaceId db.Id, name string) error {
 	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", name).
+			Msg("Failed to get agent")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteAgent, err)
 	}
 	if agent == nil {
@@ -222,8 +274,19 @@ func (a *Agent) DeleteAgent(workspaceId db.Id, name string) error {
 
 	err = a.AgentRepository.Delete(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentId", agent.Id.String()).
+			Msg("Failed to delete agent")
 		return fmt.Errorf("%w: %v", ErrFailedDeleteAgent, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentId", agent.Id.String()).
+		Str("agentName", name).
+		Msg("Agent deleted")
 
 	return nil
 }
@@ -232,6 +295,10 @@ func (a *Agent) DeleteAgent(workspaceId db.Id, name string) error {
 func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
 	instances, err := a.InstanceRepository.ListByAgentId(agentId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("agentId", agentId.String()).
+			Msg("Failed to list agent instances")
 		return "", nil, err
 	}
 
@@ -246,6 +313,11 @@ func (a *Agent) GetHealthStatus(agentId db.Id) (string, map[string]int, error) {
 	for _, instance := range instances {
 		checks, err := a.HealthCheckRepository.ListByInstanceId(instance.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("agentId", agentId.String()).
+				Str("instanceId", instance.Id.String()).
+				Msg("Failed to list instance health checks")
 			return "", nil, err
 		}
 

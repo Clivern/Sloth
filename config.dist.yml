@@ -1,94 +1,94 @@
 app:
-  name: ${COGNIT_SERVER_NAME:-Cognit}
-  mode: ${COGNIT_SERVER_MODE:-prod}
-  port: ${COGNIT_SERVER_PORT:-8000}
-  url: ${COGNIT_SERVER_URL:-http://127.0.0.1:8000}
-  timeout: ${COGNIT_SERVER_TIMEOUT:-50}
+  name: ${SLOTH_SERVER_NAME:-Sloth}
+  mode: ${SLOTH_SERVER_MODE:-prod}
+  port: ${SLOTH_SERVER_PORT:-8000}
+  url: ${SLOTH_SERVER_URL:-http://127.0.0.1:8000}
+  timeout: ${SLOTH_SERVER_TIMEOUT:-50}
   # Comma-separated CIDRs of reverse proxies allowed to set X-Forwarded-For; empty means use the TCP peer
-  trusted_proxies: ${COGNIT_TRUSTED_PROXIES:-}
+  trusted_proxies: ${SLOTH_TRUSTED_PROXIES:-}
 
   encryption:
-    key: ${COGNIT_ENCRYPTION_KEY:-}
+    key: ${SLOTH_ENCRYPTION_KEY:-}
 
   metrics:
-    username: ${COGNIT_SERVER_PROM_METRICS_USERNAME:-admin}
-    secret: ${COGNIT_SERVER_PROM_METRICS_SECRET:-secret}
+    username: ${SLOTH_SERVER_PROM_METRICS_USERNAME:-admin}
+    secret: ${SLOTH_SERVER_PROM_METRICS_SECRET:-secret}
 
   log:
-    level: ${COGNIT_SERVER_LOG_LEVEL:-debug}
-    output: ${COGNIT_SERVER_LOG_OUTPUT:-stdout}
-    format: ${COGNIT_SERVER_LOG_FORMAT:-json}
+    level: ${SLOTH_SERVER_LOG_LEVEL:-debug}
+    output: ${SLOTH_SERVER_LOG_OUTPUT:-stdout}
+    format: ${SLOTH_SERVER_LOG_FORMAT:-json}
 
   mailer:
-    provider: ${COGNIT_MAILER_PROVIDER:-resend}
-    from: ${COGNIT_MAILER_FROM:-no_reply@clivern.com}
+    provider: ${SLOTH_MAILER_PROVIDER:-resend}
+    from: ${SLOTH_MAILER_FROM:-no_reply@clivern.com}
     resend:
-      api_key: ${COGNIT_RESEND_API_KEY:-}
+      api_key: ${SLOTH_RESEND_API_KEY:-}
 
   oauth:
     github:
-      client_id: ${COGNIT_GITHUB_OAUTH_CLIENT_ID:-}
-      client_secret: ${COGNIT_GITHUB_OAUTH_CLIENT_SECRET:-}
-      redirect_url: ${COGNIT_GITHUB_OAUTH_REDIRECT_URL:-}
+      client_id: ${SLOTH_GITHUB_OAUTH_CLIENT_ID:-}
+      client_secret: ${SLOTH_GITHUB_OAUTH_CLIENT_SECRET:-}
+      redirect_url: ${SLOTH_GITHUB_OAUTH_REDIRECT_URL:-}
     google:
-      client_id: ${COGNIT_GOOGLE_OAUTH_CLIENT_ID:-}
-      client_secret: ${COGNIT_GOOGLE_OAUTH_CLIENT_SECRET:-}
-      redirect_url: ${COGNIT_GOOGLE_OAUTH_REDIRECT_URL:-}
+      client_id: ${SLOTH_GOOGLE_OAUTH_CLIENT_ID:-}
+      client_secret: ${SLOTH_GOOGLE_OAUTH_CLIENT_SECRET:-}
+      redirect_url: ${SLOTH_GOOGLE_OAUTH_REDIRECT_URL:-}
 
   database:
     rw:
-      driver: ${COGNIT_DATABASE_DRIVER:-postgres}
-      host: ${COGNIT_DATABASE_HOST:-localhost}
-      port: ${COGNIT_DATABASE_PORT:-5433}
-      username: ${COGNIT_DATABASE_USERNAME:-postgres}
-      password: ${COGNIT_DATABASE_PASSWORD:-postgres}
-      name: ${COGNIT_DATABASE_NAME:-cognit}
-      max_open_conns: ${COGNIT_DATABASE_MAX_OPEN_CONNS:-25}
-      max_idle_conns: ${COGNIT_DATABASE_MAX_IDLE_CONNS:-10}
-      conn_max_lifetime: ${COGNIT_DATABASE_CONN_MAX_LIFETIME:-300}
+      driver: ${SLOTH_DATABASE_DRIVER:-postgres}
+      host: ${SLOTH_DATABASE_HOST:-localhost}
+      port: ${SLOTH_DATABASE_PORT:-5433}
+      username: ${SLOTH_DATABASE_USERNAME:-postgres}
+      password: ${SLOTH_DATABASE_PASSWORD:-postgres}
+      name: ${SLOTH_DATABASE_NAME:-sloth}
+      max_open_conns: ${SLOTH_DATABASE_MAX_OPEN_CONNS:-25}
+      max_idle_conns: ${SLOTH_DATABASE_MAX_IDLE_CONNS:-10}
+      conn_max_lifetime: ${SLOTH_DATABASE_CONN_MAX_LIFETIME:-300}
     ro:
-    - driver: ${COGNIT_DATABASE_DRIVER:-postgres}
-      host: ${COGNIT_DATABASE_HOST:-localhost}
-      port: ${COGNIT_DATABASE_PORT:-5433}
-      username: ${COGNIT_DATABASE_USERNAME:-postgres}
-      password: ${COGNIT_DATABASE_PASSWORD:-postgres}
-      name: ${COGNIT_DATABASE_NAME:-cognit}
-      max_open_conns: ${COGNIT_DATABASE_MAX_OPEN_CONNS:-25}
-      max_idle_conns: ${COGNIT_DATABASE_MAX_IDLE_CONNS:-10}
-      conn_max_lifetime: ${COGNIT_DATABASE_CONN_MAX_LIFETIME:-300}
+    - driver: ${SLOTH_DATABASE_DRIVER:-postgres}
+      host: ${SLOTH_DATABASE_HOST:-localhost}
+      port: ${SLOTH_DATABASE_PORT:-5433}
+      username: ${SLOTH_DATABASE_USERNAME:-postgres}
+      password: ${SLOTH_DATABASE_PASSWORD:-postgres}
+      name: ${SLOTH_DATABASE_NAME:-sloth}
+      max_open_conns: ${SLOTH_DATABASE_MAX_OPEN_CONNS:-25}
+      max_idle_conns: ${SLOTH_DATABASE_MAX_IDLE_CONNS:-10}
+      conn_max_lifetime: ${SLOTH_DATABASE_CONN_MAX_LIFETIME:-300}
 
   billing:
-    provider: ${COGNIT_BILLING_PROVIDER:-stripe}
-    secret_key: ${COGNIT_STRIPE_SECRET_KEY:-}
-    webhook_secret: ${COGNIT_STRIPE_WEBHOOK_SECRET:-}
-    tokens_per_usd: ${COGNIT_TOKENS_PER_USD:-20000}
+    provider: ${SLOTH_BILLING_PROVIDER:-stripe}
+    secret_key: ${SLOTH_STRIPE_SECRET_KEY:-}
+    webhook_secret: ${SLOTH_STRIPE_WEBHOOK_SECRET:-}
+    tokens_per_usd: ${SLOTH_TOKENS_PER_USD:-20000}
     urls:
-      checkout_success: ${COGNIT_STRIPE_CHECKOUT_SUCCESS_URL:-/billing/success}
-      checkout_cancel: ${COGNIT_STRIPE_CHECKOUT_CANCEL_URL:-/billing/cancel}
-      portal_return: ${COGNIT_STRIPE_PORTAL_RETURN_URL:-/billing}
+      checkout_success: ${SLOTH_STRIPE_CHECKOUT_SUCCESS_URL:-/billing/success}
+      checkout_cancel: ${SLOTH_STRIPE_CHECKOUT_CANCEL_URL:-/billing/cancel}
+      portal_return: ${SLOTH_STRIPE_PORTAL_RETURN_URL:-/billing}
 
   ai:
-    api_key: ${COGNIT_AI_OROUTE_API_KEY:-}
+    api_key: ${SLOTH_AI_OROUTE_API_KEY:-}
     embed:
-      model: ${COGNIT_AI_OROUTE_EMBEDDING_MODEL:-openai/text-embedding-3-large}
+      model: ${SLOTH_AI_OROUTE_EMBEDDING_MODEL:-openai/text-embedding-3-large}
     llm:
       lite:
-        model: ${COGNIT_AI_LITE_LLM_MODEL:-cohere/command-r}
+        model: ${SLOTH_AI_LITE_LLM_MODEL:-cohere/command-r}
       large:
-        model: ${COGNIT_AI_LARGE_LLM_MODEL:-openai/gpt-4o}
+        model: ${SLOTH_AI_LARGE_LLM_MODEL:-openai/gpt-4o}
 
   cache:
-    provider: ${COGNIT_CACHE_PROVIDER:-redis}
+    provider: ${SLOTH_CACHE_PROVIDER:-redis}
     redis:
-      addr: ${COGNIT_REDIS_ADDR:-127.0.0.1:6379}
-      password: ${COGNIT_REDIS_PASSWORD:-}
-      db: ${COGNIT_REDIS_DB:-0}
-      pool_size: ${COGNIT_REDIS_POOL_SIZE:-10}
-      min_idle_conns: ${COGNIT_REDIS_MIN_IDLE_CONNS:-5}
+      addr: ${SLOTH_REDIS_ADDR:-127.0.0.1:6379}
+      password: ${SLOTH_REDIS_PASSWORD:-}
+      db: ${SLOTH_REDIS_DB:-0}
+      pool_size: ${SLOTH_REDIS_POOL_SIZE:-10}
+      min_idle_conns: ${SLOTH_REDIS_MIN_IDLE_CONNS:-5}
 
   broker:
-    provider: ${COGNIT_BROKER_PROVIDER:-nats}
+    provider: ${SLOTH_BROKER_PROVIDER:-nats}
     nats:
-      url: ${COGNIT_BROKER_URL:-nats://127.0.0.1:4222}
-      name: ${COGNIT_BROKER_NAME:-cognit}
-      queue: ${COGNIT_BROKER_QUEUE:-cognit}
+      url: ${SLOTH_BROKER_URL:-nats://127.0.0.1:4222}
+      name: ${SLOTH_BROKER_NAME:-sloth}
+      queue: ${SLOTH_BROKER_QUEUE:-sloth}

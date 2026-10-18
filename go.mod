@@ -1,9 +1,9 @@
-module github.com/clivern/cognit
+module github.com/clivern/sloth
 
 go 1.27.2
 
 require (
-	github.com/OpenRouterTeam/go-sdk v0.9.63
+	github.com/OpenRouterTeam/go-sdk v0.9.64
 	github.com/drone/envsubst v1.0.3
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/httprate v0.16.1

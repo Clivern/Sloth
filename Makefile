@@ -5,7 +5,7 @@ pkgs          = ./...
 
 help: Makefile
 	@echo
-	@echo " Choose a command run in Cognit:"
+	@echo " Choose a command run in Sloth:"
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
@@ -126,15 +126,15 @@ deps:
 .PHONY: run
 run:
 	@echo ">> ============= Run API Server ============= <<"
-	$(go) run cognit.go migrate up -c config.test.yml
-	$(go) run cognit.go server -c config.test.yml
+	$(go) run sloth.go migrate up -c config.test.yml
+	$(go) run sloth.go server -c config.test.yml
 
 
 ## consumer: Run the NATS consumer
 .PHONY: consumer
 consumer:
 	@echo ">> ============= Run NATS Consumer ============= <<"
-	$(go) run cognit.go worker -c config.test.yml
+	$(go) run sloth.go worker -c config.test.yml
 
 
 ## ci: Run all CI tests.

@@ -1,8 +1,8 @@
-"""Cognit stores Agent Cards. The LLM only sees skills-as-tools."""
+"""Sloth stores Agent Cards. The LLM only sees skills-as-tools."""
 
 import json
 
-# What Cognit stores per registered agent: A2A card + this instance.
+# What Sloth stores per registered agent: A2A card + this instance.
 # PUT /v1/workspaces/acme/catalog/agents/{agent}
 store = {
     "user-directory": {
@@ -156,18 +156,18 @@ def execute(tool_call, store):
                 }
             },
         },
-        "cognit_routes_to": find_agent(store, skill_id),
+        "sloth_routes_to": find_agent(store, skill_id),
     }
 
 
 tools = cards_to_tools(store)
 calls = fake_llm(query, tools)
 
-print("1. Cognit store (agent cards)\n")
+print("1. Sloth store (agent cards)\n")
 print(json.dumps(store, indent=2))
 print("\n2. tools the LLM sees (skills only)\n")
 print(json.dumps(tools, indent=2))
 print("\n3. LLM tool calls\n")
 print(json.dumps(calls, indent=2))
-print("\n4. execute — Cognit maps skill → agent\n")
+print("\n4. execute — Sloth maps skill → agent\n")
 print(json.dumps([execute(c, store) for c in calls], indent=2))

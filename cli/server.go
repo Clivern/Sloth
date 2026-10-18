@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package cli
@@ -6,14 +6,14 @@ package cli
 import (
 	"fmt"
 
-	"github.com/clivern/cognit/core"
+	"github.com/clivern/sloth/core"
 
 	"github.com/spf13/cobra"
 )
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Start the Cognit management server",
+	Short: "Start the Sloth management server",
 	Run: func(_ *cobra.Command, _ []string) {
 		err := core.Load(config)
 		if err != nil {

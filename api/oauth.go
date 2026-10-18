@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/module"
-	"github.com/clivern/cognit/pkg/github"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/module"
+	"github.com/clivern/sloth/pkg/github"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
-const OauthStateCookie = "_cognit_oauth_state"
+const OauthStateCookie = "_sloth_oauth_state"
 
 // GitHubOAuthStartAction redirects the browser to GitHub's authorize URL.
 func (a *API) GitHubOAuthStartAction(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func (a *API) GitHubOAuthCallbackAction(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	util.SetCookie(w, "_cognit_session", result.Session.Token, result.CookieOptions)
+	util.SetCookie(w, "_sloth_session", result.Session.Token, result.CookieOptions)
 
 	err = a.Invite.AttachPending(result.User)
 	if err != nil {
@@ -180,7 +180,7 @@ func (a *API) GoogleOAuthCallbackAction(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	util.SetCookie(w, "_cognit_session", result.Session.Token, result.CookieOptions)
+	util.SetCookie(w, "_sloth_session", result.Session.Token, result.CookieOptions)
 
 	err = a.Invite.AttachPending(result.User)
 	if err != nil {

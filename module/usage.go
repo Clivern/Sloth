@@ -1,12 +1,14 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
 
 import (
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/ai"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/ai"
+	"github.com/clivern/sloth/pkg/util"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Usage provides workspace consumption helpers.
@@ -39,16 +41,28 @@ func (u *Usage) MembersCount(workspaceUsers db.WorkspaceUserRepository, workspac
 func (u *Usage) GetWorkspaceUsage(deps UsageSnapshotDeps, workspaceId db.Id) (*WorkspaceUsageMetrics, error) {
 	members, err := u.MembersCount(deps.WorkspaceUserRepository, workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count workspace members")
 		return nil, err
 	}
 
 	aiTokens, err := u.AITokens(deps.UsageRepository, workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get AI token usage")
 		return nil, err
 	}
 
 	aiCost, err := u.AICost(deps.UsageRepository, workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get AI cost usage")
 		return nil, err
 	}
 
@@ -94,10 +108,19 @@ func (u *Usage) IncrementAIUsage(usage db.UsageRepository, subscriptions db.Subs
 			tokens,
 			db.UsageUnitTokens,
 		); err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Msg("Failed to increment AI usage")
 			return err
 		}
 
 		if err := subscriptions.ConsumeTokens(workspaceId, tokens); err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Int64("tokens", tokens).
+				Msg("Failed to consume AI tokens")
 			return err
 		}
 	}
@@ -111,9 +134,19 @@ func (u *Usage) IncrementAIUsage(usage db.UsageRepository, subscriptions db.Subs
 			cost,
 			db.UsageUnitNanoUSD,
 		); err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Msg("Failed to increment AI usage")
 			return err
 		}
 	}
+
+	log.Debug().
+		Str("workspaceId", workspaceId.String()).
+		Int64("tokens", tokens).
+		Int64("cost", cost).
+		Msg("AI usage incremented")
 
 	return nil
 }

@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -110,7 +110,7 @@ func (r *HealthCheckRepositoryPostgres) Create(check *HealthCheck) error {
 	}
 
 	return r.db.QueryRow(
-		`INSERT INTO health_checks (
+		`INSERT INTO ai_health_checks (
 			id, instance_id, check_id, name, type, source, status, definition,
 			output, ttl_expires_at, last_run_at, next_run_at
 		)
@@ -138,7 +138,7 @@ func (r *HealthCheckRepositoryPostgres) GetById(id Id) (*HealthCheck, error) {
 		`SELECT
 			id, instance_id, check_id, name, type, source, status, definition,
 			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
-		FROM health_checks
+		FROM ai_health_checks
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -171,7 +171,7 @@ func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(instanceId Id, c
 		`SELECT
 			id, instance_id, check_id, name, type, source, status, definition,
 			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
-		FROM health_checks
+		FROM ai_health_checks
 		WHERE instance_id = $1 AND check_id = $2`,
 		instanceId.String(),
 		checkId,
@@ -201,7 +201,7 @@ func (r *HealthCheckRepositoryPostgres) GetByInstanceAndCheckId(instanceId Id, c
 // Update updates a health check definition and when it next runs.
 func (r *HealthCheckRepositoryPostgres) Update(check *HealthCheck) error {
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET name = $1, type = $2, definition = $3::jsonb, next_run_at = $4, updated_at = $5
 		WHERE id = $6`,
 		check.Name,
@@ -217,7 +217,7 @@ func (r *HealthCheckRepositoryPostgres) Update(check *HealthCheck) error {
 
 // Delete removes a health check row.
 func (r *HealthCheckRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM health_checks WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_health_checks WHERE id = $1`, id.String())
 
 	return err
 }
@@ -228,7 +228,7 @@ func (r *HealthCheckRepositoryPostgres) ListByInstanceId(instanceId Id) ([]*Heal
 		`SELECT
 			id, instance_id, check_id, name, type, source, status, definition,
 			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
-		FROM health_checks
+		FROM ai_health_checks
 		WHERE instance_id = $1
 		ORDER BY check_id`,
 		instanceId.String(),
@@ -271,8 +271,8 @@ func (r *HealthCheckRepositoryPostgres) ListByInstanceId(instanceId Id) ([]*Heal
 // DeleteByAgentAndCheckId removes a template check from every instance of an agent.
 func (r *HealthCheckRepositoryPostgres) DeleteByAgentAndCheckId(agentId Id, checkId string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM health_checks hc
-		USING agent_instances ai
+		`DELETE FROM ai_health_checks hc
+		USING ai_agent_instances ai
 		WHERE hc.instance_id = ai.id
 			AND ai.agent_id = $1
 			AND hc.check_id = $2
@@ -294,7 +294,7 @@ func (r *HealthCheckRepositoryPostgres) Pass(id Id, output string, ttlExpiresAt 
 	}
 
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET status = $1, output = $2, ttl_expires_at = COALESCE($3, ttl_expires_at),
 			last_run_at = $4, updated_at = $4
 		WHERE id = $5`,
@@ -317,7 +317,7 @@ func (r *HealthCheckRepositoryPostgres) Warn(id Id, output string) error {
 	}
 
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET status = $1, output = $2, last_run_at = $3, updated_at = $3
 		WHERE id = $4`,
 		HealthCheckStatusWarning,
@@ -338,7 +338,7 @@ func (r *HealthCheckRepositoryPostgres) Fail(id Id, output string) error {
 	}
 
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET status = $1, output = $2, last_run_at = $3, updated_at = $3
 		WHERE id = $4`,
 		HealthCheckStatusCritical,
@@ -359,7 +359,7 @@ func (r *HealthCheckRepositoryPostgres) Report(id Id, status, output string, ttl
 	}
 
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET status = $1, output = $2, ttl_expires_at = COALESCE($3, ttl_expires_at),
 			last_run_at = $4, updated_at = $4
 		WHERE id = $5`,
@@ -386,7 +386,7 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 		`SELECT
 			id, instance_id, check_id, name, type, source, status, definition,
 			output, ttl_expires_at, last_run_at, next_run_at, created_at, updated_at
-		FROM health_checks
+		FROM ai_health_checks
 		WHERE next_run_at <= $1 AND type IN ($2, $3)
 		ORDER BY next_run_at
 		LIMIT $4
@@ -434,7 +434,7 @@ func (r *HealthCheckRepositoryPostgres) ClaimDue(now time.Time, limit int, hold 
 
 	held := now.Add(hold)
 	for _, check := range list {
-		_, err := tx.Exec(`UPDATE health_checks SET next_run_at = $1 WHERE id = $2`, held, check.Id.String())
+		_, err := tx.Exec(`UPDATE ai_health_checks SET next_run_at = $1 WHERE id = $2`, held, check.Id.String())
 		if err != nil {
 			return nil, err
 		}
@@ -452,7 +452,7 @@ func (r *HealthCheckRepositoryPostgres) Record(id Id, status, output string, nex
 	}
 
 	_, err := r.db.Exec(
-		`UPDATE health_checks
+		`UPDATE ai_health_checks
 		SET status = $1, output = $2, last_run_at = $3, next_run_at = $4, updated_at = $3
 		WHERE id = $5`,
 		status,
@@ -478,7 +478,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Create(id Id, key, value string) err
 	}
 
 	_, err = r.db.Exec(
-		`INSERT INTO health_checks_meta (id, health_check_id, key, value)
+		`INSERT INTO ai_health_checks_meta (id, health_check_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
 		metaId.String(),
 		id.String(),
@@ -494,7 +494,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheck
 	meta := &HealthCheckMeta{}
 	err := r.db.QueryRow(
 		`SELECT id, health_check_id, key, value #>> '{}', created_at, updated_at
-		FROM health_checks_meta
+		FROM ai_health_checks_meta
 		WHERE health_check_id = $1 AND key = $2`,
 		id.String(),
 		key,
@@ -516,7 +516,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Get(id Id, key string) (*HealthCheck
 // Update updates an existing health check metadata row. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
-		`UPDATE health_checks_meta
+		`UPDATE ai_health_checks_meta
 		SET value = to_jsonb($1::text), updated_at = $2
 		WHERE health_check_id = $3 AND key = $4`,
 		value,
@@ -531,7 +531,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Update(id Id, key, value string) err
 // Delete deletes a health check metadata row. TODO: remove if not used in future.
 func (r *HealthCheckMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM health_checks_meta WHERE health_check_id = $1 AND key = $2`,
+		`DELETE FROM ai_health_checks_meta WHERE health_check_id = $1 AND key = $2`,
 		id.String(),
 		key,
 	)
@@ -543,7 +543,7 @@ func (r *HealthCheckMetaRepositoryPostgres) Delete(id Id, key string) error {
 func (r *HealthCheckMetaRepositoryPostgres) ListByHealthCheckId(id Id) ([]*HealthCheckMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, health_check_id, key, value #>> '{}', created_at, updated_at
-		FROM health_checks_meta
+		FROM ai_health_checks_meta
 		WHERE health_check_id = $1
 		ORDER BY key`,
 		id.String(),

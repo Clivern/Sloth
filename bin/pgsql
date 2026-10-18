@@ -31,14 +31,14 @@ from pathlib import Path
 
 
 DEFAULT_IMAGE = "docker.io/library/postgres:16-alpine"
-DEFAULT_CONTAINER = "cognit-postgres"
-DEFAULT_VOLUME = "cognit-postgres-data"
+DEFAULT_CONTAINER = "sloth-postgres"
+DEFAULT_VOLUME = "sloth-postgres-data"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_HOST_PORT = 5433
 DEFAULT_CONTAINER_PORT = 5432
 DEFAULT_USER = "postgres"
 DEFAULT_PASSWORD = "postgres"
-DEFAULT_DATABASE = "cognit"
+DEFAULT_DATABASE = "sloth"
 DEFAULT_DATA_MOUNT = "/var/lib/postgresql"
 DEFAULT_PGDATA = f"{DEFAULT_DATA_MOUNT}/pgdata"
 
@@ -73,12 +73,12 @@ HELP_TEXT = f"""examples:
   ./bin/pgsql remove --with-volume
 
 default app environment:
-  export COGNIT_DATABASE_DRIVER=postgres
-  export COGNIT_DATABASE_HOST={DEFAULT_HOST}
-  export COGNIT_DATABASE_PORT={DEFAULT_HOST_PORT}
-  export COGNIT_DATABASE_USERNAME={DEFAULT_USER}
-  export COGNIT_DATABASE_PASSWORD={DEFAULT_PASSWORD}
-  export COGNIT_DATABASE_NAME={DEFAULT_DATABASE}
+  export SLOTH_DATABASE_DRIVER=postgres
+  export SLOTH_DATABASE_HOST={DEFAULT_HOST}
+  export SLOTH_DATABASE_PORT={DEFAULT_HOST_PORT}
+  export SLOTH_DATABASE_USERNAME={DEFAULT_USER}
+  export SLOTH_DATABASE_PASSWORD={DEFAULT_PASSWORD}
+  export SLOTH_DATABASE_NAME={DEFAULT_DATABASE}
 """
 
 
@@ -184,12 +184,12 @@ Image:     {cfg.image}
 DSN:       {dsn}
 
 App environment:
-export COGNIT_DATABASE_DRIVER=postgres
-export COGNIT_DATABASE_HOST={cfg.host}
-export COGNIT_DATABASE_PORT={cfg.port}
-export COGNIT_DATABASE_USERNAME={cfg.user}
-export COGNIT_DATABASE_PASSWORD={cfg.password}
-export COGNIT_DATABASE_NAME={cfg.database}
+export SLOTH_DATABASE_DRIVER=postgres
+export SLOTH_DATABASE_HOST={cfg.host}
+export SLOTH_DATABASE_PORT={cfg.port}
+export SLOTH_DATABASE_USERNAME={cfg.user}
+export SLOTH_DATABASE_PASSWORD={cfg.password}
+export SLOTH_DATABASE_NAME={cfg.database}
 """
 
 
@@ -400,7 +400,7 @@ def add_common_options(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run a local PostgreSQL database for cognit with Apple Container.",
+        description="Run a local PostgreSQL database for sloth with Apple Container.",
         epilog=HELP_TEXT,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

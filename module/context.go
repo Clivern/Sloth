@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -6,7 +6,7 @@ package module
 import (
 	"context"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 )
 
 // AppCtx carries request-scoped metadata that can be passed through handlers and services.

@@ -54,7 +54,7 @@
                 required
                 maxlength="100"
                 class="input-field font-mono"
-                placeholder="cognit"
+                placeholder="sloth"
                 autocomplete="off"
                 :disabled="saving"
               />
@@ -133,7 +133,7 @@ watch(() => props.open, (open) => {
   error.value = null
   form.type = props.current?.type || 'api_key'
   form.header = props.current?.header || 'X-API-Key'
-  form.username = props.current?.username || 'cognit'
+  form.username = props.current?.username || 'sloth'
   form.secret = ''
 })
 

@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/imroc/req/v3"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -59,6 +60,10 @@ func (c *Card) Fetch(ctx context.Context, address string, port int, path string)
 			DisableAutoReadResponse().
 			Get(target.String())
 		if err != nil {
+			log.Debug().
+				Err(err).
+				Str("url", target.String()).
+				Msg("Failed to fetch agent card")
 			lastErr = fmt.Errorf("fetch agent card: %w", err)
 			continue
 		}
@@ -66,26 +71,51 @@ func (c *Card) Fetch(ctx context.Context, address string, port int, path string)
 		body, err := io.ReadAll(io.LimitReader(resp.Body, MaxCardSize+1))
 		resp.Body.Close()
 		if err != nil {
+			log.Debug().
+				Err(err).
+				Str("url", target.String()).
+				Msg("Failed to fetch agent card")
 			lastErr = fmt.Errorf("fetch agent card: %w", err)
 			continue
 		}
 
 		if !resp.IsSuccessState() {
+			log.Debug().
+				Str("url", target.String()).
+				Int("status", resp.StatusCode).
+				Msg("Agent card request failed")
 			lastErr = fmt.Errorf("fetch agent card: %s: status %d", target.String(), resp.StatusCode)
 			continue
 		}
 
 		if len(body) > MaxCardSize {
+			log.Warn().
+				Str("url", target.String()).
+				Msg("Agent card too large")
 			return nil, ErrCardTooLarge
 		}
 
 		var card map[string]any
 		if json.Unmarshal(body, &card) != nil || card == nil {
+			log.Warn().
+				Str("url", target.String()).
+				Msg("Agent card is not a JSON object")
 			return nil, ErrInvalidAgentCard
 		}
 
+		log.Debug().
+			Str("url", target.String()).
+			Msg("Agent card fetched")
+
 		return card, nil
 	}
+
+	log.Warn().
+		Err(lastErr).
+		Str("address", address).
+		Int("port", port).
+		Str("path", path).
+		Msg("Failed to fetch agent card")
 
 	return nil, lastErr
 }

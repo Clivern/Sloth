@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -6,15 +6,15 @@ package api
 import (
 	"net/http"
 
-	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/locale"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 )
 
 // LogoutAction logs the user out and revokes their session.
 func (a *API) LogoutAction(w http.ResponseWriter, r *http.Request) {
-	util.DeleteCookie(w, "_cognit_session")
+	util.DeleteCookie(w, "_sloth_session")
 
 	user, ok := a.GetUser(r)
 	if !ok {

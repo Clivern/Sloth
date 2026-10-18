@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -6,7 +6,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/clivern/cognit/locale"
+	"github.com/clivern/sloth/locale"
 
 	"github.com/rs/zerolog/log"
 )

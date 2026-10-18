@@ -1,4 +1,4 @@
-CREATE TABLE async_tasks (
+CREATE TABLE IF NOT EXISTS async_tasks (
 	id UUID PRIMARY KEY,
 	workspace_id UUID NULL REFERENCES workspaces(id) ON DELETE CASCADE,
 	type VARCHAR(60) NOT NULL,
@@ -14,5 +14,5 @@ CREATE TABLE async_tasks (
 	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
-CREATE INDEX idx_async_tasks_status_priority_created_at
+CREATE INDEX IF NOT EXISTS idx_async_tasks_status_priority_created_at
 	ON async_tasks (status, priority DESC, created_at);

@@ -5,7 +5,7 @@ Every gateway call answers two questions:
 1. **Who is calling?** The credential (`agent_identity`).
 2. **May they call this agent?** The `intentions` table.
 
-Callers go through Cognit. They do not call another agent’s IP.
+Callers go through Sloth. They do not call another agent’s IP.
 
 ## Example
 
@@ -20,7 +20,7 @@ Each caller has **its own** key. `agent3` does not hand out a shared secret.
 
 ## Identity
 
-`agent_identity` is the caller’s identity (API key or basic auth). Cognit issues the secret once and stores a hash.
+`agent_identity` is the caller’s identity (API key or basic auth). Sloth issues the secret once and stores a hash.
 
 Verify the secret → that row’s agent is the source. Fail → **401**.
 
@@ -51,7 +51,7 @@ grant_type=client_credentials
 
 Tokens are stored as SHA-256 hashes in `agent_identity_tokens` and deleted once expired. A wrong secret, a disabled identity or another identity type gets **401** `invalid_client`.
 
-`X-Source-Agent` is only a lookup hint so Cognit does not scan every key: find that agent, then verify the secret against **its** hashes. If the header says `agent1` but the secret is `agent2`’s → **401**. The header never wins.
+`X-Source-Agent` is only a lookup hint so Sloth does not scan every key: find that agent, then verify the secret against **its** hashes. If the header says `agent1` but the secret is `agent2`’s → **401**. The header never wins.
 
 ## Policy
 
@@ -77,9 +77,9 @@ forward
 
 ## Protection
 
-Identity proves who is calling. Protection keeps the destination reachable **only** through Cognit.
+Identity proves who is calling. Protection keeps the destination reachable **only** through Sloth.
 
-Each agent has at most one protection: the credential Cognit sends when it forwards a call. Configure the agent to reject calls without it.
+Each agent has at most one protection: the credential Sloth sends when it forwards a call. Configure the agent to reject calls without it.
 
 ```
 GET    /api/v1/workspaces/{workspace}/agents/{agent}/protection
@@ -93,4 +93,4 @@ DELETE /api/v1/workspaces/{workspace}/agents/{agent}/protection
 | `api_key` | secret in `header` (default `X-API-Key`) | encrypted |
 | `basic_auth` | `username` + secret | encrypted |
 
-`PUT` takes `type`, `username` (basic auth), `header` (API key) and an optional `secret`. Without `secret`, Cognit generates one and returns it once. Saving again replaces the credential. `PUT …/status` takes `isActive` and keeps the secret.
+`PUT` takes `type`, `username` (basic auth), `header` (API key) and an optional `secret`. Without `secret`, Sloth generates one and returns it once. Saving again replaces the credential. `PUT …/status` takes `isActive` and keeps the secret.

@@ -1,12 +1,12 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package cli
 
 import (
-	"github.com/clivern/cognit/core"
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/migration"
+	"github.com/clivern/sloth/core"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/migration"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"

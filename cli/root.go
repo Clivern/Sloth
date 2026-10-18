@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package cli
@@ -13,12 +13,12 @@ import (
 var config string
 
 var rootCmd = &cobra.Command{
-	Use: "cognit",
-	Short: `🐀 A Service Discovery Registry for AI Agents
+	Use: "sloth",
+	Short: `🚩 A Gateway & Service Discovery Registry for AI Agents
 
 
 If you have any suggestions, bug reports, or annoyances please report
-them to our issue tracker at <https://github.com/clivern/cognit/issues>`,
+them to our issue tracker at <https://github.com/clivern/sloth/issues>`,
 }
 
 // Execute runs cmd tool

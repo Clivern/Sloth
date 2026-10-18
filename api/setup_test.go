@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clivern/cognit/module"
+	"github.com/clivern/sloth/module"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"

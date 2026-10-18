@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -34,7 +34,7 @@ const (
 const BotUserId Id = "00000000-0000-0000-0000-000000000000"
 
 // BotUserName is the name of the platform bot user.
-const BotUserName = "Cognit"
+const BotUserName = "Sloth"
 
 // User is the DB row for a user.
 type User struct {

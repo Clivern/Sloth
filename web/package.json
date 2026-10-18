@@ -1,7 +1,7 @@
 {
-  "name": "Cognit",
+  "name": "Sloth",
   "version": "0.1.0",
-  "description": "A Service Discovery Registry for AI Agents",
+  "description": "A Gateway & Service Discovery Registry for AI Agents",
   "type": "module",
   "scripts": {
     "dev": "vite",

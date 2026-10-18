@@ -1,13 +1,13 @@
 version: 2
 
-project_name: cognit
+project_name: sloth
 
 before:
   hooks:
     - go mod download
 
 builds:
-  - id: cognit
+  - id: sloth
     main: .
     env:
       - CGO_ENABLED=0

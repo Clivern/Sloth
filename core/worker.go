@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package core
@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/broker"
-	"github.com/clivern/cognit/worker"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/broker"
+	"github.com/clivern/sloth/worker"
 
 	"github.com/rs/zerolog/log"
 )
@@ -43,8 +43,9 @@ func RunWorker() error {
 	nats := client.Config().NATS
 
 	worker.Register(worker.Dependencies{
-		Tasks:  db.NewAsyncTaskRepository(db.GetDB(false)),
-		Checks: db.NewHealthCheckRepository(db.GetDB(true)),
+		Tasks:        db.NewAsyncTaskRepository(db.GetDB(false)),
+		Checks:       db.NewHealthCheckRepository(db.GetDB(true)),
+		Integrations: db.NewIntegrationRepository(db.GetDB(true)),
 	})
 
 	err = worker.Bind(client, nats.Queue)

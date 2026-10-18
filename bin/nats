@@ -26,13 +26,13 @@ from pathlib import Path
 
 
 DEFAULT_IMAGE = "docker.io/library/nats:2"
-DEFAULT_CONTAINER = "cognit-nats"
-DEFAULT_VOLUME = "cognit-nats-data"
+DEFAULT_CONTAINER = "sloth-nats"
+DEFAULT_VOLUME = "sloth-nats-data"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_CLIENT_PORT = 4222
 DEFAULT_MONITOR_PORT = 8222
-DEFAULT_NAME = "cognit"
-DEFAULT_QUEUE = "cognit"
+DEFAULT_NAME = "sloth"
+DEFAULT_QUEUE = "sloth"
 DEFAULT_DATA_MOUNT = "/data"
 
 MONITOR_ENDPOINTS = (
@@ -61,9 +61,9 @@ HELP_TEXT = f"""examples:
   ./bin/nats remove --with-volume
 
 default app environment:
-  export COGNIT_BROKER_URL=nats://{DEFAULT_HOST}:{DEFAULT_CLIENT_PORT}
-  export COGNIT_BROKER_NAME={DEFAULT_NAME}
-  export COGNIT_BROKER_QUEUE={DEFAULT_QUEUE}
+  export SLOTH_BROKER_URL=nats://{DEFAULT_HOST}:{DEFAULT_CLIENT_PORT}
+  export SLOTH_BROKER_NAME={DEFAULT_NAME}
+  export SLOTH_BROKER_QUEUE={DEFAULT_QUEUE}
 """
 
 
@@ -169,9 +169,9 @@ Client URL: nats://{cfg.host}:{cfg.client_port}
 Monitor:    http://{cfg.host}:{cfg.monitor_port}
 
 App environment:
-export COGNIT_BROKER_URL=nats://{cfg.host}:{cfg.client_port}
-export COGNIT_BROKER_NAME={cfg.name}
-export COGNIT_BROKER_QUEUE={cfg.queue}
+export SLOTH_BROKER_URL=nats://{cfg.host}:{cfg.client_port}
+export SLOTH_BROKER_NAME={cfg.name}
+export SLOTH_BROKER_QUEUE={cfg.queue}
 """
 
 
@@ -373,7 +373,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_common_options(common_parser)
 
     parser = argparse.ArgumentParser(
-        description="Run a local NATS server for cognit with Apple Container.",
+        description="Run a local NATS server for sloth with Apple Container.",
         epilog=HELP_TEXT,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

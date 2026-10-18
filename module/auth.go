@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 )
@@ -52,7 +52,11 @@ func NewAuth(users db.UserRepository, sessions db.SessionRepository, config db.C
 // Logout revokes all sessions for a user.
 func (a *Auth) Logout(userId db.Id) error {
 	count, err := a.SessionRepository.DeleteExpired()
-	if err == nil && count > 0 {
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to delete expired sessions")
+	} else if count > 0 {
 		log.Info().
 			Int64("count", count).
 			Msg("Expired sessions deleted")
@@ -60,6 +64,10 @@ func (a *Auth) Logout(userId db.Id) error {
 
 	err = a.SessionRepository.DeleteByUserId(userId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", userId.String()).
+			Msg("Failed to revoke user sessions")
 		return fmt.Errorf("%w: %v", ErrFailedRevokeSessions, err)
 	}
 

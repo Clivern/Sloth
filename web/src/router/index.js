@@ -99,10 +99,10 @@ const routes = [
     meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Integrations', description: 'Integrations' }
   },
   {
-    path: '/audits',
-    name: 'Audits',
-    component: () => import('@/views/Audits.vue'),
-    meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Audits', description: 'Workspace audit log' }
+    path: '/events',
+    name: 'Events',
+    component: () => import('@/views/Events.vue'),
+    meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Events', description: 'Workspace events' }
   },
   {
     path: '/404',

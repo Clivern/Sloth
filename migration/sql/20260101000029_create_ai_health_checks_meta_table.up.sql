@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS ai_health_checks_meta (
+	id UUID PRIMARY KEY,
+	health_check_id UUID NOT NULL REFERENCES ai_health_checks(id) ON DELETE CASCADE,
+	key VARCHAR(60) NOT NULL,
+	value JSONB,
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	UNIQUE (health_check_id, key)
+);

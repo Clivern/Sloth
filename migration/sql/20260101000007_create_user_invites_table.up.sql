@@ -1,4 +1,4 @@
-CREATE TABLE user_invites (
+CREATE TABLE IF NOT EXISTS user_invites (
 	id UUID PRIMARY KEY,
 	email VARCHAR(60) NOT NULL,
 	role VARCHAR(20) NOT NULL DEFAULT 'regular',
@@ -11,4 +11,4 @@ CREATE TABLE user_invites (
 	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
-CREATE INDEX idx_user_invites_token ON user_invites(token);
+CREATE INDEX IF NOT EXISTS idx_user_invites_token ON user_invites(token);

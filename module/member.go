@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -6,7 +6,9 @@ package module
 import (
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
+
+	"github.com/rs/zerolog/log"
 )
 
 // WorkspaceMemberResponse is a workspace member shaped for API responses.
@@ -36,6 +38,10 @@ type ListWorkspaceMembersResult struct {
 func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (*ListWorkspaceMembersResult, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -48,11 +54,19 @@ func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (
 		offset,
 	)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to list workspace members")
 		return nil, err
 	}
 
 	total, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to count workspace members")
 		return nil, err
 	}
 
@@ -60,9 +74,18 @@ func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (
 	for _, member := range list {
 		user, err := w.UserRepository.GetById(member.UserId)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("userId", member.UserId.String()).
+				Msg("Failed to get member user")
 			return nil, err
 		}
 		if user == nil {
+			log.Warn().
+				Str("workspaceId", workspaceId.String()).
+				Str("userId", member.UserId.String()).
+				Msg("Workspace member has no user")
 			continue
 		}
 
@@ -83,13 +106,27 @@ func (w *Workspace) ListWorkspaceMembers(workspaceId db.Id, limit, offset int) (
 
 // GetWorkspaceMember returns the membership for a user in a workspace, or nil if not a member. TODO: remove if not used in future.
 func (w *Workspace) GetWorkspaceMember(workspaceId, userId db.Id) (*db.WorkspaceUser, error) {
-	return w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
+	member, err := w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Msg("Failed to get workspace membership")
+		return nil, err
+	}
+
+	return member, nil
 }
 
 // UpdateWorkspaceMemberRole updates the role of a member in a workspace.
 func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role string) (*WorkspaceMemberResponse, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -98,6 +135,11 @@ func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role st
 
 	m, err := w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Msg("Failed to get workspace membership")
 		return nil, err
 	}
 	if m == nil {
@@ -111,11 +153,28 @@ func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role st
 
 	err = w.WorkspaceUserRepository.Update(m)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Str("role", role).
+			Msg("Failed to update member role")
 		return nil, err
 	}
 
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("userId", userId.String()).
+		Str("role", role).
+		Msg("Workspace member role updated")
+
 	user, err := w.UserRepository.GetById(m.UserId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Msg("Failed to get member user")
 		return nil, err
 	}
 	if user == nil {
@@ -136,9 +195,13 @@ func (w *Workspace) UpdateWorkspaceMemberRole(workspaceId, userId db.Id, role st
 
 // DeleteWorkspaceMember removes a member from a workspace.
 func (w *Workspace) DeleteWorkspaceMember(workspaceId, userId db.Id) error {
-
 	m, err := w.WorkspaceUserRepository.GetByWorkspaceAndUser(workspaceId, userId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Msg("Failed to get workspace membership")
 		return err
 	}
 	if m == nil {
@@ -148,5 +211,20 @@ func (w *Workspace) DeleteWorkspaceMember(workspaceId, userId db.Id) error {
 		return ErrWorkspaceOwnerProtected
 	}
 
-	return w.WorkspaceUserRepository.Delete(m.Id)
+	err = w.WorkspaceUserRepository.Delete(m.Id)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("userId", userId.String()).
+			Msg("Failed to remove workspace member")
+		return err
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("userId", userId.String()).
+		Msg("Workspace member removed")
+
+	return nil
 }

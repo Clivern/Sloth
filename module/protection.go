@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -9,9 +9,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/encrypt"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/encrypt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -20,7 +21,7 @@ var (
 	ErrInvalidProtectionConfig = errors.New("invalid protection config")
 )
 
-// ProtectionConfig is the JSON shape stored in agent_protection.config.
+// ProtectionConfig is the JSON shape stored in ai_agent_protection.config.
 type ProtectionConfig struct {
 	Header          string `json:"header,omitempty"`
 	Username        string `json:"username,omitempty"`
@@ -70,6 +71,11 @@ func NewProtection(agents db.AgentRepository, protections db.AgentProtectionRepo
 func (p *Protection) GetProtection(workspaceId db.Id, agentName string) (*ProtectionResponse, error) {
 	agent, err := p.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -78,6 +84,11 @@ func (p *Protection) GetProtection(workspaceId db.Id, agentName string) (*Protec
 
 	protection, err := p.ProtectionRepository.GetByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent protection")
 		return nil, err
 	}
 	if protection == nil {
@@ -85,7 +96,12 @@ func (p *Protection) GetProtection(workspaceId db.Id, agentName string) (*Protec
 	}
 
 	var config ProtectionConfig
-	_ = json.Unmarshal([]byte(protection.Config), &config)
+	if err := json.Unmarshal([]byte(protection.Config), &config); err != nil {
+		log.Warn().
+			Err(err).
+			Str("protectionId", protection.Id.String()).
+			Msg("Failed to decode protection config")
+	}
 
 	return &ProtectionResponse{
 		Id:        protection.Id,
@@ -106,6 +122,11 @@ func (p *Protection) SaveProtection(workspaceId db.Id, agentName string, req *Sa
 
 	agent, err := p.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -123,13 +144,31 @@ func (p *Protection) SaveProtection(workspaceId db.Id, agentName string, req *Sa
 		config.SecretEncrypted, err = encrypt.Encrypt(secret)
 	}
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to encrypt protection secret")
 		return nil, err
 	}
 
-	raw, _ := json.Marshal(config)
+	raw, err := json.Marshal(config)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to encode protection config")
+		return nil, err
+	}
 
 	protection, err := p.ProtectionRepository.GetByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent protection")
 		return nil, err
 	}
 
@@ -143,8 +182,20 @@ func (p *Protection) SaveProtection(workspaceId db.Id, agentName string, req *Sa
 		err = p.ProtectionRepository.Update(protection)
 	}
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to save agent protection")
 		return nil, err
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("protectionId", protection.Id.String()).
+		Str("type", protection.Type).
+		Msg("Agent protection saved")
 
 	return &ProtectionResponse{
 		Id:        protection.Id,
@@ -162,6 +213,11 @@ func (p *Protection) SaveProtection(workspaceId db.Id, agentName string, req *Sa
 func (p *Protection) UpdateProtectionStatus(workspaceId db.Id, agentName string, req *UpdateProtectionStatusRequest) (*ProtectionResponse, error) {
 	agent, err := p.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, err
 	}
 	if agent == nil {
@@ -170,6 +226,11 @@ func (p *Protection) UpdateProtectionStatus(workspaceId db.Id, agentName string,
 
 	protection, err := p.ProtectionRepository.GetByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent protection")
 		return nil, err
 	}
 	if protection == nil {
@@ -180,11 +241,28 @@ func (p *Protection) UpdateProtectionStatus(workspaceId db.Id, agentName string,
 
 	err = p.ProtectionRepository.Update(protection)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to update agent protection status")
 		return nil, err
 	}
 
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("protectionId", protection.Id.String()).
+		Bool("isActive", protection.IsActive).
+		Msg("Agent protection status updated")
+
 	var config ProtectionConfig
-	_ = json.Unmarshal([]byte(protection.Config), &config)
+	if err := json.Unmarshal([]byte(protection.Config), &config); err != nil {
+		log.Warn().
+			Err(err).
+			Str("protectionId", protection.Id.String()).
+			Msg("Failed to decode protection config")
+	}
 
 	return &ProtectionResponse{
 		Id:        protection.Id,
@@ -201,6 +279,11 @@ func (p *Protection) UpdateProtectionStatus(workspaceId db.Id, agentName string,
 func (p *Protection) DeleteProtection(workspaceId db.Id, agentName string) error {
 	agent, err := p.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return err
 	}
 	if agent == nil {
@@ -209,11 +292,32 @@ func (p *Protection) DeleteProtection(workspaceId db.Id, agentName string) error
 
 	protection, err := p.ProtectionRepository.GetByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent protection")
 		return err
 	}
 	if protection == nil {
 		return ErrProtectionNotFound
 	}
 
-	return p.ProtectionRepository.Delete(protection.Id)
+	err = p.ProtectionRepository.Delete(protection.Id)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to delete agent protection")
+		return err
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("protectionId", protection.Id.String()).
+		Msg("Agent protection deleted")
+
+	return nil
 }

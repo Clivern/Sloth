@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -15,7 +15,7 @@ const (
 	AsyncTaskStatusCompleted = "completed"
 	AsyncTaskStatusFailed    = "failed"
 
-	AsyncTaskTypeNoop = "cognit.noop"
+	AsyncTaskTypeNoop = "sloth.noop"
 )
 
 // AsyncTask is a single row in the async_tasks table.

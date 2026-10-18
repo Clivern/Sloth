@@ -1,9 +1,9 @@
-# Cognit DB Schema
+# Sloth DB Schema
 
 SQL migrations live in [`sql/`](sql) as `<version>_<description>.{up,down}.sql` pairs. Applied versions are tracked in the `migrations` table.
 
 ```bash
-go run cognit.go migrate up -c config.yml
+go run sloth.go migrate up -c config.yml
 ```
 
 Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value extensions (`key`, `value jsonb`) of their parent table. All foreign keys use `ON DELETE CASCADE`. Timestamps default to `CURRENT_TIMESTAMP AT TIME ZONE 'UTC'` (shown as `now() UTC`).
@@ -568,23 +568,26 @@ Access tokens issued to `client_credentials` identities by `POST /api/v1/public/
 - Index: `idx_a2a_tasks_workspace_id_created_at` on `(workspace_id, created_at DESC)`
 - Index: `idx_a2a_tasks_state_updated_at` on `(state, updated_at)`
 
-### `audit`
+### `events`
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
 | `id` | UUID | no |  | primary key |
 | `workspace_id` | UUID | no |  | → `workspaces.id` (cascade) |
+| `type` | VARCHAR(60) | no |  | `audit.log`, `agent.health.changed`, `agent.instance.changed`, `catalog.changed`, `gateway.call.denied`, `system.health.degraded` |
 | `actor_id` | UUID | yes |  |  |
 | `actor_name` | VARCHAR(100) | yes |  |  |
-| `actor_type` | VARCHAR(20) | yes |  |  |
-| `action` | VARCHAR(100) | no |  |  |
+| `actor_type` | VARCHAR(20) | yes |  | `user`, `access_key`, `system` |
 | `resource_type` | VARCHAR(100) | yes |  |  |
 | `resource_id` | UUID | yes |  |  |
 | `ip_address` | VARCHAR(45) | yes |  |  |
 | `user_agent` | VARCHAR(200) | yes |  |  |
-| `meta` | JSONB | yes |  |  |
+| `data` | JSONB | yes |  |  |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |
-| `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
+
+- Index: `idx_events_workspace_id_created_at` on `(workspace_id, created_at DESC)`
+- Index: `idx_events_resource` on `(resource_type, resource_id)`
+- Every triggered event is stored; each active integration subscribed to it also gets a delivery task in `async_tasks`.
 
 ## Global
 
@@ -640,7 +643,7 @@ erDiagram
     workspaces ||--o{ agent_skills : has
     workspaces ||--o{ integrations : has
     workspaces |o--o{ async_tasks : has
-    workspaces ||--o{ audit : has
+    workspaces ||--o{ events : has
 
     subscriptions ||--o{ subscriptions_meta : has
     integrations ||--o{ integrations_meta : has

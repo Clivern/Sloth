@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clivern/cognit/migration"
+	"github.com/clivern/sloth/migration"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
@@ -29,10 +29,10 @@ func openTestDB(t *testing.T) *sql.DB {
 
 	testDBOnce.Do(func() {
 		port := 5432
-		if raw := os.Getenv("COGNIT_DATABASE_PORT"); raw != "" {
+		if raw := os.Getenv("SLOTH_DATABASE_PORT"); raw != "" {
 			parsed, err := strconv.Atoi(raw)
 			if err != nil {
-				testDBErr = fmt.Errorf("invalid COGNIT_DATABASE_PORT: %w", err)
+				testDBErr = fmt.Errorf("invalid SLOTH_DATABASE_PORT: %w", err)
 				return
 			}
 
@@ -40,12 +40,12 @@ func openTestDB(t *testing.T) *sql.DB {
 		}
 
 		config := DatabaseConfig{
-			Driver:   envOr("COGNIT_DATABASE_DRIVER", "postgres"),
-			Host:     envOr("COGNIT_DATABASE_HOST", "localhost"),
+			Driver:   envOr("SLOTH_DATABASE_DRIVER", "postgres"),
+			Host:     envOr("SLOTH_DATABASE_HOST", "localhost"),
 			Port:     port,
-			Username: envOr("COGNIT_DATABASE_USERNAME", "postgres"),
-			Password: envOr("COGNIT_DATABASE_PASSWORD", "postgres"),
-			Database: envOr("COGNIT_DATABASE_NAME", "cognit"),
+			Username: envOr("SLOTH_DATABASE_USERNAME", "postgres"),
+			Password: envOr("SLOTH_DATABASE_PASSWORD", "postgres"),
+			Database: envOr("SLOTH_DATABASE_NAME", "sloth"),
 		}
 
 		var conn *Connection

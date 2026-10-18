@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,9 +7,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/util"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -72,11 +73,20 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 	for {
 		h, err := util.RandomHandle(4, 8)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Msg("Failed to generate workspace handle")
 			return nil, err
 		}
 
 		existing, err := w.WorkspaceRepository.GetByHandle(h)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("handle", h).
+				Msg("Failed to get workspace by handle")
 			return nil, err
 		}
 		if existing == nil {
@@ -92,6 +102,10 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 
 	err := w.WorkspaceRepository.Create(workspace)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to create workspace")
 		return nil, err
 	}
 
@@ -101,6 +115,11 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 		Role:        db.UserRoleOwner,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Str("workspaceId", workspace.Id.String()).
+			Msg("Failed to add workspace owner")
 		return nil, err
 	}
 
@@ -108,11 +127,26 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 		WorkspaceId: workspace.Id,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Str("workspaceId", workspace.Id.String()).
+			Msg("Failed to create workspace subscription")
 		return nil, err
 	}
 
+	log.Info().
+		Str("userId", user.Id.String()).
+		Str("workspaceId", workspace.Id.String()).
+		Str("handle", workspace.Handle).
+		Msg("Workspace created")
+
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspace.Id.String()).
+			Msg("Failed to count workspace members")
 		return nil, err
 	}
 
@@ -131,11 +165,19 @@ func (w *Workspace) CreateWorkspace(req *CreateWorkspaceRequest, user *db.User) 
 func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorkspacesResponse, error) {
 	workspaces, err := w.WorkspaceRepository.List(limit, offset, user.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to list workspaces")
 		return nil, err
 	}
 
 	total, err := w.WorkspaceRepository.Count(user.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to count workspaces")
 		return nil, err
 	}
 
@@ -143,11 +185,20 @@ func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorks
 	for _, workspace := range workspaces {
 		membership, err := w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("workspaceId", workspace.Id.String()).
+				Msg("Failed to get workspace membership")
 			return nil, err
 		}
 
 		count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspace.Id.String()).
+				Msg("Failed to count workspace members")
 			return nil, err
 		}
 
@@ -173,6 +224,10 @@ func (w *Workspace) ListWorkspaces(user *db.User, limit, offset int) (*ListWorks
 func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceResponse, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -184,12 +239,21 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 	if user != nil {
 		membership, err = w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("workspaceId", workspace.Id.String()).
+				Msg("Failed to get workspace membership")
 			return nil, err
 		}
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspace.Id.String()).
+			Msg("Failed to count workspace members")
 		return nil, err
 	}
 
@@ -212,6 +276,10 @@ func (w *Workspace) GetWorkspace(workspaceId db.Id, user *db.User) (*WorkspaceRe
 func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceRequest, user *db.User) (*WorkspaceResponse, error) {
 	workspace, err := w.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -221,20 +289,37 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 	workspace.Name = req.Name
 	err = w.WorkspaceRepository.Update(workspace)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to update workspace")
 		return nil, err
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Msg("Workspace updated")
 
 	// An access key has no user, so it gets no role
 	var membership *db.WorkspaceUser
 	if user != nil {
 		membership, err = w.WorkspaceRepository.GetWorkspaceMembership(workspace.Id, user.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("workspaceId", workspace.Id.String()).
+				Msg("Failed to get workspace membership")
 			return nil, err
 		}
 	}
 
 	count, err := w.WorkspaceUserRepository.CountByWorkspaceId(workspace.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspace.Id.String()).
+			Msg("Failed to count workspace members")
 		return nil, err
 	}
 
@@ -255,6 +340,18 @@ func (w *Workspace) UpdateWorkspace(workspaceId db.Id, req *UpdateWorkspaceReque
 
 // DeleteWorkspace deletes a workspace.
 func (w *Workspace) DeleteWorkspace(workspaceId db.Id) error {
+	err := w.WorkspaceRepository.Delete(workspaceId)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to delete workspace")
+		return err
+	}
 
-	return w.WorkspaceRepository.Delete(workspaceId)
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Msg("Workspace deleted")
+
+	return nil
 }

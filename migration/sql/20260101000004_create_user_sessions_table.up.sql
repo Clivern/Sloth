@@ -1,4 +1,4 @@
-CREATE TABLE user_sessions (
+CREATE TABLE IF NOT EXISTS user_sessions (
 	id UUID PRIMARY KEY,
 	token VARCHAR(100) NOT NULL UNIQUE,
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -8,4 +8,4 @@ CREATE TABLE user_sessions (
 	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );
-CREATE INDEX idx_user_sessions_token ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token);

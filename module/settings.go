@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -32,9 +33,17 @@ func (s *Settings) Update(platformEmail string, maintenanceMode bool) error {
 	for key, value := range updates {
 		err := s.ConfigRepository.Update(key, value)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key).
+				Msg("Failed to update setting")
 			return fmt.Errorf("failed to update config %s: %w", key, err)
 		}
 	}
+
+	log.Info().
+		Bool("maintenanceMode", maintenanceMode).
+		Msg("Settings updated")
 
 	return nil
 }
@@ -51,6 +60,10 @@ func (s *Settings) GetSettings() (map[string]string, error) {
 	for _, key := range keys {
 		config, err := s.ConfigRepository.Get(key)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("key", key).
+				Msg("Failed to get setting")
 			return nil, err
 		}
 		if config != nil {

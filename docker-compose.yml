@@ -1,4 +1,4 @@
-name: cognit
+name: sloth
 
 services:
   postgres:
@@ -7,11 +7,11 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-cognit}
+      POSTGRES_DB: ${POSTGRES_DB:-sloth}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cognit"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sloth"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,42 +21,42 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ${COGNIT_IMAGE:-registry.digitalocean.com/cognit/cognit:main}
+    image: ${SLOTH_IMAGE:-registry.digitalocean.com/sloth/sloth:main}
     restart: "no"
     command: ["migrate", "up", "-c", "/app/configs/config.yml"]
     environment:
-      COGNIT_SERVER_URL: ${COGNIT_SERVER_URL:-http://localhost}
-      COGNIT_DATABASE_HOST: postgres
-      COGNIT_DATABASE_PORT: "5432"
-      COGNIT_DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
-      COGNIT_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      COGNIT_DATABASE_NAME: ${POSTGRES_DB:-cognit}
+      SLOTH_SERVER_URL: ${SLOTH_SERVER_URL:-http://localhost}
+      SLOTH_DATABASE_HOST: postgres
+      SLOTH_DATABASE_PORT: "5432"
+      SLOTH_DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      SLOTH_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SLOTH_DATABASE_NAME: ${POSTGRES_DB:-sloth}
     volumes:
       - ./etc/config/config.yml:/app/configs/config.yml:ro
-      - cognit_data:/app/var
+      - sloth_data:/app/var
     depends_on:
       postgres:
         condition: service_healthy
 
-  cognit:
-    image: ${COGNIT_IMAGE:-registry.digitalocean.com/cognit/cognit:main}
+  sloth:
+    image: ${SLOTH_IMAGE:-registry.digitalocean.com/sloth/sloth:main}
     restart: unless-stopped
     command: ["server", "-c", "/app/configs/config.yml"]
     environment:
-      COGNIT_SERVER_URL: ${COGNIT_SERVER_URL:-http://localhost}
-      COGNIT_DATABASE_HOST: postgres
-      COGNIT_DATABASE_PORT: "5432"
-      COGNIT_DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
-      COGNIT_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      COGNIT_DATABASE_NAME: ${POSTGRES_DB:-cognit}
-      COGNIT_BROKER_URL: nats://nats:4222
-      COGNIT_AI_OROUTE_API_KEY: ${COGNIT_AI_OROUTE_API_KEY:-}
-      COGNIT_RESEND_API_KEY: ${COGNIT_RESEND_API_KEY:-}
-      COGNIT_STRIPE_SECRET_KEY: ${COGNIT_STRIPE_SECRET_KEY:-}
-      COGNIT_STRIPE_WEBHOOK_SECRET: ${COGNIT_STRIPE_WEBHOOK_SECRET:-}
+      SLOTH_SERVER_URL: ${SLOTH_SERVER_URL:-http://localhost}
+      SLOTH_DATABASE_HOST: postgres
+      SLOTH_DATABASE_PORT: "5432"
+      SLOTH_DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      SLOTH_DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SLOTH_DATABASE_NAME: ${POSTGRES_DB:-sloth}
+      SLOTH_BROKER_URL: nats://nats:4222
+      SLOTH_AI_OROUTE_API_KEY: ${SLOTH_AI_OROUTE_API_KEY:-}
+      SLOTH_RESEND_API_KEY: ${SLOTH_RESEND_API_KEY:-}
+      SLOTH_STRIPE_SECRET_KEY: ${SLOTH_STRIPE_SECRET_KEY:-}
+      SLOTH_STRIPE_WEBHOOK_SECRET: ${SLOTH_STRIPE_WEBHOOK_SECRET:-}
     volumes:
       - ./etc/config/config.yml:/app/configs/config.yml:ro
-      - cognit_data:/app/var
+      - sloth_data:/app/var
     expose:
       - "8000"
     depends_on:
@@ -75,8 +75,8 @@ services:
     volumes:
       - ./etc/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - cognit
+      - sloth
 
 volumes:
   postgres_data:
-  cognit_data:
+  sloth_data:

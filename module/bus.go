@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/broker"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/broker"
 
 	"github.com/rs/zerolog/log"
 )
@@ -19,6 +19,9 @@ var bus *broker.Client
 func StartBus() error {
 	client, err := broker.New()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to connect NATS bus")
 		return fmt.Errorf("connect nats bus: %w", err)
 	}
 
@@ -49,18 +52,30 @@ func StopBus() {
 	}
 
 	bus = nil
+
+	log.Info().
+		Msg("NATS bus drained")
 }
 
 // EnqueueTask records a pending async task and publishes it on NATS.
 func EnqueueTask(taskType string, payload map[string]string, workspaceId db.Id) error {
 	taskId, err := db.NewId()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("type", taskType).
+			Msg("Failed to generate task id")
 		return err
 	}
 
 	payload["taskId"] = taskId.String()
 	raw, err := json.Marshal(payload)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("type", taskType).
+			Str("id", taskId.String()).
+			Msg("Failed to encode task payload")
 		return err
 	}
 
@@ -74,27 +89,64 @@ func EnqueueTask(taskType string, payload map[string]string, workspaceId db.Id) 
 		Payload:     &body,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("type", taskType).
+			Str("id", taskId.String()).
+			Msg("Failed to store task")
 		return err
 	}
 
 	err = GetBus().Publish(taskType, raw)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("type", taskType).
+			Str("id", taskId.String()).
+			Msg("Failed to publish task")
 		return err
 	}
 
-	return GetBus().Flush()
+	err = GetBus().Flush()
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("type", taskType).
+			Str("id", taskId.String()).
+			Msg("Failed to flush NATS bus")
+		return err
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("type", taskType).
+		Str("id", taskId.String()).
+		Msg("Task enqueued")
+
+	return nil
 }
 
 // RepublishPendingTasks publishes pending async tasks to NATS again.
 func RepublishPendingTasks() (int, error) {
 	tasks, err := db.NewAsyncTaskRepository(db.GetDB()).ListByStatus(db.AsyncTaskStatusPending)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to list pending tasks")
 		return 0, err
 	}
 
 	for n, task := range tasks {
 		err = GetBus().Publish(task.Type, []byte(*task.Payload))
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("id", task.Id.String()).
+				Str("type", task.Type).
+				Msg("Failed to republish pending task")
 			return n, err
 		}
 
@@ -106,6 +158,9 @@ func RepublishPendingTasks() (int, error) {
 
 	err = GetBus().Flush()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to flush NATS bus")
 		return 0, err
 	}
 

@@ -131,12 +131,6 @@
               </div>
             </li>
           </ul>
-
-          <div class="border-t border-theme-border px-6 py-3">
-            <router-link to="/audits" class="text-sm font-medium text-primary-800 hover:underline">
-              {{ $t('dashboard.activity_view_all') }}
-            </router-link>
-          </div>
         </div>
       </section>
 
@@ -296,7 +290,7 @@ const attentionItems = computed(() => [
     title: t('dashboard.attention_latency_title'),
     description: t('dashboard.attention_latency_desc'),
     action: t('dashboard.attention_latency_action'),
-    to: '/audits',
+    to: '/traffic',
   },
 ].filter((item) => !item.requiresSaaS || isSaaS()))
 

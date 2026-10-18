@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -77,7 +77,7 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 	agent.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agents (id, workspace_id, name, card, card_checksum, card_path, version)
+		`INSERT INTO ai_agents (id, workspace_id, name, card, card_checksum, card_path, version)
 		VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
 		RETURNING created_at, updated_at`,
 		agent.Id.String(),
@@ -95,7 +95,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 	agent := &Agent{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
-		FROM agents
+		FROM ai_agents
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -121,7 +121,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 	agent := &Agent{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
-		FROM agents
+		FROM ai_agents
 		WHERE workspace_id = $1 AND name = $2`,
 		workspaceId.String(),
 		name,
@@ -146,7 +146,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 // Update updates an agent card, card path and version.
 func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 	_, err := r.db.Exec(
-		`UPDATE agents
+		`UPDATE ai_agents
 		SET name = $1, card = $2::jsonb, card_checksum = $3, card_path = $4, version = $5, updated_at = $6
 		WHERE id = $7`,
 		agent.Name,
@@ -164,7 +164,7 @@ func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 // SetCardIfMissing stores a fetched card only when the agent has none yet and reports whether it did.
 func (r *AgentRepositoryPostgres) SetCardIfMissing(id Id, card, checksum string) (bool, error) {
 	result, err := r.db.Exec(
-		`UPDATE agents
+		`UPDATE ai_agents
 		SET card = $1::jsonb, card_checksum = $2, updated_at = $3
 		WHERE id = $4 AND card IS NULL`,
 		card,
@@ -183,7 +183,7 @@ func (r *AgentRepositoryPostgres) SetCardIfMissing(id Id, card, checksum string)
 
 // Delete removes an agent row.
 func (r *AgentRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM agents WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_agents WHERE id = $1`, id.String())
 
 	return err
 }
@@ -192,7 +192,7 @@ func (r *AgentRepositoryPostgres) Delete(id Id) error {
 func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Agent, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
-		FROM agents
+		FROM ai_agents
 		WHERE workspace_id = $1
 		ORDER BY name
 		LIMIT $2 OFFSET $3`,
@@ -234,7 +234,7 @@ func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offse
 func (r *AgentRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM agents WHERE workspace_id = $1`,
+		`SELECT COUNT(*) FROM ai_agents WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
 
@@ -254,7 +254,7 @@ func (r *AgentMetaRepositoryPostgres) Create(id Id, key, value string) error {
 	}
 
 	_, err = r.db.Exec(
-		`INSERT INTO agents_meta (id, agent_id, key, value)
+		`INSERT INTO ai_agents_meta (id, agent_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
 		metaId.String(),
 		id.String(),
@@ -270,7 +270,7 @@ func (r *AgentMetaRepositoryPostgres) Get(id Id, key string) (*AgentMeta, error)
 	meta := &AgentMeta{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, key, value #>> '{}', created_at, updated_at
-		FROM agents_meta
+		FROM ai_agents_meta
 		WHERE agent_id = $1 AND key = $2`,
 		id.String(),
 		key,
@@ -292,7 +292,7 @@ func (r *AgentMetaRepositoryPostgres) Get(id Id, key string) (*AgentMeta, error)
 // Update updates an existing agent metadata row. TODO: remove if not used in future.
 func (r *AgentMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
-		`UPDATE agents_meta
+		`UPDATE ai_agents_meta
 		SET value = to_jsonb($1::text), updated_at = $2
 		WHERE agent_id = $3 AND key = $4`,
 		value,
@@ -307,7 +307,7 @@ func (r *AgentMetaRepositoryPostgres) Update(id Id, key, value string) error {
 // Delete deletes an agent metadata row. TODO: remove if not used in future.
 func (r *AgentMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM agents_meta WHERE agent_id = $1 AND key = $2`,
+		`DELETE FROM ai_agents_meta WHERE agent_id = $1 AND key = $2`,
 		id.String(),
 		key,
 	)
@@ -319,7 +319,7 @@ func (r *AgentMetaRepositoryPostgres) Delete(id Id, key string) error {
 func (r *AgentMetaRepositoryPostgres) ListByAgentId(id Id) ([]*AgentMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, agent_id, key, value #>> '{}', created_at, updated_at
-		FROM agents_meta
+		FROM ai_agents_meta
 		WHERE agent_id = $1
 		ORDER BY key`,
 		id.String(),

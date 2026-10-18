@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/clivern/cognit/pkg/github"
-	"github.com/clivern/cognit/pkg/google"
+	"github.com/clivern/sloth/pkg/github"
+	"github.com/clivern/sloth/pkg/google"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"

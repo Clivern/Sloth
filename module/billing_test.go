@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/ai"
-	"github.com/clivern/cognit/pkg/stripe"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/ai"
+	"github.com/clivern/sloth/pkg/stripe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

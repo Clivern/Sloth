@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package middleware
@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/locale"
+	"github.com/clivern/sloth/pkg/util"
 
 	cmid "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"

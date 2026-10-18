@@ -13,21 +13,21 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: cognit
+          POSTGRES_DB: sloth
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d cognit"
+          --health-cmd "pg_isready -U postgres -d sloth"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      COGNIT_DATABASE_DRIVER: postgres
-      COGNIT_DATABASE_HOST: localhost
-      COGNIT_DATABASE_PORT: 5432
-      COGNIT_DATABASE_USERNAME: postgres
-      COGNIT_DATABASE_PASSWORD: postgres
-      COGNIT_DATABASE_NAME: cognit
+      SLOTH_DATABASE_DRIVER: postgres
+      SLOTH_DATABASE_HOST: localhost
+      SLOTH_DATABASE_PORT: 5432
+      SLOTH_DATABASE_USERNAME: postgres
+      SLOTH_DATABASE_PASSWORD: postgres
+      SLOTH_DATABASE_NAME: sloth
     strategy:
       fail-fast: false
       matrix:

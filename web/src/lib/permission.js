@@ -43,13 +43,6 @@ export const WORKSPACE_KEY_PERMISSION_GROUPS = [
     ],
   },
   {
-    labelKey: 'workspace_settings_page.perm_group_audits',
-    permissions: [
-      { value: 'CAN_LIST_WORKSPACE_AUDITS', labelKey: 'workspace_settings_page.perm_list_workspace_audits' },
-      { value: 'CAN_GET_WORKSPACE_AUDIT', labelKey: 'workspace_settings_page.perm_get_workspace_audit' },
-    ],
-  },
-  {
     labelKey: 'workspace_settings_page.perm_group_agents',
     permissions: [
       { value: 'CAN_LIST_AGENTS', labelKey: 'workspace_settings_page.perm_list_agents' },
@@ -76,6 +69,23 @@ export const WORKSPACE_KEY_PERMISSION_GROUPS = [
       { value: 'CAN_UPDATE_INTENTION', labelKey: 'workspace_settings_page.perm_update_intention' },
       { value: 'CAN_DELETE_INTENTION', labelKey: 'workspace_settings_page.perm_delete_intention' },
       { value: 'CAN_CHECK_INTENTION', labelKey: 'workspace_settings_page.perm_check_intention' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_integrations',
+    permissions: [
+      { value: 'CAN_LIST_INTEGRATIONS', labelKey: 'workspace_settings_page.perm_list_integrations' },
+      { value: 'CAN_GET_INTEGRATION', labelKey: 'workspace_settings_page.perm_get_integration' },
+      { value: 'CAN_CREATE_INTEGRATION', labelKey: 'workspace_settings_page.perm_create_integration' },
+      { value: 'CAN_UPDATE_INTEGRATION', labelKey: 'workspace_settings_page.perm_update_integration' },
+      { value: 'CAN_DELETE_INTEGRATION', labelKey: 'workspace_settings_page.perm_delete_integration' },
+    ],
+  },
+  {
+    labelKey: 'workspace_settings_page.perm_group_events',
+    permissions: [
+      { value: 'CAN_LIST_EVENTS', labelKey: 'workspace_settings_page.perm_list_events' },
+      { value: 'CAN_GET_EVENT', labelKey: 'workspace_settings_page.perm_get_event' },
     ],
   },
   {

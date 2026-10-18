@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/pkg/stripe"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/stripe"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
@@ -89,6 +89,10 @@ func NewBilling(workspaces db.WorkspaceRepository, subscriptions db.Subscription
 func (b *Billing) GetBillingStatus(workspaceId db.Id) (*BillingStatusResponse, error) {
 	workspace, err := b.WorkspaceRepository.GetById(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace")
 		return nil, err
 	}
 	if workspace == nil {
@@ -97,6 +101,10 @@ func (b *Billing) GetBillingStatus(workspaceId db.Id) (*BillingStatusResponse, e
 
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace subscription")
 		return nil, err
 	}
 	if subscription == nil {
@@ -116,9 +124,12 @@ func (b *Billing) GetBillingStatus(workspaceId db.Id) (*BillingStatusResponse, e
 
 // GetBillingUsage returns usage and limits for a workspace.
 func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*BillingUsageResponse, error) {
-
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace subscription")
 		return nil, err
 	}
 	if subscription == nil {
@@ -127,6 +138,10 @@ func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*B
 
 	used, err := b.Usage.GetWorkspaceUsage(deps, workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace usage")
 		return nil, err
 	}
 
@@ -144,9 +159,11 @@ func (b *Billing) GetBillingUsage(workspaceId db.Id, deps UsageSnapshotDeps) (*B
 
 // CreateCheckoutSession starts Stripe Checkout for an AI token purchase.
 func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, user *db.User, req *BillingCheckoutRequest, successURL string, cancelURL string) (*BillingSessionResponse, error) {
-
 	client, err := stripe.New()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to create stripe client")
 		return nil, err
 	}
 
@@ -157,6 +174,10 @@ func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, 
 
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace subscription")
 		return nil, err
 	}
 	if subscription == nil {
@@ -173,22 +194,41 @@ func (b *Billing) CreateCheckoutSession(ctx context.Context, workspaceId db.Id, 
 		CancelURL:     cancelURL,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Int64("amountCents", req.AmountCents).
+			Msg("Failed to create stripe checkout session")
 		return nil, err
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("userId", user.Id.String()).
+		Str("sessionId", session.ID).
+		Int64("amountCents", req.AmountCents).
+		Int64("tokens", tokens).
+		Msg("Stripe checkout session created")
 
 	return &BillingSessionResponse{URL: session.URL}, nil
 }
 
 // CreatePortalSession opens Stripe's customer portal.
 func (b *Billing) CreatePortalSession(ctx context.Context, workspaceId db.Id, returnURL string) (*BillingSessionResponse, error) {
-
 	client, err := stripe.New()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to create stripe client")
 		return nil, err
 	}
 
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace subscription")
 		return nil, err
 	}
 	if subscription == nil {
@@ -205,8 +245,16 @@ func (b *Billing) CreatePortalSession(ctx context.Context, workspaceId db.Id, re
 		ReturnURL:  returnURL,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to create stripe portal session")
 		return nil, err
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Msg("Stripe portal session created")
 
 	return &BillingSessionResponse{URL: session.URL}, nil
 }
@@ -215,21 +263,35 @@ func (b *Billing) CreatePortalSession(ctx context.Context, workspaceId db.Id, re
 func (b *Billing) HandleWebhook(payload []byte, signature string) error {
 	client, err := stripe.New()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to create stripe client")
 		return err
 	}
 
 	event, err := client.ConstructWebhookEvent(payload, signature)
 	if err != nil {
+		log.Warn().
+			Err(err).
+			Msg("Failed to verify stripe webhook event")
 		return err
 	}
 
 	if event.Type != "checkout.session.completed" {
+		log.Debug().
+			Str("eventId", event.ID).
+			Str("eventType", string(event.Type)).
+			Msg("Stripe webhook event ignored")
 		return nil
 	}
 
 	var session stripesdk.CheckoutSession
 	err = json.Unmarshal(event.Data.Raw, &session)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("eventId", event.ID).
+			Msg("Failed to decode stripe checkout session")
 		return fmt.Errorf("decode checkout session: %w", err)
 	}
 
@@ -240,6 +302,9 @@ func (b *Billing) HandleWebhook(payload []byte, signature string) error {
 func (b *Billing) CreditTokenPurchase(client *stripe.Client, session *stripesdk.CheckoutSession) error {
 	workspaceId := db.Id(session.Metadata["workspaceId"])
 	if lo.IsEmpty(workspaceId) {
+		log.Warn().
+			Str("sessionId", session.ID).
+			Msg("Stripe checkout session has no workspace")
 		return nil
 	}
 
@@ -256,26 +321,50 @@ func (b *Billing) CreditTokenPurchase(client *stripe.Client, session *stripesdk.
 		Tokens:          tokens,
 	})
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("sessionId", session.ID).
+			Msg("Failed to record token purchase")
 		return fmt.Errorf("record token purchase: %w", err)
 	}
 	if !inserted {
+		log.Info().
+			Str("workspaceId", workspaceId.String()).
+			Str("sessionId", session.ID).
+			Msg("Token purchase already recorded")
 		return nil
 	}
 
 	err = b.SubscriptionRepository.AddTokens(workspaceId, tokens)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("sessionId", session.ID).
+			Int64("tokens", tokens).
+			Msg("Failed to credit AI tokens")
 		return fmt.Errorf("credit ai tokens: %w", err)
 	}
 
 	if session.Customer != nil && lo.IsNotEmpty(session.Customer.ID) {
 		subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Msg("Failed to get workspace subscription")
 			return err
 		}
 		if subscription != nil {
 			subscription.ProviderCustomerId = lo.ToPtr(session.Customer.ID)
 			err = b.SubscriptionRepository.Update(subscription)
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("workspaceId", workspaceId.String()).
+					Str("customerId", session.Customer.ID).
+					Msg("Failed to update subscription customer")
 				return err
 			}
 		}
@@ -295,6 +384,10 @@ func (b *Billing) CreditTokenPurchase(client *stripe.Client, session *stripesdk.
 func (b *Billing) GetWorkspaceSubscription(workspaceId db.Id) (*db.Subscription, error) {
 	subscription, err := b.SubscriptionRepository.GetByWorkspaceId(workspaceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Msg("Failed to get workspace subscription")
 		return nil, err
 	}
 	if subscription == nil {

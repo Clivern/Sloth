@@ -1,4 +1,4 @@
-CREATE TABLE integrations_meta (
+CREATE TABLE IF NOT EXISTS integrations_meta (
 	id UUID PRIMARY KEY,
 	integration_id UUID NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
 	key VARCHAR(60) NOT NULL,

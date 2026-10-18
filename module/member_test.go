@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -6,7 +6,7 @@ package module
 import (
 	"testing"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

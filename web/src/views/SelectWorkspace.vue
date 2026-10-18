@@ -16,12 +16,13 @@
         <div
           v-for="workspace in workspaces"
           :key="workspace.id"
-          class="flex items-center gap-2 rounded-lg border border-theme-border bg-white shadow-sm overflow-hidden"
+          class="rounded-lg border border-theme-border bg-white shadow-sm overflow-hidden"
         >
           <button
             type="button"
-            @click="selectWorkspace(workspace)"
-            class="flex-1 flex items-center justify-between px-4 py-3 text-left hover:bg-theme-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary-800 focus:ring-inset min-w-0"
+            @click="toggleWorkspace(workspace)"
+            :aria-expanded="expandedId === workspace.id"
+            class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-theme-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary-800 focus:ring-inset min-w-0"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <div class="min-w-0 flex-1">
@@ -35,10 +36,35 @@
                 {{ $t('select_workspace.active') }}
               </span>
             </div>
-            <svg class="ml-3 h-5 w-5 shrink-0 text-theme-textLight" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <svg
+              class="ml-3 h-5 w-5 shrink-0 text-theme-textLight transition-transform"
+              :class="{ 'rotate-90': expandedId === workspace.id }"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </button>
+          <div
+            v-if="expandedId === workspace.id"
+            class="grid grid-cols-1 gap-2 border-t border-theme-border px-4 py-3 sm:grid-cols-3"
+            role="group"
+            :aria-label="$t('select_workspace.gateway')"
+          >
+            <button
+              v-for="gateway in gateways"
+              :key="gateway.id"
+              type="button"
+              :disabled="gateway.disabled"
+              class="group rounded-md border border-theme-border px-3 py-2 text-sm font-medium text-theme-text transition-colors hover:bg-theme-hover focus:outline-none focus:ring-2 focus:ring-primary-800 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              @click="selectWorkspace(workspace)"
+            >
+              <span :class="{ 'group-hover:hidden': gateway.disabled }">{{ gateway.label }}</span>
+              <span v-if="gateway.disabled" class="hidden group-hover:inline">{{ $t('select_workspace.coming_soon') }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -122,6 +148,13 @@ const showCreateModal = ref(false)
 const createModalError = ref(null)
 const newWorkspaceName = ref('')
 const createLoading = ref(false)
+const expandedId = ref(null)
+
+const gateways = computed(() => [
+  { id: 'ai', label: t('select_workspace.ai_gateway') },
+  { id: 'api', label: t('select_workspace.api_gateway'), disabled: true },
+  { id: 'mcp', label: t('select_workspace.mcp_gateway'), disabled: true },
+])
 
 const pageTitle = computed(() => {
   if (workspaces.value.length) {
@@ -155,6 +188,10 @@ function closeCreateModal() {
   showCreateModal.value = false
   createModalError.value = null
   newWorkspaceName.value = ''
+}
+
+function toggleWorkspace(workspace) {
+  expandedId.value = expandedId.value === workspace.id ? null : workspace.id
 }
 
 function selectWorkspace(workspace) {

@@ -1,6 +1,6 @@
-# Cognit overview
+# Sloth overview
 
-Cognit is a workspace-scoped control plane for AI agents that speak A2A. Agents register a card, report health checks, and call other skills through the gateway. Async work runs on NATS workers.
+Sloth is a workspace-scoped control plane for AI agents that speak A2A. Agents register a card, report health checks, and call other skills through the gateway. Async work runs on NATS workers.
 
 ## Planes
 
@@ -8,7 +8,7 @@ Cognit is a workspace-scoped control plane for AI agents that speak A2A. Agents 
 | --- | --- |
 | Control | Workspaces, catalog, health, intentions, KV |
 | Data | A2A message/task verbs, skill-addressed routing |
-| Workers | NATS queue subscribers (`cognit.noop`) |
+| Workers | NATS queue subscribers (`sloth.noop`) |
 
 Isolation is a **workspace**. Tokens, catalog, and routing never cross that boundary. A2A still names its routing key `tenant` — set it to the workspace id.
 

@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: Cognit API
+  title: Sloth API
   description: |
-    Cognit is a Service Discovery Registry for AI Agents. Agents register, discover each other by skill,
+    Sloth is a Gateway & Service Discovery Registry for AI Agents. Agents register, discover each other by skill,
     and call through a gateway that manages load balancing, health, and policy on every request.
 
-    **Authentication**: session cookie `_cognit_session` or user API key `X-API-Key`. Workspace access keys `X-Access-Key`
+    **Authentication**: session cookie `_sloth_session` or user API key `X-API-Key`. Workspace access keys `X-Access-Key`
 
     Errors are returned as `{"errorMessage": "..."}`.
   version: 1.0.0
@@ -27,13 +27,14 @@ tags:
   - name: Members
   - name: Access keys
   - name: Billing
-  - name: Audits
   - name: Agents
   - name: Instances
   - name: Health checks
   - name: Identities
   - name: Protection
   - name: Intentions
+  - name: Integrations
+  - name: Events
   - name: Key-value
   - name: Traffic
   - name: Metrics
@@ -978,60 +979,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/v1/workspaces/{workspaceId}/audits:
-    get:
-      tags: [Audits]
-      summary: List audit events
-      parameters:
-        - $ref: "#/components/parameters/workspaceId"
-        - $ref: "#/components/parameters/limit"
-        - $ref: "#/components/parameters/offset"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  audits:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AuditEvent"
-                  _meta:
-                    $ref: "#/components/schemas/PaginationMeta"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
-  /api/v1/workspaces/{workspaceId}/audits/{auditId}:
-    get:
-      tags: [Audits]
-      summary: Get audit event
-      parameters:
-        - $ref: "#/components/parameters/workspaceId"
-        - $ref: "#/components/parameters/auditId"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuditEvent"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
   /api/v1/workspaces/{workspaceId}/agents:
     get:
       tags: [Agents]
@@ -1477,7 +1424,7 @@ paths:
       summary: Create or replace an agent health check template
       description: |
         The template is copied onto every registered instance of the agent, and onto each
-        instance that registers later. `http` and `tcp` checks are probed by Cognit on their
+        instance that registers later. `http` and `tcp` checks are probed by Sloth on their
         interval; `ttl` checks must be reported by the instance before the TTL runs out.
         An instance's status is the worst status across its checks.
       parameters:
@@ -1537,7 +1484,7 @@ paths:
     get:
       tags: [Protection]
       summary: Get the agent protection
-      description: The credential Cognit uses to call the agent. Secrets are never returned.
+      description: The credential Sloth uses to call the agent. Secrets are never returned.
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -1562,7 +1509,7 @@ paths:
       description: |
         An agent has at most one protection; saving replaces the previous credential and turns it on.
         `api_key` and `basic_auth` secrets are stored encrypted so the gateway can send them.
-        When `secret` is omitted Cognit generates one and returns it in `secret` once.
+        When `secret` is omitted Sloth generates one and returns it in `secret` once.
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -1670,7 +1617,7 @@ paths:
     post:
       tags: [Identities]
       summary: Issue an agent identity
-      description: Cognit generates the secret, stores only its bcrypt hash, and returns it in `secret` once.
+      description: Sloth generates the secret, stores only its bcrypt hash, and returns it in `secret` once.
       parameters:
         - $ref: "#/components/parameters/workspaceId"
         - $ref: "#/components/parameters/agentName"
@@ -1920,6 +1867,186 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/v1/workspaces/{workspaceId}/integrations:
+    get:
+      tags: [Integrations]
+      summary: List event integrations
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  integrations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Integration"
+                  _meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Integrations]
+      summary: Create event integration
+      description: A webhook without a secret gets a generated signing secret, returned once in `secret`.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveIntegrationRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/integrations/{integrationId}:
+    get:
+      tags: [Integrations]
+      summary: Get event integration
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/integrationId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Integrations]
+      summary: Update event integration
+      description: The type cannot change. An empty `secret` keeps the stored one.
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/integrationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveIntegrationRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Integration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Integrations]
+      summary: Delete event integration
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/integrationId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/events:
+    get:
+      tags: [Events]
+      summary: List workspace events
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Event"
+                  _meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/events/{eventId}:
+    get:
+      tags: [Events]
+      summary: Get workspace event
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - $ref: "#/components/parameters/eventId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/workspaces/{workspaceId}/kv:
     get:
       tags: [Key-value]
@@ -2087,7 +2214,7 @@ components:
     sessionCookie:
       type: apiKey
       in: cookie
-      name: _cognit_session
+      name: _sloth_session
     userApiKey:
       type: apiKey
       in: header
@@ -2157,15 +2284,22 @@ components:
       schema:
         type: string
         format: uuid
-    auditId:
-      name: auditId
+    intentionId:
+      name: intentionId
       in: path
       required: true
       schema:
         type: string
         format: uuid
-    intentionId:
-      name: intentionId
+    integrationId:
+      name: integrationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    eventId:
+      name: eventId
       in: path
       required: true
       schema:
@@ -2690,36 +2824,6 @@ components:
           type: string
           format: uri
 
-    AuditEvent:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        workspaceId:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
-        action:
-          type: string
-        resourceType:
-          type: string
-        resourceId:
-          type: string
-          format: uuid
-        ipAddress:
-          type: string
-        userAgent:
-          type: string
-        meta:
-          type: object
-          additionalProperties: true
-        createdAt:
-          type: string
-          format: date-time
-
     UpsertAgentRequest:
       type: object
       required: [version]
@@ -3007,7 +3111,7 @@ components:
           format: date-time
         secret:
           type: string
-          description: Only present when Cognit generated the secret.
+          description: Only present when Sloth generated the secret.
 
     ReportCheckRequest:
       type: object
@@ -3118,6 +3222,119 @@ components:
           type: string
         intention:
           $ref: "#/components/schemas/Intention"
+
+    IntegrationEvents:
+      type: array
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+        enum: [audit.log, agent.health.changed, agent.instance.changed, catalog.changed, gateway.call.denied, system.health.degraded]
+
+    SaveIntegrationRequest:
+      type: object
+      required: [type, name, events, isActive]
+      description: "webhook and slack need url; datadog needs site and secret (API key); splunk needs url and secret (HEC token); pagerduty needs site and secret (integration key)."
+      properties:
+        type:
+          type: string
+          enum: [webhook, slack, datadog, splunk, pagerduty]
+        name:
+          type: string
+          maxLength: 60
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        site:
+          type: string
+          description: Datadog site, or the PagerDuty events host.
+          enum: [datadoghq.com, us3.datadoghq.com, us5.datadoghq.com, datadoghq.eu, ap1.datadoghq.com, ddog-gov.com, events.pagerduty.com, events.eu.pagerduty.com]
+        index:
+          type: string
+          maxLength: 100
+        secret:
+          type: string
+          minLength: 8
+          maxLength: 512
+          writeOnly: true
+        events:
+          $ref: "#/components/schemas/IntegrationEvents"
+        isActive:
+          type: boolean
+
+    Integration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [webhook, slack, datadog, splunk, pagerduty]
+        name:
+          type: string
+        url:
+          type: string
+        site:
+          type: string
+        index:
+          type: string
+        events:
+          $ref: "#/components/schemas/IntegrationEvents"
+        hasSecret:
+          type: boolean
+        isActive:
+          type: boolean
+        secret:
+          type: string
+          description: Generated webhook signing secret, only on create.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [audit.log, agent.health.changed, agent.instance.changed, catalog.changed, gateway.call.denied, system.health.degraded]
+        actorId:
+          type: string
+          format: uuid
+        actorName:
+          type: string
+        actorType:
+          type: string
+          enum: [user, access_key, system]
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+          format: uuid
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
 
     PutKeyValueRequest:
       type: object

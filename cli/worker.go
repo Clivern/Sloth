@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package cli
@@ -6,14 +6,14 @@ package cli
 import (
 	"fmt"
 
-	"github.com/clivern/cognit/core"
+	"github.com/clivern/sloth/core"
 
 	"github.com/spf13/cobra"
 )
 
 var workerCmd = &cobra.Command{
 	Use:   "worker",
-	Short: "Start the Cognit NATS worker",
+	Short: "Start the Sloth NATS worker",
 	Run: func(_ *cobra.Command, _ []string) {
 		err := core.Load(config)
 		if err != nil {

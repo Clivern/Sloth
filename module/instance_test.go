@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/samber/lo"
 	"github.com/spf13/viper"
@@ -274,7 +274,7 @@ func TestUnitInstance(t *testing.T) {
 	})
 
 	t.Run("register fetches the card from the first instance and points it at the gateway", func(t *testing.T) {
-		viper.Set("app.url", "https://cognit.test")
+		viper.Set("app.url", "https://sloth.test")
 		f := defaultInstanceFixture()
 		f.agents.agent.CardPath = "/.well-known/agent-card.json"
 
@@ -300,13 +300,13 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, f.agents.cards, 1)
 		assert.Equal(
 			t,
-			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}`,
+			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}`,
 			f.agents.cards[0],
 		)
 	})
 
 	t.Run("register adds a gateway interface to a fetched card that has none", func(t *testing.T) {
-		viper.Set("app.url", "https://cognit.test")
+		viper.Set("app.url", "https://sloth.test")
 		f := defaultInstanceFixture()
 		f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
 			return map[string]any{"name": "Support"}, nil
@@ -323,7 +323,7 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, f.agents.cards, 1)
 		assert.Equal(
 			t,
-			`{"name":"Support","supportedInterfaces":[{"url":"https://cognit.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}]}`,
+			`{"name":"Support","supportedInterfaces":[{"url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}]}`,
 			f.agents.cards[0],
 		)
 	})

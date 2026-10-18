@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS ai_agent_identity (
+	id UUID PRIMARY KEY,
+	agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
+	name VARCHAR(100) NOT NULL,
+	type VARCHAR(30) NOT NULL,
+	config JSONB NOT NULL,
+	is_active BOOLEAN NOT NULL DEFAULT TRUE,
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	UNIQUE (agent_id, name)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_agent_identity_agent_id ON ai_agent_identity(agent_id);

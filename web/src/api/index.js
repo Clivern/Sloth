@@ -6,6 +6,7 @@ const api = axios.create({
   timeout: 10000,
 })
 
+// Request interceptor
 api.interceptors.request.use((config) => {
   try {
     const locale = typeof localStorage !== 'undefined' && localStorage.getItem('_flocale')
@@ -16,24 +17,22 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Endpoints and pages where a 401 does not redirect to login
+const noRedirectUrls = ['public/action/logout']
+const publicPages = ['/', '/login', '/setup']
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isProfileEndpoint = error.config?.url === '/action/profile'
-    const isLogoutEndpoint = error.config?.url === 'public/action/logout'
-    const isOnPublicPage = window.location.pathname === '/' ||
-                           window.location.pathname === '/login' ||
-                           window.location.pathname === '/setup'
+    const { pathname, search } = window.location
 
     if (error.response?.status === 401 &&
-        !isProfileEndpoint &&
-        !isLogoutEndpoint &&
-        !isOnPublicPage) {
+        !noRedirectUrls.includes(error.config?.url) &&
+        !publicPages.includes(pathname)) {
       removeUserFromStorage()
       removeWorkspaceFromStorage()
-      const redirect = `${window.location.pathname}${window.location.search}`
-      window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`
+      window.location.href = `/login?redirect=${encodeURIComponent(pathname + search)}`
     }
     return Promise.reject(error)
   }
@@ -45,12 +44,15 @@ export const health_api = {
   ready: () => api.get('public/_ready'),
 }
 
+// API endpoints for the current user's session and profile
 export const auth_api = {
   logout: () => api.post('public/action/logout'),
+  me: () => api.get('/me'),
   getProfile: () => api.get('/action/profile'),
   updateProfile: (data) => api.put('/action/profile', data),
 }
 
+// API endpoints for the first-run setup
 export const setup_api = {
   install: (data) => api.post('public/action/setup', data),
   checkInstalled: () => api.get('public/action/setup/status'),
@@ -71,18 +73,21 @@ export const workspace_api = {
   delete: (id) => api.delete(`/workspaces/${id}`),
 }
 
+// API endpoints for workspace members
 export const workspace_member_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/members`, { params }),
   updateRole: (workspaceId, userId, data) => api.put(`/workspaces/${workspaceId}/members/${userId}`, data),
   delete: (workspaceId, userId) => api.delete(`/workspaces/${workspaceId}/members/${userId}`),
 }
 
+// API endpoints for workspace invites
 export const workspace_invite_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/invites`, { params }),
   create: (workspaceId, data) => api.post(`/workspaces/${workspaceId}/invites`, data),
   delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/invites/${id}`),
 }
 
+// API endpoints for workspace billing
 export const billing_api = {
   status: (workspaceId) => api.get(`/workspaces/${workspaceId}/billing`),
   usage: (workspaceId) => api.get(`/workspaces/${workspaceId}/billing/usage`),
@@ -90,6 +95,7 @@ export const billing_api = {
   portal: (workspaceId) => api.post(`/workspaces/${workspaceId}/billing/portal`),
 }
 
+// API endpoints for workspace access keys
 export const workspace_access_key_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/keys`, { params }),
   create: (workspaceId, data) => api.post(`/workspaces/${workspaceId}/keys`, data),
@@ -104,12 +110,14 @@ export const agent_api = {
   delete: (workspaceId, name) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}`),
 }
 
+// API endpoints for agent health checks
 export const agent_check_api = {
   list: (workspaceId, name) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/checks`),
   upsert: (workspaceId, name, checkId, data) => api.put(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/checks/${encodeURIComponent(checkId)}`, data),
   delete: (workspaceId, name, checkId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/checks/${encodeURIComponent(checkId)}`),
 }
 
+// API endpoints for agent identities
 export const agent_identity_api = {
   list: (workspaceId, name) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/identities`),
   create: (workspaceId, name, data) => api.post(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/identities`, data),
@@ -117,6 +125,7 @@ export const agent_identity_api = {
   delete: (workspaceId, name, id) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/identities/${id}`),
 }
 
+// API endpoints for agent protection
 export const agent_protection_api = {
   get: (workspaceId, name) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`),
   save: (workspaceId, name, data) => api.put(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`, data),
@@ -124,16 +133,41 @@ export const agent_protection_api = {
   delete: (workspaceId, name) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/protection`),
 }
 
+// API endpoints for agent instances
 export const agent_instance_api = {
   list: (workspaceId, name, params) => api.get(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances`, { params }),
   delete: (workspaceId, name, instanceId) => api.delete(`/workspaces/${workspaceId}/agents/${encodeURIComponent(name)}/instances/${encodeURIComponent(instanceId)}`),
 }
 
+// API endpoints for workspace intentions
 export const intention_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/intentions`, { params }),
   create: (workspaceId, data) => api.put(`/workspaces/${workspaceId}/intentions`, data),
   update: (workspaceId, id, data) => api.put(`/workspaces/${workspaceId}/intentions/${id}`, data),
   delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/intentions/${id}`),
+}
+
+// API endpoints for workspace event integrations
+export const integration_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/integrations`, { params }),
+  create: (workspaceId, data) => api.post(`/workspaces/${workspaceId}/integrations`, data),
+  update: (workspaceId, id, data) => api.put(`/workspaces/${workspaceId}/integrations/${id}`, data),
+  delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/integrations/${id}`),
+}
+
+// API endpoints for workspace events
+export const event_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/events`, { params }),
+  get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/events/${id}`),
+}
+
+// API endpoints for the current user's workspace notifications
+export const notification_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/notifications`, { params }),
+  countUnread: (workspaceId) => api.get(`/workspaces/${workspaceId}/notifications/unread`),
+  markRead: (workspaceId, id) => api.post(`/workspaces/${workspaceId}/notifications/${id}/read`),
+  markAllRead: (workspaceId) => api.post(`/workspaces/${workspaceId}/notifications/read`),
+  dismiss: (workspaceId, id) => api.post(`/workspaces/${workspaceId}/notifications/${id}/dismiss`),
 }
 
 // Keys may contain slashes, so they are not encoded

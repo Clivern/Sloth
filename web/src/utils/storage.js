@@ -1,5 +1,5 @@
-const USER_STORAGE_KEY = 'cognit_user'
-const WORKSPACE_STORAGE_KEY = 'cognit_workspace'
+const USER_STORAGE_KEY = 'sloth_user'
+const WORKSPACE_STORAGE_KEY = 'sloth_workspace'
 
 export const loadUserFromStorage = () => {
   try {

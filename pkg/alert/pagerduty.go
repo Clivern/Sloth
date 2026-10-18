@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package alert
@@ -6,18 +6,10 @@ package alert
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/imroc/req/v3"
-	"github.com/rs/zerolog/log"
-	"github.com/samber/lo"
 )
-
-const PagerDutyEventsURL = "https://events.pagerduty.com/v2/enqueue"
-
-// PagerDutyConfig holds the Events API v2 routing key of a PagerDuty service.
-type PagerDutyConfig struct {
-	RoutingKey string
-}
 
 // PagerDutyEvent is the Events API v2 request body.
 type PagerDutyEvent struct {
@@ -35,40 +27,41 @@ type PagerDutyPayload struct {
 	CustomDetails map[string]string `json:"custom_details,omitempty"`
 }
 
-// PagerDuty sends alerts to a PagerDuty service through the Events API v2.
+// PagerDuty triggers PagerDuty incidents through the Events API v2.
 type PagerDuty struct {
-	config   PagerDutyConfig
-	endpoint string
-	http     *req.Client
+	routingKey string
+	severities map[string]string
+	endpoint   string
+	http       *req.Client
 }
 
-// NewPagerDuty returns a PagerDuty notifier for a service routing key.
-func NewPagerDuty(cfg PagerDutyConfig) *PagerDuty {
+// NewPagerDuty returns a PagerDuty sender for a region host, routing key and event severities.
+func NewPagerDuty(site, routingKey string, severities map[string]string) *PagerDuty {
 	return &PagerDuty{
-		config:   cfg,
-		endpoint: PagerDutyEventsURL,
-		http:     req.C(),
+		routingKey: routingKey,
+		severities: severities,
+		endpoint:   fmt.Sprintf("https://%s/v2/enqueue", site),
+		http:       req.C().SetTimeout(10 * time.Second),
 	}
 }
 
-// Send triggers or resolves a PagerDuty incident based on the alert status.
-func (p *PagerDuty) Send(ctx context.Context, a Alert) error {
-	event := PagerDutyEvent{
-		RoutingKey:  p.config.RoutingKey,
-		EventAction: lo.Ternary(a.Status == StatusResolved, "resolve", "trigger"),
-		DedupKey:    a.Key,
-		Payload: PagerDutyPayload{
-			Summary:       a.Title,
-			Source:        a.Source,
-			Severity:      a.Severity,
-			CustomDetails: lo.Assign(map[string]string{"message": a.Message}, a.Details),
-		},
-	}
-
+// Send triggers one incident per delivery with the event data as details.
+func (p *PagerDuty) Send(ctx context.Context, e Event) error {
 	resp, err := p.http.R().
 		SetContext(ctx).
-		SetBody(event).
+		SetBody(PagerDutyEvent{
+			RoutingKey:  p.routingKey,
+			EventAction: "trigger",
+			DedupKey:    e.Id,
+			Payload: PagerDutyPayload{
+				Summary:       fmt.Sprintf("Sloth %s", e.Event),
+				Source:        "sloth",
+				Severity:      p.severities[e.Event],
+				CustomDetails: e.Data,
+			},
+		}).
 		Post(p.endpoint)
+
 	if err != nil {
 		return fmt.Errorf("pagerduty request: %w", err)
 	}
@@ -76,11 +69,6 @@ func (p *PagerDuty) Send(ctx context.Context, a Alert) error {
 	if !resp.IsSuccessState() {
 		return fmt.Errorf("pagerduty request: status %d: %s", resp.StatusCode, resp.Bytes())
 	}
-
-	log.Info().
-		Str("provider", "pagerduty").
-		Str("dedup_key", a.Key).
-		Msg("Alert sent")
 
 	return nil
 }

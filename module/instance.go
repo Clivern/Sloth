@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -13,9 +13,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/locale"
-	"github.com/clivern/cognit/pkg/util"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/locale"
+	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
@@ -98,6 +98,11 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, offset int) (*ListInstancesResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 	if agent == nil {
@@ -106,11 +111,21 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, off
 
 	total, err := i.InstanceRepository.CountByAgentId(agent.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to count agent instances")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 
 	instances, err := i.InstanceRepository.ListPageByAgentId(agent.Id, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to list agent instances")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 
@@ -118,6 +133,12 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, off
 	for _, instance := range instances {
 		status, checks, err := i.GetHealth(instance.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("agentName", agentName).
+				Str("instanceId", instance.InstanceId).
+				Msg("Failed to get instance health")
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 		}
 
@@ -144,6 +165,11 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, off
 func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, limit, offset int) (*ListInstancesResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 	if agent == nil {
@@ -154,11 +180,21 @@ func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, lim
 
 	total, err := i.InstanceRepository.CountLiveByAgentId(agent.Id, now)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to count healthy agent instances")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 
 	instances, err := i.InstanceRepository.ListLivePageByAgentId(agent.Id, now, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to list healthy agent instances")
 		return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 	}
 
@@ -166,6 +202,12 @@ func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, lim
 	for _, instance := range instances {
 		status, checks, err := i.GetHealth(instance.Id)
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("workspaceId", workspaceId.String()).
+				Str("agentName", agentName).
+				Str("instanceId", instance.InstanceId).
+				Msg("Failed to get instance health")
 			return nil, fmt.Errorf("%w: %v", ErrFailedListInstances, err)
 		}
 
@@ -192,6 +234,11 @@ func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, lim
 func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) (*InstanceResponse, error) {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
 	}
 	if agent == nil {
@@ -200,6 +247,12 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to get agent instance")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
 	}
 	if instance == nil {
@@ -208,6 +261,12 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 
 	status, checks, err := i.GetHealth(instance.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instance.InstanceId).
+			Msg("Failed to get instance health")
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetInstance, err)
 	}
 
@@ -233,6 +292,11 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 	if agent == nil {
@@ -241,6 +305,12 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to get agent instance")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
@@ -265,11 +335,23 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		err = i.InstanceRepository.Update(instance)
 	}
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to save agent instance")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
 	err = i.SyncChecks(instance.Id, agent.Id, lang)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to sync instance checks")
 		return nil, false, err
 	}
 
@@ -319,6 +401,11 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 					Err(err).
 					Str("agentId", agent.Id.String()).
 					Msg("Failed to store agent card")
+			} else {
+				log.Info().
+					Str("agentId", agent.Id.String()).
+					Str("instanceId", instanceId).
+					Msg("Agent card stored")
 			}
 		}
 	}
@@ -326,6 +413,12 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 	instance.UpdatedAt = time.Now().UTC()
 	status, checks, err := i.GetHealth(instance.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instance.InstanceId).
+			Msg("Failed to get instance health")
 		return nil, false, fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
@@ -342,6 +435,15 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		UpdatedAt:  instance.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("instanceId", instanceId).
+		Str("address", instance.Address).
+		Int("port", instance.Port).
+		Bool("created", created).
+		Msg("Agent instance registered")
+
 	return item, created, nil
 }
 
@@ -351,11 +453,20 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 
 	templates, err := i.AgentCheckRepository.ListByAgentId(agentId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("agentId", agentId.String()).
+			Str("instanceId", instanceId.String()).
+			Msg("Failed to list agent checks")
 		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
 	current, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("instanceId", instanceId.String()).
+			Msg("Failed to list instance checks")
 		return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 	}
 
@@ -377,6 +488,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 		if existing != nil && existing.Type != template.Type {
 			err = i.HealthCheckRepository.Delete(existing.Id)
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("instanceId", instanceId.String()).
+					Str("checkId", template.CheckId).
+					Msg("Failed to reset instance check")
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
 
@@ -421,7 +537,12 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 				check.NextRunAt = &now
 			} else {
 				var templateDefinition CheckDefinition
-				_ = json.Unmarshal([]byte(template.Definition), &templateDefinition)
+				if err := json.Unmarshal([]byte(template.Definition), &templateDefinition); err != nil {
+					log.Warn().
+						Err(err).
+						Str("checkId", template.CheckId).
+						Msg("Failed to decode check definition")
+				}
 				output := locale.T(lang, "waiting_for_first_report")
 				expiresAt := now.Add(time.Duration(templateDefinition.TTL) * time.Second)
 				check.Output = &output
@@ -431,6 +552,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 			err = i.HealthCheckRepository.Create(check)
 		}
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("instanceId", instanceId.String()).
+				Str("checkId", template.CheckId).
+				Msg("Failed to save instance check")
 			return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 		}
 	}
@@ -440,6 +566,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 		if check.Source == db.HealthCheckSourceAgent && templatesById[check.CheckId] == nil {
 			err = i.HealthCheckRepository.Delete(check.Id)
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("instanceId", instanceId.String()).
+					Str("checkId", check.CheckId).
+					Msg("Failed to remove orphaned instance check")
 				return fmt.Errorf("%w: %v", ErrFailedRegisterInstance, err)
 			}
 
@@ -457,6 +588,11 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Msg("Failed to get agent")
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
 	if agent == nil {
@@ -465,6 +601,12 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 
 	instance, err := i.InstanceRepository.GetByAgentAndInstanceId(agent.Id, instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to get agent instance")
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
 	if instance == nil {
@@ -473,8 +615,20 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 
 	err = i.InstanceRepository.Delete(instance.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("workspaceId", workspaceId.String()).
+			Str("agentName", agentName).
+			Str("instanceId", instanceId).
+			Msg("Failed to delete agent instance")
 		return fmt.Errorf("%w: %v", ErrFailedDeregisterInstance, err)
 	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("agentName", agentName).
+		Str("instanceId", instanceId).
+		Msg("Agent instance deregistered")
 
 	return nil
 }
@@ -483,6 +637,10 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 func (i *Instance) GetHealth(instanceId db.Id) (string, []*HealthCheckResponse, error) {
 	checks, err := i.HealthCheckRepository.ListByInstanceId(instanceId)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("instanceId", instanceId.String()).
+			Msg("Failed to list instance checks")
 		return "", nil, err
 	}
 

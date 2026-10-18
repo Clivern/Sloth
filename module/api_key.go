@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package module
@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/clivern/cognit/db"
+	"github.com/clivern/sloth/db"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -55,6 +55,10 @@ type APIKeyResponse struct {
 func (a *APIKey) CreateAPIKey(req *CreateAPIKeyRequest, user *db.User) (*APIKeyResponse, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to generate API key")
 		return nil, err
 	}
 
@@ -77,8 +81,17 @@ func (a *APIKey) CreateAPIKey(req *CreateAPIKeyRequest, user *db.User) (*APIKeyR
 
 	err = a.APIKeyRepository.Create(apiKey)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to create API key")
 		return nil, err
 	}
+
+	log.Info().
+		Str("userId", user.Id.String()).
+		Str("apiKeyId", apiKey.Id.String()).
+		Msg("API key created")
 
 	return &APIKeyResponse{
 		Id:        apiKey.Id,
@@ -97,7 +110,11 @@ func (a *APIKey) CreateAPIKey(req *CreateAPIKeyRequest, user *db.User) (*APIKeyR
 // ListAPIKeys returns the user's API keys (metadata only, never the secret).
 func (a *APIKey) ListAPIKeys(user *db.User, limit, offset int) (*ListAPIKeysResult, error) {
 	count, err := a.APIKeyRepository.DeleteExpired()
-	if err == nil && count > 0 {
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to delete expired API keys")
+	} else if count > 0 {
 		log.Info().
 			Int64("count", count).
 			Msg("Expired API keys deleted")
@@ -105,11 +122,19 @@ func (a *APIKey) ListAPIKeys(user *db.User, limit, offset int) (*ListAPIKeysResu
 
 	total, err := a.APIKeyRepository.CountByUserId(user.Id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to count API keys")
 		return nil, err
 	}
 
 	keys, err := a.APIKeyRepository.ListByUserId(user.Id, limit, offset)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Msg("Failed to list API keys")
 		return nil, err
 	}
 
@@ -134,7 +159,11 @@ func (a *APIKey) ListAPIKeys(user *db.User, limit, offset int) (*ListAPIKeysResu
 // GetAPIKey returns a single API key owned by the user (never the secret).
 func (a *APIKey) GetAPIKey(id db.Id, user *db.User) (*APIKeyResponse, error) {
 	count, err := a.APIKeyRepository.DeleteExpired()
-	if err == nil && count > 0 {
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("Failed to delete expired API keys")
+	} else if count > 0 {
 		log.Info().
 			Int64("count", count).
 			Msg("Expired API keys deleted")
@@ -142,6 +171,11 @@ func (a *APIKey) GetAPIKey(id db.Id, user *db.User) (*APIKeyResponse, error) {
 
 	k, err := a.APIKeyRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Str("apiKeyId", id.String()).
+			Msg("Failed to get API key")
 		return nil, err
 	}
 	if k == nil || k.UserId != user.Id {
@@ -165,11 +199,31 @@ func (a *APIKey) GetAPIKey(id db.Id, user *db.User) (*APIKeyResponse, error) {
 func (a *APIKey) DeleteAPIKey(id db.Id, user *db.User) error {
 	k, err := a.APIKeyRepository.GetById(id)
 	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Str("apiKeyId", id.String()).
+			Msg("Failed to get API key")
 		return err
 	}
 	if k == nil || k.UserId != user.Id {
 		return ErrAPIKeyNotFound
 	}
 
-	return a.APIKeyRepository.Delete(k.Id)
+	err = a.APIKeyRepository.Delete(k.Id)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("userId", user.Id.String()).
+			Str("apiKeyId", k.Id.String()).
+			Msg("Failed to delete API key")
+		return err
+	}
+
+	log.Info().
+		Str("userId", user.Id.String()).
+		Str("apiKeyId", k.Id.String()).
+		Msg("API key deleted")
+
+	return nil
 }

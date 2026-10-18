@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package api
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clivern/cognit/db"
-	"github.com/clivern/cognit/module"
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/module"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +22,7 @@ func TestUnitProtectionActions(t *testing.T) {
 		Id:       "protection-1",
 		AgentId:  "agent-1",
 		Type:     db.AgentProtectionTypeBasicAuth,
-		Config:   `{"username":"cognit","secretEncrypted":"cipher"}`,
+		Config:   `{"username":"sloth","secretEncrypted":"cipher"}`,
 		IsActive: true,
 	}
 	base := "/api/v1/workspaces/ws-1/agents/support-assistant/protection"
@@ -36,7 +36,7 @@ func TestUnitProtectionActions(t *testing.T) {
 		newProtectionRouter(api).ServeHTTP(w, httptest.NewRequest(http.MethodGet, base, nil))
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Body.String(), `"username":"cognit"`)
+		assert.Contains(t, w.Body.String(), `"username":"sloth"`)
 		assert.NotContains(t, w.Body.String(), "cipher")
 	})
 
@@ -124,7 +124,7 @@ func TestUnitProtectionActions(t *testing.T) {
 				Id:       "protection-1",
 				AgentId:  "agent-1",
 				Type:     db.AgentProtectionTypeBasicAuth,
-				Config:   `{"username":"cognit","secretEncrypted":"cipher"}`,
+				Config:   `{"username":"sloth","secretEncrypted":"cipher"}`,
 				IsActive: true,
 			}},
 		)}

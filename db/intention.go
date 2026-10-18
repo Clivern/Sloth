@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -80,7 +80,7 @@ func (r *IntentionRepositoryPostgres) Create(intention *Intention) error {
 	intention.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO intentions (id, workspace_id, source_agent, destination_agent, skill, action)
+		`INSERT INTO ai_intentions (id, workspace_id, source_agent, destination_agent, skill, action)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING created_at, updated_at`,
 		intention.Id.String(),
@@ -97,7 +97,7 @@ func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 	intention := &Intention{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
-		FROM intentions
+		FROM ai_intentions
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -120,7 +120,7 @@ func (r *IntentionRepositoryPostgres) GetById(id Id) (*Intention, error) {
 // Update updates an intention rule.
 func (r *IntentionRepositoryPostgres) Update(intention *Intention) error {
 	_, err := r.db.Exec(
-		`UPDATE intentions
+		`UPDATE ai_intentions
 		SET source_agent = $1, destination_agent = $2, skill = $3, action = $4, updated_at = $5
 		WHERE id = $6`,
 		intention.SourceAgent,
@@ -136,7 +136,7 @@ func (r *IntentionRepositoryPostgres) Update(intention *Intention) error {
 
 // Delete removes an intention row.
 func (r *IntentionRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM intentions WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_intentions WHERE id = $1`, id.String())
 
 	return err
 }
@@ -145,7 +145,7 @@ func (r *IntentionRepositoryPostgres) Delete(id Id) error {
 func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Intention, error) {
 	rows, err := r.db.Query(
 		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
-		FROM intentions
+		FROM ai_intentions
 		WHERE workspace_id = $1
 		ORDER BY source_agent, destination_agent, skill
 		LIMIT $2 OFFSET $3`,
@@ -186,7 +186,7 @@ func (r *IntentionRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, o
 func (r *IntentionRepositoryPostgres) CountByWorkspaceId(workspaceId Id) (int64, error) {
 	var count int64
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM intentions WHERE workspace_id = $1`,
+		`SELECT COUNT(*) FROM ai_intentions WHERE workspace_id = $1`,
 		workspaceId.String(),
 	).Scan(&count)
 
@@ -198,7 +198,7 @@ func (r *IntentionRepositoryPostgres) Match(workspaceId Id, source, destination,
 	intention := &Intention{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, source_agent, destination_agent, skill, action, created_at, updated_at
-		FROM intentions
+		FROM ai_intentions
 		WHERE workspace_id = $1
 			AND source_agent = $2
 			AND destination_agent = $3
@@ -239,7 +239,7 @@ func (r *IntentionMetaRepositoryPostgres) Create(id Id, key, value string) error
 	}
 
 	_, err = r.db.Exec(
-		`INSERT INTO intentions_meta (id, intention_id, key, value)
+		`INSERT INTO ai_intentions_meta (id, intention_id, key, value)
 		VALUES ($1, $2, $3, to_jsonb($4::text))`,
 		metaId.String(),
 		id.String(),
@@ -255,7 +255,7 @@ func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta
 	meta := &IntentionMeta{}
 	err := r.db.QueryRow(
 		`SELECT id, intention_id, key, value #>> '{}', created_at, updated_at
-		FROM intentions_meta
+		FROM ai_intentions_meta
 		WHERE intention_id = $1 AND key = $2`,
 		id.String(),
 		key,
@@ -277,7 +277,7 @@ func (r *IntentionMetaRepositoryPostgres) Get(id Id, key string) (*IntentionMeta
 // Update updates an existing intention metadata row. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Update(id Id, key, value string) error {
 	_, err := r.db.Exec(
-		`UPDATE intentions_meta
+		`UPDATE ai_intentions_meta
 		SET value = to_jsonb($1::text), updated_at = $2
 		WHERE intention_id = $3 AND key = $4`,
 		value,
@@ -292,7 +292,7 @@ func (r *IntentionMetaRepositoryPostgres) Update(id Id, key, value string) error
 // Delete deletes an intention metadata row. TODO: remove if not used in future.
 func (r *IntentionMetaRepositoryPostgres) Delete(id Id, key string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM intentions_meta WHERE intention_id = $1 AND key = $2`,
+		`DELETE FROM ai_intentions_meta WHERE intention_id = $1 AND key = $2`,
 		id.String(),
 		key,
 	)
@@ -304,7 +304,7 @@ func (r *IntentionMetaRepositoryPostgres) Delete(id Id, key string) error {
 func (r *IntentionMetaRepositoryPostgres) ListByIntentionId(id Id) ([]*IntentionMeta, error) {
 	rows, err := r.db.Query(
 		`SELECT id, intention_id, key, value #>> '{}', created_at, updated_at
-		FROM intentions_meta
+		FROM ai_intentions_meta
 		WHERE intention_id = $1
 		ORDER BY key`,
 		id.String(),

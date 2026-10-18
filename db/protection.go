@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package db
@@ -79,7 +79,7 @@ func (r *AgentProtectionRepositoryPostgres) Create(protection *AgentProtection) 
 	protection.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_protection (id, agent_id, type, config, is_active)
+		`INSERT INTO ai_agent_protection (id, agent_id, type, config, is_active)
 		VALUES ($1, $2, $3, $4::jsonb, $5)
 		RETURNING created_at, updated_at`,
 		protection.Id.String(),
@@ -95,7 +95,7 @@ func (r *AgentProtectionRepositoryPostgres) GetById(id Id) (*AgentProtection, er
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, type, config, is_active, created_at, updated_at
-		FROM agent_protection
+		FROM ai_agent_protection
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -119,7 +119,7 @@ func (r *AgentProtectionRepositoryPostgres) GetByAgentId(agentId Id) (*AgentProt
 	protection := &AgentProtection{}
 	err := r.db.QueryRow(
 		`SELECT id, agent_id, type, config, is_active, created_at, updated_at
-		FROM agent_protection
+		FROM ai_agent_protection
 		WHERE agent_id = $1`,
 		agentId.String(),
 	).Scan(
@@ -142,7 +142,7 @@ func (r *AgentProtectionRepositoryPostgres) GetByAgentId(agentId Id) (*AgentProt
 func (r *AgentProtectionRepositoryPostgres) Update(protection *AgentProtection) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_protection
+		`UPDATE ai_agent_protection
 		SET type = $1, config = $2::jsonb, is_active = $3, updated_at = $4
 		WHERE id = $5`,
 		protection.Type,
@@ -159,7 +159,7 @@ func (r *AgentProtectionRepositoryPostgres) Update(protection *AgentProtection) 
 
 // Delete removes an agent protection row.
 func (r *AgentProtectionRepositoryPostgres) Delete(id Id) error {
-	_, err := r.db.Exec(`DELETE FROM agent_protection WHERE id = $1`, id.String())
+	_, err := r.db.Exec(`DELETE FROM ai_agent_protection WHERE id = $1`, id.String())
 
 	return err
 }
@@ -179,7 +179,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) Create(token *AgentProtectionTo
 	token.Id = id
 
 	return r.db.QueryRow(
-		`INSERT INTO agent_protection_tokens
+		`INSERT INTO ai_agent_protection_tokens
 		(id, protection_id, token_hash, expires_at, revoked_at, meta)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING created_at, updated_at`,
@@ -197,7 +197,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetById(id Id) (*AgentProtectio
 	token := &AgentProtectionToken{}
 	err := r.db.QueryRow(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
-		FROM agent_protection_tokens
+		FROM ai_agent_protection_tokens
 		WHERE id = $1`,
 		id.String(),
 	).Scan(
@@ -222,7 +222,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string
 	token := &AgentProtectionToken{}
 	err := r.db.QueryRow(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
-		FROM agent_protection_tokens
+		FROM ai_agent_protection_tokens
 		WHERE token_hash = $1
 			AND revoked_at IS NULL
 			AND expires_at > $2`,
@@ -249,7 +249,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) GetByTokenHash(tokenHash string
 func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId Id) ([]*AgentProtectionToken, error) {
 	rows, err := r.db.Query(
 		`SELECT id, protection_id, token_hash, expires_at, revoked_at, meta, created_at, updated_at
-		FROM agent_protection_tokens
+		FROM ai_agent_protection_tokens
 		WHERE protection_id = $1
 		ORDER BY created_at DESC`,
 		protectionId.String(),
@@ -287,7 +287,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) ListByProtectionId(protectionId
 func (r *AgentProtectionTokenRepositoryPostgres) Revoke(id Id) error {
 	now := time.Now().UTC()
 	_, err := r.db.Exec(
-		`UPDATE agent_protection_tokens
+		`UPDATE ai_agent_protection_tokens
 		SET revoked_at = $1, updated_at = $1
 		WHERE id = $2 AND revoked_at IS NULL`,
 		now,
@@ -300,7 +300,7 @@ func (r *AgentProtectionTokenRepositoryPostgres) Revoke(id Id) error {
 // DeleteExpired removes expired token rows. TODO: remove if not used in future.
 func (r *AgentProtectionTokenRepositoryPostgres) DeleteExpired() (int64, error) {
 	result, err := r.db.Exec(
-		`DELETE FROM agent_protection_tokens WHERE expires_at <= $1`,
+		`DELETE FROM ai_agent_protection_tokens WHERE expires_at <= $1`,
 		time.Now().UTC(),
 	)
 	if err != nil {

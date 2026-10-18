@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package conf
@@ -13,9 +13,9 @@ const (
 // BuiltEdition is the compile-time edition.
 var BuiltEdition = EditionOSS
 
-// Edition returns the compile-time edition, or COGNIT_EDITION when set.
+// Edition returns the compile-time edition, or SLOTH_EDITION when set.
 func Edition() string {
-	switch os.Getenv("COGNIT_EDITION") {
+	switch os.Getenv("SLOTH_EDITION") {
 	case EditionSaaS:
 		return EditionSaaS
 	case EditionOSS:

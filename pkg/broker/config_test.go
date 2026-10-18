@@ -1,4 +1,4 @@
-// Copyright 2026 Cognit. All rights reserved.
+// Copyright 2026 Sloth. All rights reserved.
 // License can be found in the LICENSE file.
 
 package broker
@@ -15,12 +15,12 @@ func TestUnitGetConfig(t *testing.T) {
 	t.Cleanup(viper.Reset)
 	viper.Set("app.broker.provider", "nats")
 	viper.Set("app.broker.nats.url", "nats://localhost:4222")
-	viper.Set("app.broker.nats.name", "cognit")
+	viper.Set("app.broker.nats.name", "sloth")
 	viper.Set("app.broker.nats.queue", "workers")
 
 	cfg := GetConfig()
 	assert.Equal(t, "nats", cfg.Provider)
 	assert.Equal(t, "nats://localhost:4222", cfg.NATS.URL)
-	assert.Equal(t, "cognit", cfg.NATS.Name)
+	assert.Equal(t, "sloth", cfg.NATS.Name)
 	assert.Equal(t, "workers", cfg.NATS.Queue)
 }

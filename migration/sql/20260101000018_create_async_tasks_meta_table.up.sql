@@ -1,4 +1,4 @@
-CREATE TABLE async_tasks_meta (
+CREATE TABLE IF NOT EXISTS async_tasks_meta (
 	id UUID PRIMARY KEY,
 	async_task_id UUID NOT NULL REFERENCES async_tasks(id) ON DELETE CASCADE,
 	key VARCHAR(60) NOT NULL,
