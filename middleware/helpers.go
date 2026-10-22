@@ -6,6 +6,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/clivern/sloth/db"
@@ -28,7 +29,10 @@ func IsAssetPath(path string) bool {
 
 // ShouldSkipAuth determines if authentication should be skipped for a given path
 func ShouldSkipAuth(path string) bool {
-	return strings.HasPrefix(path, "/api/v1/public/") || !strings.HasPrefix(path, "/api/v1/")
+	// Gateway routes authenticate agent identities instead of users or access keys.
+	a2aPathPattern := regexp.MustCompile(`^/api/v1/workspaces/[^/]+/a2a/`)
+
+	return strings.HasPrefix(path, "/api/v1/public/") || !strings.HasPrefix(path, "/api/v1/") || a2aPathPattern.MatchString(path)
 }
 
 // GetPrincipal returns the authenticated user or workspace access key from context.
