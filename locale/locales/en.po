@@ -533,3 +533,24 @@ msgstr "Failed to list events."
 
 msgid "failed_get_event"
 msgstr "Failed to get event."
+
+msgid "invalid_agent_identity"
+msgstr "Invalid agent identity."
+
+msgid "a2a_call_denied"
+msgstr "No intention allows this agent to make this call."
+
+msgid "skill_not_found"
+msgstr "No agent in the workspace advertises this skill."
+
+msgid "task_not_found"
+msgstr "Task not found."
+
+msgid "no_healthy_instance"
+msgstr "No healthy agent instance is available."
+
+msgid "agent_unreachable"
+msgstr "The agent instance could not be reached."
+
+msgid "failed_a2a_request"
+msgstr "Failed to complete the A2A request."
