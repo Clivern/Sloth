@@ -17,3 +17,5 @@ CREATE INDEX IF NOT EXISTS idx_ai_traffic_workspace_id_created_at
 	ON ai_traffic (workspace_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_traffic_workspace_id_instances
 	ON ai_traffic (workspace_id, source_instance, destination_instance);
+CREATE INDEX IF NOT EXISTS idx_ai_traffic_workspace_id_task_id
+	ON ai_traffic (workspace_id, task_id);
