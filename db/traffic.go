@@ -41,6 +41,7 @@ type TrafficCall struct {
 type TrafficRepository interface {
 	Create(call *TrafficCall) error
 	GetById(id Id) (*TrafficCall, error)
+	GetAllowedByTaskId(workspaceId Id, taskId string) (*TrafficCall, error)
 	ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*TrafficCall, error)
 	CountByWorkspaceId(workspaceId Id) (int64, error)
 }
@@ -54,7 +55,7 @@ func NewTrafficRepository(db *sql.DB) TrafficRepository {
 	return &TrafficRepositoryPostgres{db: db}
 }
 
-// Create inserts a traffic call row. TODO: remove if not used in future.
+// Create inserts a traffic call row.
 func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 	id, err := NewId()
 	if err != nil {
@@ -95,6 +96,43 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 		FROM ai_traffic
 		WHERE id = $1`,
 		id.String(),
+	).Scan(
+		&call.Id,
+		&call.WorkspaceId,
+		&call.SourceInstance,
+		&call.DestinationInstance,
+		&call.Skill,
+		&call.Verb,
+		&call.Decision,
+		&call.Result,
+		&call.LatencyMs,
+		&call.TaskId,
+		&call.Meta,
+		&call.CreatedAt,
+		&call.UpdatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	return call, err
+}
+
+// GetAllowedByTaskId returns the latest allowed call that carried a task id in a workspace.
+func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId string) (*TrafficCall, error) {
+	call := &TrafficCall{}
+	err := r.db.QueryRow(
+		`SELECT
+			id, workspace_id, source_instance, destination_instance, skill, verb,
+			decision, result, latency_ms, task_id, meta,
+			created_at, updated_at
+		FROM ai_traffic
+		WHERE workspace_id = $1 AND task_id = $2 AND decision = $3
+		ORDER BY created_at DESC
+		LIMIT 1`,
+		workspaceId.String(),
+		taskId,
+		TrafficDecisionAllow,
 	).Scan(
 		&call.Id,
 		&call.WorkspaceId,

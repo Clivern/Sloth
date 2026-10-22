@@ -61,6 +61,42 @@ func TestIntegrationTrafficRepository(t *testing.T) {
 		assert.GreaterOrEqual(t, count, int64(2))
 	})
 
+	t.Run("get allowed by task id skips denied calls and other workspaces", func(t *testing.T) {
+		taskId := "task-b41c"
+		other := createTestWorkspace(t, database)
+
+		require.NoError(t, repo.Create(&TrafficCall{
+			WorkspaceId:         workspace.Id,
+			SourceInstance:      "support-assistant",
+			DestinationInstance: "user-directory-1",
+			Verb:                "SendMessage",
+			Decision:            TrafficDecisionAllow,
+			Result:              TrafficResultCompleted,
+			TaskId:              &taskId,
+			Meta:                new(`{"agentId":"a","instanceId":"i"}`),
+		}))
+		require.NoError(t, repo.Create(&TrafficCall{
+			WorkspaceId:         workspace.Id,
+			SourceInstance:      "support-assistant",
+			DestinationInstance: "user-directory",
+			Verb:                "GetTask",
+			Decision:            TrafficDecisionDeny,
+			Result:              TrafficResultDenied,
+			TaskId:              &taskId,
+		}))
+
+		got, err := repo.GetAllowedByTaskId(workspace.Id, taskId)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.Equal(t, TrafficDecisionAllow, got.Decision)
+		assert.Equal(t, "user-directory-1", got.DestinationInstance)
+		assert.JSONEq(t, `{"agentId":"a","instanceId":"i"}`, *got.Meta)
+
+		got, err = repo.GetAllowedByTaskId(other.Id, taskId)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	})
+
 	t.Run("missing row", func(t *testing.T) {
 		id, err := NewId()
 		require.NoError(t, err)
