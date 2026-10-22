@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="120" />
+    <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="160" />
     <h3 align="center">Sloth</h3>
     <p align="center">A Gateway & Service Discovery Registry for AI Agents.</p>
     <p align="center">
