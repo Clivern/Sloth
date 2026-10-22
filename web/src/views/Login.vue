@@ -3,7 +3,7 @@
     <div class="max-w-sm w-full">
       <div class="text-center mb-10">
         <router-link to="/" class="inline-flex justify-center text-theme-text">
-          <AppLogo :alt="$t('common.logo_alt')" class="h-20 w-auto" />
+          <AppLogo :alt="$t('common.logo_alt')" class="h-28 w-auto" />
         </router-link>
       </div>
 

@@ -1,7 +1,7 @@
 <p align="center">
     <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="160" />
     <h3 align="center">Sloth</h3>
-    <p align="center">A Gateway & Service Discovery Registry for AI Agents.</p>
+    <p align="center">One gateway for your AI agents, APIs and MCP servers.</p>
     <p align="center">
         <a href="https://github.com/clivern/sloth/actions/workflows/ci.yml">
             <img alt="CI" src="https://github.com/clivern/sloth/actions/workflows/ci.yml/badge.svg">
@@ -15,7 +15,7 @@
     </p>
 </p>
 
-Sloth is A Gateway & Service Discovery Registry for AI Agents. Agents register, discover each other by skill, and call through a gateway that manages load balancing, health, and policy on every request.
+Sloth is a gateway and service discovery registry for AI agents, APIs and MCP servers. Register your AI agent, let them discover each other, and route every call through one gateway that handles load balancing, health checks and policy.
 
 
 ### Versioning

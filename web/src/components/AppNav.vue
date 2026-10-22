@@ -5,7 +5,7 @@
         <div class="flex items-center">
           <div class="shrink-0 flex items-center">
             <router-link to="/" class="text-theme-text">
-              <AppLogo :alt="$t('common.logo_alt')" class="h-8 w-auto" />
+              <AppLogo variant="tile" :alt="$t('common.logo_alt')" class="h-8 w-auto" />
             </router-link>
           </div>
           <div class="hidden md:ml-8 md:flex md:space-x-1">
