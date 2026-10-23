@@ -133,6 +133,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/{agentName}", a.GetAgentAction)          // get an agent
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteAgent})).Delete("/{agentName}", a.DeleteAgentAction) // delete an agent
 			r.With(middleware.AgentAuth()).Get("/catalog/skills", a.ListCatalogSkillsAction)                                       // list the skills the calling agent may call
+			r.With(middleware.AgentAuth()).Get("/catalog/skills/{skill}/agents", a.ListCatalogSkillAgentsAction)                   // list the agents the calling agent may call for a skill
 
 			r.Route("/{agentName}/instances", func(r chi.Router) {
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanListInstances})).Get("/", a.ListInstancesAction)                              // list agent instances

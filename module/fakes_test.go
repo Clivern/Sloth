@@ -1265,13 +1265,25 @@ func (f *fakeIdentityTokens) GetByTokenHash(tokenHash string) (*db.AgentIdentity
 
 type fakeAgentSkills struct {
 	db.AgentSkillRepository
-	skills []*db.CallableSkill
-	total  int64
-	filter *db.ListCallableSkillsFilter
-	err    error
+	skills      []*db.CallableSkill
+	total       int64
+	filter      *db.ListCallableSkillsFilter
+	skill       *db.AgentSkill
+	agents      []*db.CallableAgent
+	agentFilter *db.ListCallableAgentsFilter
+	err         error
 }
 
 func (f *fakeAgentSkills) ListCallable(workspaceId db.Id, filter *db.ListCallableSkillsFilter) ([]*db.CallableSkill, int64, error) {
 	f.filter = filter
 	return f.skills, f.total, f.err
+}
+
+func (f *fakeAgentSkills) GetSkill(workspaceId db.Id, skillId string) (*db.AgentSkill, error) {
+	return f.skill, f.err
+}
+
+func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, filter *db.ListCallableAgentsFilter) ([]*db.CallableAgent, int64, error) {
+	f.agentFilter = filter
+	return f.agents, f.total, f.err
 }

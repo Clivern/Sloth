@@ -9,6 +9,7 @@ import (
 
 	"github.com/clivern/sloth/db"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,5 +63,38 @@ func TestUnitCatalog(t *testing.T) {
 	t.Run("list skills returns repository errors", func(t *testing.T) {
 		_, err := NewCatalog(&fakeAgentSkills{err: errors.New("db down")}).ListSkills("ws-1", caller, &ListCatalogSkillsRequest{Limit: 20})
 		assert.Error(t, err)
+	})
+
+	t.Run("list skill agents returns not found when no agent offers the skill", func(t *testing.T) {
+		_, err := NewCatalog(&fakeAgentSkills{}).ListSkillAgents("ws-1", caller, "ghost.skill", &ListCatalogSkillAgentsRequest{Limit: 20})
+		assert.ErrorIs(t, err, ErrSkillNotFound)
+	})
+
+	t.Run("list skill agents maps agents with status and gateway urls", func(t *testing.T) {
+		viper.Set("app.url", "https://sloth.example.com")
+		defer viper.Set("app.url", "")
+
+		skills := &fakeAgentSkills{
+			skill: &db.AgentSkill{SkillId: "user.profile.get", Name: "Get user profile"},
+			agents: []*db.CallableAgent{
+				{Name: "user-directory", Version: "1.4.0", Instances: 3, PassingInstances: 2},
+				{Name: "user-mirror", Version: "0.9.2", Instances: 1},
+			},
+			total: 2,
+		}
+
+		result, err := NewCatalog(skills).ListSkillAgents("ws-1", caller, "user.profile.get", &ListCatalogSkillAgentsRequest{Passing: true, Limit: 20, Offset: 0})
+		require.NoError(t, err)
+		assert.Equal(t, "support-assistant", skills.agentFilter.Caller)
+		assert.True(t, skills.agentFilter.Passing)
+		assert.Equal(t, int64(2), result.Total)
+		assert.Equal(t, []string{}, result.Skill.Tags)
+
+		require.Len(t, result.Agents, 2)
+		assert.Equal(t, db.HealthCheckStatusPassing, result.Agents[0].Status)
+		assert.Equal(t, CatalogAgentInstances{Total: 3, Passing: 2}, result.Agents[0].Instances)
+		assert.Equal(t, "https://sloth.example.com/api/v1/workspaces/ws-1/agents/user-directory/message:send", result.Agents[0].SendUrl)
+		assert.Equal(t, "https://sloth.example.com/api/v1/workspaces/ws-1/agents/user-directory/.well-known/agent-card.json", result.Agents[0].CardUrl)
+		assert.Equal(t, db.HealthCheckStatusCritical, result.Agents[1].Status)
 	})
 }

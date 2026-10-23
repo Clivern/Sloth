@@ -88,3 +88,66 @@ func TestUnitListCatalogSkillsAction(t *testing.T) {
 		assert.Contains(t, w.Body.String(), "failed_catalog_request")
 	})
 }
+
+func TestUnitListCatalogSkillAgentsAction(t *testing.T) {
+	caller := &db.Agent{Id: "agent-0", Name: "support-assistant"}
+
+	newRouter := func(skills *fakeAgentSkills) *chi.Mux {
+		api := &API{Catalog: module.NewCatalog(skills)}
+
+		router := chi.NewRouter()
+		router.With(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				next.ServeHTTP(w, r.WithContext(module.WithAgent(r.Context(), caller)))
+			})
+		}).Get("/api/v1/workspaces/{workspaceId}/agents/catalog/skills/{skill}/agents", api.ListCatalogSkillAgentsAction)
+
+		return router
+	}
+
+	t.Run("returns the skill and the callable agents", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{
+			skill:  &db.AgentSkill{SkillId: "user.profile.get", Name: "Get user profile", Tags: []string{"profile"}},
+			agents: []*db.CallableAgent{{Name: "user-directory", Version: "1.4.0", Instances: 1, PassingInstances: 1}},
+			total:  1,
+		})
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills/user.profile.get/agents", nil))
+		require.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `"skill":{"id":"user.profile.get","name":"Get user profile","description":"","tags":["profile"]}`)
+		assert.Contains(t, w.Body.String(), `"name":"user-directory"`)
+		assert.Contains(t, w.Body.String(), `"status":"passing"`)
+		assert.Contains(t, w.Body.String(), `"total":1`)
+	})
+
+	t.Run("returns an empty list when the caller may call no agent for the skill", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{
+			skill:  &db.AgentSkill{SkillId: "user.profile.get", Name: "Get user profile"},
+			agents: []*db.CallableAgent{},
+		})
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills/user.profile.get/agents", nil))
+		require.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `"agents":[]`)
+	})
+
+	t.Run("returns 404 when no agent offers the skill", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{})
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills/ghost.skill/agents", nil))
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Contains(t, w.Body.String(), "skill_not_found")
+	})
+
+	t.Run("returns 500 when the catalog cannot be read", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{err: errors.New("db down")})
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills/user.profile.get/agents", nil))
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, w.Body.String(), "failed_catalog_request")
+	})
+}

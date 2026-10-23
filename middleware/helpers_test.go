@@ -18,6 +18,8 @@ func TestUnitShouldSkipAuth(t *testing.T) {
 		{path: "/assets/app.js", want: true},
 		{path: "/api/v1/workspaces/ws-1/a2a/agents/weather/message:send", want: false},
 		{path: "/api/v1/workspaces/ws-1/agents/catalog/skills", want: true},
+		{path: "/api/v1/workspaces/ws-1/agents/catalog/skills/user.profile.get/agents", want: true},
+		{path: "/api/v1/workspaces/ws-1/agents/catalog/skills/user.profile.get", want: false},
 		{path: "/api/v1/workspaces/ws-1/agents/weather", want: false},
 		{path: "/api/v1/workspaces/ws-1/kv/a2a/flag", want: false},
 		{path: "/api/v1/me", want: false},

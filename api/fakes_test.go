@@ -1000,9 +1000,19 @@ type fakeAgentSkills struct {
 	db.AgentSkillRepository
 	skills []*db.CallableSkill
 	total  int64
+	skill  *db.AgentSkill
+	agents []*db.CallableAgent
 	err    error
 }
 
 func (f *fakeAgentSkills) ListCallable(workspaceId db.Id, filter *db.ListCallableSkillsFilter) ([]*db.CallableSkill, int64, error) {
 	return f.skills, f.total, f.err
+}
+
+func (f *fakeAgentSkills) GetSkill(workspaceId db.Id, skillId string) (*db.AgentSkill, error) {
+	return f.skill, f.err
+}
+
+func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, filter *db.ListCallableAgentsFilter) ([]*db.CallableAgent, int64, error) {
+	return f.agents, f.total, f.err
 }

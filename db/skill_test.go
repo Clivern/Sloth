@@ -113,4 +113,43 @@ func TestIntegrationAgentSkillRepository(t *testing.T) {
 		assert.Equal(t, int64(1), total)
 		assert.Empty(t, skills)
 	})
+
+	t.Run("get skill describes it from the first agent by name and is nil when nobody offers it", func(t *testing.T) {
+		skill, err := repo.GetSkill(workspace.Id, "user.profile.get")
+		require.NoError(t, err)
+		require.NotNil(t, skill)
+		assert.Equal(t, "Get user profile", skill.Name)
+		assert.Equal(t, []string{"profile", "users"}, skill.Tags)
+
+		skill, err = repo.GetSkill(workspace.Id, "ghost.skill")
+		require.NoError(t, err)
+		assert.Nil(t, skill)
+	})
+
+	t.Run("list callable agents applies intentions, counts instances and filters passing", func(t *testing.T) {
+		agentsFor := func(skill string, passing bool) ([]*CallableAgent, int64) {
+			list, total, err := repo.ListCallableAgents(workspace.Id, skill, &ListCallableAgentsFilter{Caller: "support-assistant", Passing: passing, Limit: 20})
+			require.NoError(t, err)
+
+			return list, total
+		}
+
+		list, total := agentsFor("user.profile.get", false)
+		assert.Equal(t, int64(2), total)
+		require.Len(t, list, 2)
+		assert.Equal(t, "user-directory", list[0].Name)
+		assert.Equal(t, 1, list[0].Instances)
+		assert.Equal(t, 0, list[0].PassingInstances)
+		assert.Equal(t, "user-mirror", list[1].Name)
+		assert.Equal(t, 1, list[1].PassingInstances)
+
+		list, total = agentsFor("user.profile.get", true)
+		assert.Equal(t, int64(1), total)
+		require.Len(t, list, 1)
+		assert.Equal(t, "user-mirror", list[0].Name)
+
+		list, total = agentsFor("user.delete", false)
+		assert.Equal(t, int64(0), total)
+		assert.Empty(t, list)
+	})
 }
