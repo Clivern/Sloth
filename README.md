@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="Sloth Logo" src="/static/logo.png?v=0.1.0" width="160" />
+    <img alt="Sloth Logo" src="/static/logo-mask.svg?v=0.1.0" width="180" />
     <h3 align="center">Sloth</h3>
     <p align="center">One gateway for your AI agents, APIs and MCP servers.</p>
     <p align="center">
