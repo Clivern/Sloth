@@ -12,7 +12,7 @@ require (
 	github.com/imroc/req/v3 v3.61.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/leonelquinteros/gotext v1.8.0
-	github.com/nats-io/nats.go v1.54.0
+	github.com/nats-io/nats.go v1.55.0
 	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/resend/resend-go/v4 v4.9.0
