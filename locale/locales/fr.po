@@ -554,3 +554,6 @@ msgstr "L'instance de l'agent est injoignable."
 
 msgid "failed_a2a_request"
 msgstr "Échec de la requête A2A."
+
+msgid "failed_catalog_request"
+msgstr "Échec du chargement du catalogue d’agents."

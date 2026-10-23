@@ -132,6 +132,7 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Put("/{agentName}", a.UpsertAgentAction)    // register or replace an agent card
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/{agentName}", a.GetAgentAction)          // get an agent
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteAgent})).Delete("/{agentName}", a.DeleteAgentAction) // delete an agent
+			r.With(middleware.AgentAuth()).Get("/catalog/skills", a.ListCatalogSkillsAction)                                       // list the skills the calling agent may call
 
 			r.Route("/{agentName}/instances", func(r chi.Router) {
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanListInstances})).Get("/", a.ListInstancesAction)                              // list agent instances
@@ -163,17 +164,6 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 				r.With(middleware.Protect(middleware.Config{Perm: module.CanUpsertAgent})).Delete("/", a.DeleteProtectionAction)          // remove the agent protection
 			})
 		})
-
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/discover", a.DiscoverAgentsAction)                                   // TODO: perm for discovery
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Post("/discover/resolve", a.ResolveDiscoverAction)                         // TODO: perm for discovery
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/catalog/skills", a.ListCatalogSkillsAction)                          // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/catalog/skills/{skill}/agents", a.ListCatalogSkillAgentsAction)      // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/catalog/agents/{agentName}/card", a.GetCatalogAgentCardAction)         // TODO: perm for catalog
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/agents/{agentName}/.well-known/agent-card.json", a.GetAgentCardAction) // TODO: perm for agent card
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Post("/a2a/agents/{agentName}/message:send", a.SendAgentMessageAction)       // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Post("/a2a/skills/{skill}/message:send", a.SendSkillMessageAction)           // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanGetAgent})).Get("/a2a/tasks/{taskId}", a.GetTaskAction)                                  // TODO: perm for A2A
-		r.With(middleware.Protect(middleware.Config{Perm: module.CanListAgents})).Get("/watch/catalog", a.WatchCatalogAction)                                // TODO: perm for watch
 
 		r.Route("/intentions", func(r chi.Router) {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanListIntentions})).Get("/", a.ListIntentionsAction)                   // list intentions

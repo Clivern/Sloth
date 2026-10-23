@@ -1253,3 +1253,39 @@ func (f *fakeEvents) ListByWorkspaceId(workspaceId db.Id, limit, offset int) ([]
 func (f *fakeEvents) CountByWorkspaceId(workspaceId db.Id) (int64, error) {
 	return f.total, f.err
 }
+
+func (f *fakeAgentIdentities) ListActiveByAgentId(agentId db.Id) ([]*db.AgentIdentity, error) {
+	return lo.Filter(f.list, func(identity *db.AgentIdentity, _ int) bool { return identity.IsActive }), nil
+}
+
+func (f *fakeIdentityTokens) GetByTokenHash(tokenHash string) (*db.AgentIdentityToken, error) {
+	token, _ := lo.Find(f.created, func(token *db.AgentIdentityToken) bool { return token.TokenHash == tokenHash })
+	return token, nil
+}
+
+type fakeCatalogInstances struct {
+	db.AgentInstanceRepository
+	live map[db.Id]int64
+}
+
+func (f *fakeCatalogInstances) CountLiveByAgentId(agentId db.Id, now time.Time) (int64, error) {
+	return f.live[agentId], nil
+}
+
+// fakeCatalogIntentions matches "source/destination/skill" rules, preferring a skill rule over a "source/destination/" one.
+type fakeCatalogIntentions struct {
+	db.IntentionRepository
+	rules map[string]string
+}
+
+func (f *fakeCatalogIntentions) Match(workspaceId db.Id, source, destination, skill string) (*db.Intention, error) {
+	action, ok := f.rules[source+"/"+destination+"/"+skill]
+	if !ok {
+		action, ok = f.rules[source+"/"+destination+"/"]
+	}
+	if !ok {
+		return nil, nil
+	}
+
+	return &db.Intention{Action: action}, nil
+}
