@@ -140,6 +140,7 @@ func (a *Agents) SendMessage(workspaceId db.Id, caller *db.Agent, agentName stri
 	}
 
 	// Take turns across the agent's live instances.
+	// TODO: support other lb strategies (random, least outstanding tasks, sticky), configurable per agent, instead of always round robin.
 	picked, err := a.Picker.Pick(lo.Map(instances, func(instance *db.AgentInstance, _ int) string {
 		return instance.Id.String()
 	}), lb.Options{Strategy: lb.RoundRobin, Key: agent.Id.String()})
@@ -209,6 +210,7 @@ func (a *Agents) SendSkillMessage(workspaceId db.Id, caller *db.Agent, skill str
 	}
 
 	// Take turns across the agent's live instances.
+	// TODO: support other lb strategies (random, least outstanding tasks, sticky), configurable per agent, instead of always round robin.
 	picked, err := a.Picker.Pick(lo.Map(instances, func(instance *db.AgentInstance, _ int) string {
 		return instance.Id.String()
 	}), lb.Options{Strategy: lb.RoundRobin, Key: agent.Id.String()})
