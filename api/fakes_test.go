@@ -487,7 +487,6 @@ func newInstanceAPI(
 ) *API {
 	instance := module.NewInstance(
 		agent,
-		&fakeAgentMetas{},
 		instances,
 		checks,
 		&fakeAgentChecks{},
@@ -1016,15 +1015,6 @@ func (f *fakeAgentSkills) GetSkill(workspaceId db.Id, skillId string) (*db.Agent
 
 func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, filter *db.ListCallableAgentsFilter) ([]*db.CallableAgent, int64, error) {
 	return f.agents, f.total, f.err
-}
-
-type fakeAgentMetas struct {
-	db.AgentMetaRepository
-	meta *db.AgentMeta
-}
-
-func (f *fakeAgentMetas) Get(id db.Id, key string) (*db.AgentMeta, error) {
-	return f.meta, nil
 }
 
 func (f *fakeTrafficCalls) Create(call *db.TrafficCall) error {

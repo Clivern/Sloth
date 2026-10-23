@@ -32,7 +32,7 @@ func TestUnitAgentsActions(t *testing.T) {
 
 	host, port, _ := net.SplitHostPort(instance.Listener.Addr().String())
 	portNumber, _ := strconv.Atoi(port)
-	live := &db.AgentInstance{Id: "instance-1", AgentId: "agent-1", InstanceId: "directory-1", Address: host, Port: portNumber}
+	live := &db.AgentInstance{Id: "instance-1", AgentId: "agent-1", InstanceId: "directory-1", Address: host, Port: portNumber, Scheme: "http"}
 
 	type setup struct {
 		agent     *db.Agent
@@ -46,7 +46,6 @@ func TestUnitAgentsActions(t *testing.T) {
 	newRouter := func(s setup) *chi.Mux {
 		api := &API{Agents: module.NewAgents(
 			&fakeAgentCatalog{agent: s.agent},
-			&fakeAgentMetas{},
 			&fakeInstanceRecords{list: s.instances, instance: live},
 			&fakeIntentions{match: s.intention},
 			&fakeAgentProtections{},

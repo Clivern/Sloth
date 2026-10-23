@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/clivern/sloth/db"
@@ -36,7 +37,6 @@ var InstanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 // Instance is the module for agent instance registration and health.
 type Instance struct {
 	AgentRepository       db.AgentRepository
-	AgentMetaRepository   db.AgentMetaRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
 	AgentCheckRepository  db.AgentCheckRepository
@@ -48,6 +48,8 @@ type Instance struct {
 type RegisterInstanceRequest struct {
 	Address string          `json:"address" validate:"required,max=255" label:"Address"`
 	Port    int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
+	Scheme  string          `json:"scheme" validate:"omitempty,oneof=http https" label:"Scheme"`
+	Path    string          `json:"path" validate:"omitempty,max=255,startswith=/" label:"Path"`
 	Meta    json.RawMessage `json:"meta" label:"Meta"`
 }
 
@@ -70,6 +72,8 @@ type InstanceResponse struct {
 	InstanceId string                 `json:"instanceId"`
 	Address    string                 `json:"address"`
 	Port       int                    `json:"port"`
+	Scheme     string                 `json:"scheme"`
+	Path       string                 `json:"path"`
 	Meta       json.RawMessage        `json:"meta,omitempty"`
 	Status     string                 `json:"status"`
 	Checks     []*HealthCheckResponse `json:"checks"`
@@ -84,10 +88,9 @@ type ListInstancesResponse struct {
 }
 
 // NewInstance creates an instance module with the given repositories.
-func NewInstance(agents db.AgentRepository, agentMetas db.AgentMetaRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
+func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
 	return &Instance{
 		AgentRepository:       agents,
-		AgentMetaRepository:   agentMetas,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
 		AgentCheckRepository:  agentChecks,
@@ -150,6 +153,8 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, off
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
+			Scheme:     instance.Scheme,
+			Path:       instance.Path,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			Checks:     checks,
@@ -219,6 +224,8 @@ func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, lim
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
+			Scheme:     instance.Scheme,
+			Path:       instance.Path,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			Checks:     checks,
@@ -278,6 +285,8 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
+		Scheme:     instance.Scheme,
+		Path:       instance.Path,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     status,
 		Checks:     checks,
@@ -323,6 +332,8 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 	instance.Address = req.Address
 	instance.Port = req.Port
+	instance.Scheme = lo.CoalesceOrEmpty(req.Scheme, "http")
+	instance.Path = strings.TrimSuffix(req.Path, "/")
 	instance.Meta = nil
 	if len(req.Meta) > 0 {
 		meta := string(req.Meta)
@@ -376,22 +387,6 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 
 			interfaces, _ := card["supportedInterfaces"].([]any)
 
-			// Sloth forwards to the url the card advertised, so keep it before pointing the card at the gateway:
-			// the HTTP+JSON interface, else the first interface, else the legacy top-level url.
-			var upstream, first string
-			for _, iface := range interfaces {
-				entry, _ := iface.(map[string]any)
-				link, _ := entry["url"].(string)
-				first = lo.CoalesceOrEmpty(first, link)
-
-				if upstream == "" && entry["protocolBinding"] == "HTTP+JSON" {
-					upstream = link
-				}
-			}
-
-			legacy, _ := card["url"].(string)
-			upstream = lo.CoalesceOrEmpty(upstream, first, legacy)
-
 			if len(interfaces) == 0 {
 				interfaces = []any{map[string]any{}}
 			}
@@ -414,7 +409,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			cardJSON, _ := json.Marshal(card)
 			sum := sha256.Sum256(cardJSON)
 
-			stored, err := i.AgentRepository.SetCardIfMissing(agent.Id, string(cardJSON), hex.EncodeToString(sum[:]))
+			_, err = i.AgentRepository.SetCardIfMissing(agent.Id, string(cardJSON), hex.EncodeToString(sum[:]))
 			if err != nil {
 				log.Error().
 					Err(err).
@@ -425,16 +420,6 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 					Str("agentId", agent.Id.String()).
 					Str("instanceId", instanceId).
 					Msg("Agent card stored")
-			}
-
-			if stored {
-				err = i.AgentMetaRepository.Upsert(agent.Id, AgentMetaA2AURL, upstream)
-				if err != nil {
-					log.Error().
-						Err(err).
-						Str("agentId", agent.Id.String()).
-						Msg("Failed to store agent A2A url")
-				}
 			}
 		}
 	}
@@ -457,6 +442,8 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
+		Scheme:     instance.Scheme,
+		Path:       instance.Path,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     status,
 		Checks:     checks,

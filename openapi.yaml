@@ -3060,6 +3060,16 @@ components:
           type: integer
           minimum: 1
           maximum: 65535
+        scheme:
+          type: string
+          enum: [http, https]
+          default: http
+          description: How Sloth reaches the instance's A2A endpoint.
+        path:
+          type: string
+          maxLength: 255
+          default: ""
+          description: Path of the instance's A2A endpoint, such as `/a2a/v1`; must start with `/`. A trailing slash is dropped.
         meta:
           type: object
           additionalProperties: true
@@ -3300,6 +3310,11 @@ components:
           type: string
         port:
           type: integer
+        scheme:
+          type: string
+          enum: [http, https]
+        path:
+          type: string
         meta:
           type: object
           additionalProperties: true

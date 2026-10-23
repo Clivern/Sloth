@@ -273,6 +273,32 @@ func TestUnitInstance(t *testing.T) {
 		assert.Empty(t, f.healthChecks.created)
 	})
 
+	t.Run("register defaults the endpoint to http with no path", func(t *testing.T) {
+		f := defaultInstanceFixture()
+
+		item, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		require.NoError(t, err)
+		assert.Equal(t, "http", item.Scheme)
+		assert.Equal(t, "", item.Path)
+		assert.Equal(t, "http", f.instances.created[0].Scheme)
+	})
+
+	t.Run("register stores the endpoint the instance gives, without a trailing slash", func(t *testing.T) {
+		f := defaultInstanceFixture()
+
+		item, _, err := f.instance.RegisterInstance(
+			"ws-1",
+			"support-assistant",
+			"node-1",
+			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8443, Scheme: "https", Path: "/a2a/v1/"},
+			"en",
+		)
+		require.NoError(t, err)
+		assert.Equal(t, "https", item.Scheme)
+		assert.Equal(t, "/a2a/v1", item.Path)
+		assert.Equal(t, "/a2a/v1", f.instances.created[0].Path)
+	})
+
 	t.Run("register fetches the card from the first instance and points it at the gateway", func(t *testing.T) {
 		viper.Set("app.url", "https://sloth.test")
 		f := defaultInstanceFixture()
@@ -303,7 +329,6 @@ func TestUnitInstance(t *testing.T) {
 			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://sloth.test/api/v1/workspaces/ws-1/agents/support-assistant"}],"url":"https://sloth.test/api/v1/workspaces/ws-1/agents/support-assistant"}`,
 			f.agents.cards[0],
 		)
-		assert.Equal(t, "http://10.0.0.12:8080/a2a", f.agentMetas.values["agent-1/"+AgentMetaA2AURL])
 	})
 
 	t.Run("register adds a gateway interface to a fetched card that has none", func(t *testing.T) {

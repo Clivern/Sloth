@@ -18,12 +18,13 @@ All five endpoints below are built. These are the known gaps to enhance next.
 ## A2A compatibility
 
 - Add `GET /agents/{agentName}/tasks/{taskId}` as an alias: A2A clients call `{card url}/tasks/{id}`, which is that path.
-- Cards stored before the agents endpoints have no `a2a_url` agent meta and still point at `/a2a/agents/{name}`; Sloth forwards to them without the agent's path until the card is fetched again (re-register with a new version).
+- Instances register their A2A endpoint as `scheme` (default `http`) and `path` (default empty); an agent serving A2A under a path must send `path` when it registers, or Sloth calls `address:port` with no path.
+- Cards stored before the agents endpoints still point at `/a2a/agents/{name}` until the card is fetched again (re-register with a new version).
 - Not supported yet: `message:stream`, push notifications, `tasks/cancel`. `Agents.Forward` is a reverse proxy, so `message:stream` only needs a route that calls it without `onReply` (reading the body is what stops streaming).
 
 ## Data
 
-- Migrations `…036` (`ai_agent_skills`) and `…037` (`ai_agents_tasks`) were edited in place; databases that already ran them must be reset.
+- Migrations `…024` (`ai_agent_instances` scheme and path), `…036` (`ai_agent_skills`) and `…037` (`ai_agents_tasks`) were edited in place; databases that already ran them must be reset.
 - Cards stored before `SyncSkills` existed have no `ai_agent_skills` rows until the card is written again.
 - `SyncSkills` fails the whole card write when `skills` is not an array or a skill id or name is longer than 120 characters.
 - `ai_agents_tasks` grows forever; add a cleanup job for old rows (indexed on `created_at`).

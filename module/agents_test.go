@@ -62,7 +62,6 @@ func TestUnitAgents(t *testing.T) {
 		portNumber, _ := strconv.Atoi(port)
 
 		f := newAgentsFixture(host, portNumber)
-		f.agentMetas.values["agent-1/"+AgentMetaA2AURL] = "http://" + server.Listener.Addr().String() + "/a2a/v1/"
 
 		return f, &seen
 	}
@@ -113,7 +112,7 @@ func TestUnitAgents(t *testing.T) {
 	t.Run("send to an agent takes turns across its live instances", func(t *testing.T) {
 		f, _ := newInstance(t, http.StatusOK, `{}`)
 		first := f.instances.live[0]
-		second := &db.AgentInstance{Id: "instance-2", AgentId: "agent-1", InstanceId: "directory-2", Address: first.Address, Port: first.Port}
+		second := &db.AgentInstance{Id: "instance-2", AgentId: "agent-1", InstanceId: "directory-2", Address: first.Address, Port: first.Port, Scheme: "http", Path: "/a2a/v1"}
 		f.instances.live = []*db.AgentInstance{first, second}
 
 		for range 4 {

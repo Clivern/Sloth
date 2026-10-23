@@ -274,6 +274,8 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 | `instance_id` | VARCHAR(100) | no |  |  |
 | `address` | VARCHAR(255) | no |  |  |
 | `port` | INTEGER | no |  |  |
+| `scheme` | VARCHAR(10) | no | `'http'` | how Sloth reaches the instance's A2A endpoint |
+| `path` | VARCHAR(255) | no | `''` | A2A endpoint path, such as `/a2a/v1` |
 | `meta` | JSONB | yes |  |  |
 | `status` | VARCHAR(20) | no | `'passing'` |  |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |

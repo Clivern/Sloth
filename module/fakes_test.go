@@ -588,7 +588,6 @@ func defaultAgentFixture() *agentFixture {
 type instanceFixture struct {
 	instance     *Instance
 	agents       *fakeAgents
-	agentMetas   *fakeAgentMetas
 	instances    *fakeInstances
 	healthChecks *fakeHealthChecks
 	agentChecks  *fakeAgentChecks
@@ -605,10 +604,8 @@ func newInstanceFixture(workspace *db.Workspace, agent *db.Agent) *instanceFixtu
 		},
 		agentChecks: &fakeAgentChecks{},
 	}
-	f.agentMetas = &fakeAgentMetas{values: map[string]string{}}
 	f.instance = NewInstance(
 		f.agents,
-		f.agentMetas,
 		f.instances,
 		f.healthChecks,
 		f.agentChecks,
@@ -1291,25 +1288,6 @@ func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, 
 	return f.agents, f.total, f.err
 }
 
-type fakeAgentMetas struct {
-	db.AgentMetaRepository
-	values map[string]string
-}
-
-func (f *fakeAgentMetas) Get(id db.Id, key string) (*db.AgentMeta, error) {
-	value, ok := f.values[id.String()+"/"+key]
-	if !ok {
-		return nil, nil
-	}
-
-	return &db.AgentMeta{AgentId: id, Key: key, Value: value}, nil
-}
-
-func (f *fakeAgentMetas) Upsert(id db.Id, key, value string) error {
-	f.values[id.String()+"/"+key] = value
-	return nil
-}
-
 func (f *fakeInstances) GetById(id db.Id) (*db.AgentInstance, error) {
 	return f.instance, nil
 }
@@ -1337,7 +1315,6 @@ func (f *fakeAgentTasks) GetBySourceAndTaskId(workspaceId db.Id, sourceAgent, ta
 type agentsFixture struct {
 	module      *Agents
 	agents      *fakeAgents
-	agentMetas  *fakeAgentMetas
 	instances   *fakeInstances
 	intentions  *fakeIntentions
 	protections *fakeAgentProtections
@@ -1349,11 +1326,10 @@ type agentsFixture struct {
 // newAgentsFixture wires an agents module to in-memory fakes whose one agent runs one live instance at address.
 func newAgentsFixture(address string, port int) *agentsFixture {
 	agent := &db.Agent{Id: "agent-1", WorkspaceId: "ws-1", Name: "user-directory"}
-	instance := &db.AgentInstance{Id: "instance-1", AgentId: "agent-1", InstanceId: "directory-1", Address: address, Port: port}
+	instance := &db.AgentInstance{Id: "instance-1", AgentId: "agent-1", InstanceId: "directory-1", Address: address, Port: port, Scheme: "http", Path: "/a2a/v1"}
 
 	f := &agentsFixture{
 		agents:      &fakeAgents{agent: agent},
-		agentMetas:  &fakeAgentMetas{values: map[string]string{}},
 		instances:   &fakeInstances{live: []*db.AgentInstance{instance}, instance: instance},
 		intentions:  &fakeIntentions{match: &db.Intention{Action: db.IntentionActionAllow}},
 		protections: &fakeAgentProtections{},
@@ -1361,7 +1337,7 @@ func newAgentsFixture(address string, port int) *agentsFixture {
 		tasks:       &fakeAgentTasks{},
 		skills:      &fakeAgentSkills{},
 	}
-	f.module = NewAgents(f.agents, f.agentMetas, f.instances, f.intentions, f.protections, f.traffic, f.tasks, f.skills)
+	f.module = NewAgents(f.agents, f.instances, f.intentions, f.protections, f.traffic, f.tasks, f.skills)
 
 	return f
 }

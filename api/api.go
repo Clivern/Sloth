@@ -65,7 +65,6 @@ func New() *API {
 	purchases := db.NewTokenPurchaseRepository(conn)
 	stats := db.NewWorkspaceStatsRepository(conn)
 	agents := db.NewAgentRepository(conn)
-	agentMetas := db.NewAgentMetaRepository(conn)
 	skills := db.NewAgentSkillRepository(conn)
 	instances := db.NewAgentInstanceRepository(conn)
 	healthChecks := db.NewHealthCheckRepository(conn)
@@ -93,13 +92,13 @@ func New() *API {
 		Billing:     module.NewBilling(workspaces, subscriptions, purchases, module.Usage{}),
 		Stats:       module.NewStats(workspaces, stats),
 		Agent:       module.NewAgent(agents, instances, healthChecks, workspaces),
-		Instance:    module.NewInstance(agents, agentMetas, instances, healthChecks, agentChecks, workspaces),
+		Instance:    module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
 		Check:       module.NewCheck(agents, agentChecks, instances, healthChecks),
 		Identity:    module.NewIdentity(agents, identities, identityTokens),
 		Protection:  module.NewProtection(agents, protections),
 		Intention:   module.NewIntention(intentions, workspaces),
 		Catalog:     module.NewCatalog(skills),
-		Agents:      module.NewAgents(agents, agentMetas, instances, intentions, protections, traffic, db.NewAgentTaskRepository(conn), skills),
+		Agents:      module.NewAgents(agents, instances, intentions, protections, traffic, db.NewAgentTaskRepository(conn), skills),
 		Integration: module.NewIntegration(integrations),
 		Event:       module.NewEvent(events),
 		KeyValue:    module.NewKeyValue(kv, workspaces),

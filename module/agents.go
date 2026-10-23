@@ -12,9 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/clivern/sloth/db"
@@ -28,8 +26,6 @@ import (
 )
 
 const (
-	// AgentMetaA2AURL is the agent meta key holding the A2A url its card advertised before Sloth rewrote it.
-	AgentMetaA2AURL = "a2a_url"
 	// AgentsTimeout bounds how long an instance may take to start answering.
 	AgentsTimeout = 60 * time.Second
 	// MaxSkillCandidates caps the agents considered when a message is addressed by skill.
@@ -61,7 +57,6 @@ type SendReply struct {
 // Agents is the module that proxies messages between agents and the tasks they start.
 type Agents struct {
 	AgentRepository      db.AgentRepository
-	AgentMetaRepository  db.AgentMetaRepository
 	InstanceRepository   db.AgentInstanceRepository
 	IntentionRepository  db.IntentionRepository
 	ProtectionRepository db.AgentProtectionRepository
@@ -75,7 +70,6 @@ type Agents struct {
 // NewAgents creates an agents module with the given repositories.
 func NewAgents(
 	agents db.AgentRepository,
-	agentMetas db.AgentMetaRepository,
 	instances db.AgentInstanceRepository,
 	intentions db.IntentionRepository,
 	protections db.AgentProtectionRepository,
@@ -88,7 +82,6 @@ func NewAgents(
 
 	return &Agents{
 		AgentRepository:      agents,
-		AgentMetaRepository:  agentMetas,
 		InstanceRepository:   instances,
 		IntentionRepository:  intentions,
 		ProtectionRepository: protections,
@@ -275,11 +268,6 @@ func (a *Agents) GetTask(workspaceId db.Id, caller *db.Agent, taskId string) (*h
 
 // Forward returns a reverse proxy to one instance at path that records the call and, for message:send, where a returned task lives.
 func (a *Agents) Forward(call *db.TrafficCall, agent *db.Agent, instance *db.AgentInstance, path string) (*httputil.ReverseProxy, error) {
-	target, err := a.GetTarget(agent, instance)
-	if err != nil {
-		return nil, err
-	}
-
 	// Protected agents only accept calls that carry the credential Sloth holds for them.
 	protection, err := a.ProtectionRepository.GetByAgentId(agent.Id)
 	if err != nil {
@@ -310,11 +298,12 @@ func (a *Agents) Forward(call *db.TrafficCall, agent *db.Agent, instance *db.Age
 	return &httputil.ReverseProxy{
 		Transport: a.transport,
 		Rewrite: func(pr *httputil.ProxyRequest) {
-			pr.Out.URL.Scheme = target.Scheme
-			pr.Out.URL.Host = target.Host
-			pr.Out.URL.Path = target.Path + path
+			// The instance registered how to reach it: scheme://address:port/path.
+			pr.Out.URL.Scheme = instance.Scheme
+			pr.Out.URL.Host = net.JoinHostPort(instance.Address, strconv.Itoa(instance.Port))
+			pr.Out.URL.Path = instance.Path + path
 			pr.Out.URL.RawPath = ""
-			pr.Out.Host = target.Host
+			pr.Out.Host = pr.Out.URL.Host
 			pr.SetXForwarded()
 
 			// The caller's credentials prove who it is to Sloth and never reach the destination.
@@ -387,29 +376,6 @@ func (a *Agents) Forward(call *db.TrafficCall, agent *db.Agent, instance *db.Age
 			})
 		},
 	}, nil
-}
-
-// GetTarget returns the instance address with the scheme and path of the url the agent card advertised.
-func (a *Agents) GetTarget(agent *db.Agent, instance *db.AgentInstance) (*url.URL, error) {
-	target := &url.URL{
-		Scheme: "http",
-		Host: net.JoinHostPort(
-			instance.Address,
-			strconv.Itoa(instance.Port),
-		),
-	}
-
-	meta, err := a.AgentMetaRepository.Get(agent.Id, AgentMetaA2AURL)
-	if err != nil {
-		return nil, err
-	}
-	if meta != nil {
-		advertised, _ := url.Parse(meta.Value)
-		target.Scheme = lo.CoalesceOrEmpty(advertised.Scheme, target.Scheme)
-		target.Path = strings.TrimSuffix(advertised.Path, "/")
-	}
-
-	return target, nil
 }
 
 // IsAllowed reports whether an intention lets source call destination for skill; no intention means deny.

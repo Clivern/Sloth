@@ -23,6 +23,8 @@ type AgentInstance struct {
 	InstanceId string
 	Address    string
 	Port       int
+	Scheme     string
+	Path       string
 	Meta       *string
 	Status     string
 	CreatedAt  time.Time
@@ -91,14 +93,16 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 
 	return r.db.QueryRow(
 		`INSERT INTO ai_agent_instances
-		(id, agent_id, instance_id, address, port, meta, status)
-		VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
+		(id, agent_id, instance_id, address, port, scheme, path, meta, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
 		RETURNING created_at, updated_at`,
 		instance.Id.String(),
 		instance.AgentId.String(),
 		instance.InstanceId,
 		instance.Address,
 		instance.Port,
+		instance.Scheme,
+		instance.Path,
 		instance.Meta,
 		instance.Status,
 	).Scan(&instance.CreatedAt, &instance.UpdatedAt)
@@ -108,7 +112,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE id = $1`,
 		id.String(),
@@ -118,6 +122,8 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 		&instance.InstanceId,
 		&instance.Address,
 		&instance.Port,
+		&instance.Scheme,
+		&instance.Path,
 		&instance.Meta,
 		&instance.Status,
 		&instance.CreatedAt,
@@ -134,7 +140,7 @@ func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error)
 func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, instanceId string) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE agent_id = $1 AND instance_id = $2`,
 		agentId.String(),
@@ -145,6 +151,8 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 		&instance.InstanceId,
 		&instance.Address,
 		&instance.Port,
+		&instance.Scheme,
+		&instance.Path,
 		&instance.Meta,
 		&instance.Status,
 		&instance.CreatedAt,
@@ -157,14 +165,16 @@ func (r *AgentInstanceRepositoryPostgres) GetByAgentAndInstanceId(agentId Id, in
 	return instance, err
 }
 
-// Update updates an agent instance address and status.
+// Update updates an agent instance address, endpoint and status.
 func (r *AgentInstanceRepositoryPostgres) Update(instance *AgentInstance) error {
 	_, err := r.db.Exec(
 		`UPDATE ai_agent_instances
-		SET address = $1, port = $2, meta = $3::jsonb, status = $4, updated_at = $5
-		WHERE id = $6`,
+		SET address = $1, port = $2, scheme = $3, path = $4, meta = $5::jsonb, status = $6, updated_at = $7
+		WHERE id = $8`,
 		instance.Address,
 		instance.Port,
+		instance.Scheme,
+		instance.Path,
 		instance.Meta,
 		instance.Status,
 		time.Now().UTC(),
@@ -184,7 +194,7 @@ func (r *AgentInstanceRepositoryPostgres) Delete(id Id) error {
 // ListByAgentId lists instances for an agent.
 func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id`,
@@ -205,6 +215,8 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
+			&instance.Scheme,
+			&instance.Path,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,
@@ -223,7 +235,7 @@ func (r *AgentInstanceRepositoryPostgres) ListByAgentId(agentId Id) ([]*AgentIns
 // ListLiveByAgentId lists instances with no critical, unknown, or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time.Time) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE agent_id = $1
 			AND NOT EXISTS (
@@ -256,6 +268,8 @@ func (r *AgentInstanceRepositoryPostgres) ListLiveByAgentId(agentId Id, now time
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
+			&instance.Scheme,
+			&instance.Path,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,
@@ -285,7 +299,7 @@ func (r *AgentInstanceRepositoryPostgres) CountByAgentId(agentId Id) (int64, err
 // ListPageByAgentId lists one page of instances for an agent.
 func (r *AgentInstanceRepositoryPostgres) ListPageByAgentId(agentId Id, limit, offset int) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE agent_id = $1
 		ORDER BY instance_id
@@ -309,6 +323,8 @@ func (r *AgentInstanceRepositoryPostgres) ListPageByAgentId(agentId Id, limit, o
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
+			&instance.Scheme,
+			&instance.Path,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,
@@ -352,7 +368,7 @@ func (r *AgentInstanceRepositoryPostgres) CountLiveByAgentId(agentId Id, now tim
 // ListLivePageByAgentId lists one page of instances with no critical, unknown, or expired checks.
 func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(agentId Id, now time.Time, limit, offset int) ([]*AgentInstance, error) {
 	rows, err := r.db.Query(
-		`SELECT id, agent_id, instance_id, address, port, meta, status, created_at, updated_at
+		`SELECT id, agent_id, instance_id, address, port, scheme, path, meta, status, created_at, updated_at
 		FROM ai_agent_instances
 		WHERE agent_id = $1
 			AND NOT EXISTS (
@@ -388,6 +404,8 @@ func (r *AgentInstanceRepositoryPostgres) ListLivePageByAgentId(agentId Id, now 
 			&instance.InstanceId,
 			&instance.Address,
 			&instance.Port,
+			&instance.Scheme,
+			&instance.Path,
 			&instance.Meta,
 			&instance.Status,
 			&instance.CreatedAt,
