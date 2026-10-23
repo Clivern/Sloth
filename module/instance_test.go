@@ -300,9 +300,10 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, f.agents.cards, 1)
 		assert.Equal(
 			t,
-			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}],"url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}`,
+			`{"name":"Support","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"https://sloth.test/api/v1/workspaces/ws-1/agents/support-assistant"}],"url":"https://sloth.test/api/v1/workspaces/ws-1/agents/support-assistant"}`,
 			f.agents.cards[0],
 		)
+		assert.Equal(t, "http://10.0.0.12:8080/a2a", f.agentMetas.values["agent-1/"+AgentMetaA2AURL])
 	})
 
 	t.Run("register adds a gateway interface to a fetched card that has none", func(t *testing.T) {
@@ -323,7 +324,7 @@ func TestUnitInstance(t *testing.T) {
 		require.Len(t, f.agents.cards, 1)
 		assert.Equal(
 			t,
-			`{"name":"Support","supportedInterfaces":[{"url":"https://sloth.test/api/v1/workspaces/ws-1/a2a/agents/support-assistant"}]}`,
+			`{"name":"Support","supportedInterfaces":[{"url":"https://sloth.test/api/v1/workspaces/ws-1/agents/support-assistant"}]}`,
 			f.agents.cards[0],
 		)
 	})

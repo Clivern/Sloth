@@ -92,7 +92,7 @@ Feature: Agents
     Given the agent "spec-<runId>-echo" has its card
     When the user GETs the agent
     Then every card.supportedInterfaces[].url ends with
-      "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+      "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
     And none of them is "http://127.0.0.1:9000"
 
   @mutates
@@ -100,7 +100,7 @@ Feature: Agents
     Given the agent "spec-<runId>-echo" is registered
     And a card server serving a card that also has "url": "http://127.0.0.1:9000"
     When instance "i-1" registers with the card server's address and port
-    Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+    Then card.url ends with "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
 
   @mutates
   Scenario: A card without supportedInterfaces gets one pointing at the gateway
@@ -108,7 +108,7 @@ Feature: Agents
     And a card server serving {"name": "spec-<runId>-echo", "version": "1.0.0"}
     When instance "i-1" registers with the card server's address and port
     Then card.supportedInterfaces has 1 entry
-    And its url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+    And its url ends with "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
 
   @mutates
   Scenario: A card that is not a JSON object is not stored

@@ -36,6 +36,7 @@ var InstanceIdPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`)
 // Instance is the module for agent instance registration and health.
 type Instance struct {
 	AgentRepository       db.AgentRepository
+	AgentMetaRepository   db.AgentMetaRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
 	AgentCheckRepository  db.AgentCheckRepository
@@ -83,9 +84,10 @@ type ListInstancesResponse struct {
 }
 
 // NewInstance creates an instance module with the given repositories.
-func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
+func NewInstance(agents db.AgentRepository, agentMetas db.AgentMetaRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, agentChecks db.AgentCheckRepository, workspaces db.WorkspaceRepository) *Instance {
 	return &Instance{
 		AgentRepository:       agents,
+		AgentMetaRepository:   agentMetas,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
 		AgentCheckRepository:  agentChecks,
@@ -366,11 +368,14 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 				Msg("Failed to fetch agent card")
 		} else {
 			gateway := fmt.Sprintf(
-				"%s/api/v1/workspaces/%s/a2a/agents/%s",
+				"%s/api/v1/workspaces/%s/agents/%s",
 				viper.GetString("app.url"),
 				workspaceId,
 				agent.Name,
 			)
+
+			// Sloth forwards to the url the card advertised, so keep it before pointing the card at the gateway.
+			upstream := AdvertisedA2AURL(card)
 
 			interfaces, _ := card["supportedInterfaces"].([]any)
 			if len(interfaces) == 0 {
@@ -395,7 +400,7 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 			cardJSON, _ := json.Marshal(card)
 			sum := sha256.Sum256(cardJSON)
 
-			_, err = i.AgentRepository.SetCardIfMissing(agent.Id, string(cardJSON), hex.EncodeToString(sum[:]))
+			stored, err := i.AgentRepository.SetCardIfMissing(agent.Id, string(cardJSON), hex.EncodeToString(sum[:]))
 			if err != nil {
 				log.Error().
 					Err(err).
@@ -406,6 +411,16 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 					Str("agentId", agent.Id.String()).
 					Str("instanceId", instanceId).
 					Msg("Agent card stored")
+			}
+
+			if stored {
+				err = i.AgentMetaRepository.Upsert(agent.Id, AgentMetaA2AURL, upstream)
+				if err != nil {
+					log.Error().
+						Err(err).
+						Str("agentId", agent.Id.String()).
+						Msg("Failed to store agent A2A url")
+				}
 			}
 		}
 	}

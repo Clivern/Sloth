@@ -487,6 +487,7 @@ func newInstanceAPI(
 ) *API {
 	instance := module.NewInstance(
 		agent,
+		&fakeAgentMetas{},
 		instances,
 		checks,
 		&fakeAgentChecks{},
@@ -1015,4 +1016,35 @@ func (f *fakeAgentSkills) GetSkill(workspaceId db.Id, skillId string) (*db.Agent
 
 func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, filter *db.ListCallableAgentsFilter) ([]*db.CallableAgent, int64, error) {
 	return f.agents, f.total, f.err
+}
+
+type fakeAgentMetas struct {
+	db.AgentMetaRepository
+	meta *db.AgentMeta
+}
+
+func (f *fakeAgentMetas) Get(id db.Id, key string) (*db.AgentMeta, error) {
+	return f.meta, nil
+}
+
+func (f *fakeTrafficCalls) Create(call *db.TrafficCall) error {
+	f.calls = append(f.calls, call)
+	return nil
+}
+
+type fakeAgentTasks struct {
+	db.AgentTaskRepository
+	task *db.AgentTask
+}
+
+func (f *fakeAgentTasks) Save(task *db.AgentTask) error {
+	return nil
+}
+
+func (f *fakeAgentTasks) GetBySourceAndTaskId(workspaceId db.Id, sourceAgent, taskId string) (*db.AgentTask, error) {
+	return f.task, nil
+}
+
+func (f *fakeInstanceRecords) GetById(id db.Id) (*db.AgentInstance, error) {
+	return f.instance, f.getErr
 }

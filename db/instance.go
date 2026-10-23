@@ -104,7 +104,7 @@ func (r *AgentInstanceRepositoryPostgres) Create(instance *AgentInstance) error 
 	).Scan(&instance.CreatedAt, &instance.UpdatedAt)
 }
 
-// GetById returns an agent instance by id. TODO: remove if not used in future.
+// GetById returns an agent instance by id.
 func (r *AgentInstanceRepositoryPostgres) GetById(id Id) (*AgentInstance, error) {
 	instance := &AgentInstance{}
 	err := r.db.QueryRow(
