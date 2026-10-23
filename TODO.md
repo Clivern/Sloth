@@ -19,7 +19,7 @@ All five endpoints below are built. These are the known gaps to enhance next.
 
 - Add `GET /agents/{agentName}/tasks/{taskId}` as an alias: A2A clients call `{card url}/tasks/{id}`, which is that path.
 - Cards stored before the agents endpoints have no `a2a_url` agent meta and still point at `/a2a/agents/{name}`; Sloth forwards to them without the agent's path until the card is fetched again (re-register with a new version).
-- Not supported yet: `message:stream`, push notifications, `tasks/cancel`.
+- Not supported yet: `message:stream`, push notifications, `tasks/cancel`. `Agents.Forward` is a reverse proxy, so `message:stream` only needs a route that calls it without `onReply` (reading the body is what stops streaming).
 
 ## Data
 

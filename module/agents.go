@@ -4,22 +4,25 @@
 package module
 
 import (
-	"context"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/locale"
 	"github.com/clivern/sloth/pkg/encrypt"
+	"github.com/clivern/sloth/pkg/lb"
+	"github.com/clivern/sloth/pkg/util"
 
-	"github.com/imroc/req/v3"
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
@@ -27,10 +30,8 @@ import (
 const (
 	// AgentMetaA2AURL is the agent meta key holding the A2A url its card advertised before Sloth rewrote it.
 	AgentMetaA2AURL = "a2a_url"
-	// AgentsTimeout bounds each call forwarded to an instance.
+	// AgentsTimeout bounds how long an instance may take to start answering.
 	AgentsTimeout = 60 * time.Second
-	// MaxAgentsResponseSize caps the response body read from an instance.
-	MaxAgentsResponseSize = 10 << 20
 	// MaxSkillCandidates caps the agents considered when a message is addressed by skill.
 	MaxSkillCandidates = 1000
 
@@ -42,21 +43,7 @@ var (
 	ErrCallDenied        = errors.New("call denied")
 	ErrNoHealthyInstance = errors.New("no healthy instance")
 	ErrTaskNotFound      = errors.New("task not found")
-	ErrAgentUnreachable  = errors.New("agent unreachable")
 )
-
-// AgentsRequest is the part of an incoming call forwarded to an instance.
-type AgentsRequest struct {
-	Version string
-	Body    []byte
-}
-
-// AgentsResponse is the instance reply, relayed to the caller as is.
-type AgentsResponse struct {
-	StatusCode  int
-	ContentType string
-	Body        []byte
-}
 
 // AgentsTrafficMeta is the JSON stored in ai_traffic.meta for a forwarded call.
 type AgentsTrafficMeta struct {
@@ -64,14 +51,14 @@ type AgentsTrafficMeta struct {
 	InstanceId db.Id `json:"instanceId"`
 }
 
-// sendReply is the part of a message:send reply that names a task; a direct message has none.
-type sendReply struct {
+// SendReply is the part of a message:send reply that names a task; a direct message has none.
+type SendReply struct {
 	Task struct {
 		Id string `json:"id"`
 	} `json:"task"`
 }
 
-// Agents is the module that forwards messages between agents and fetches the tasks they start.
+// Agents is the module that proxies messages between agents and the tasks they start.
 type Agents struct {
 	AgentRepository      db.AgentRepository
 	AgentMetaRepository  db.AgentMetaRepository
@@ -81,7 +68,8 @@ type Agents struct {
 	TrafficRepository    db.TrafficRepository
 	TaskRepository       db.AgentTaskRepository
 	SkillRepository      db.AgentSkillRepository
-	http                 *req.Client
+	Picker               *lb.Picker
+	transport            http.RoundTripper
 }
 
 // NewAgents creates an agents module with the given repositories.
@@ -95,6 +83,9 @@ func NewAgents(
 	tasks db.AgentTaskRepository,
 	skills db.AgentSkillRepository,
 ) *Agents {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.ResponseHeaderTimeout = AgentsTimeout
+
 	return &Agents{
 		AgentRepository:      agents,
 		AgentMetaRepository:  agentMetas,
@@ -104,32 +95,13 @@ func NewAgents(
 		TrafficRepository:    traffic,
 		TaskRepository:       tasks,
 		SkillRepository:      skills,
-		http:                 req.C().SetTimeout(AgentsTimeout),
+		Picker:               lb.New(),
+		transport:            transport,
 	}
 }
 
-// AdvertisedA2AURL returns the HTTP+JSON url an agent card advertises, falling back to its first interface or legacy url.
-func AdvertisedA2AURL(card map[string]any) string {
-	interfaces, _ := card["supportedInterfaces"].([]any)
-
-	var first string
-	for _, iface := range interfaces {
-		entry, _ := iface.(map[string]any)
-		link, _ := entry["url"].(string)
-		first = lo.CoalesceOrEmpty(first, link)
-
-		if entry["protocolBinding"] == "HTTP+JSON" && link != "" {
-			return link
-		}
-	}
-
-	legacy, _ := card["url"].(string)
-
-	return lo.CoalesceOrEmpty(first, legacy)
-}
-
-// SendMessage sends a message from caller to a named agent; only intentions without a skill apply.
-func (a *Agents) SendMessage(ctx context.Context, workspaceId db.Id, caller *db.Agent, agentName string, r *AgentsRequest) (*AgentsResponse, error) {
+// SendMessage returns a proxy that sends caller's message to a named agent; only intentions without a skill apply.
+func (a *Agents) SendMessage(workspaceId db.Id, caller *db.Agent, agentName string) (*httputil.ReverseProxy, error) {
 	agent, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		return nil, err
@@ -138,22 +110,48 @@ func (a *Agents) SendMessage(ctx context.Context, workspaceId db.Id, caller *db.
 		return nil, ErrAgentNotFound
 	}
 
-	call := newCall(workspaceId, caller.Name, agent.Name, "", VerbSendMessage)
+	call := &db.TrafficCall{
+		WorkspaceId:         workspaceId,
+		SourceInstance:      caller.Name,
+		DestinationInstance: agent.Name,
+		Verb:                VerbSendMessage,
+	}
 
-	allowed, err := a.allowed(workspaceId, caller.Name, agent.Name, "")
+	allowed, err := a.IsAllowed(workspaceId, caller.Name, agent.Name, "")
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		a.record(call, db.TrafficResultDenied)
+		call.Decision = db.TrafficDecisionDeny
+		call.Result = db.TrafficResultDenied
+		_ = a.TrafficRepository.Create(call)
 		return nil, ErrCallDenied
 	}
 
-	return a.send(ctx, call, caller, agent, r)
+	instances, err := a.InstanceRepository.ListLiveByAgentId(agent.Id, time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+	if len(instances) == 0 {
+		call.Decision = db.TrafficDecisionAllow
+		call.Result = db.TrafficResultNoInstance
+		_ = a.TrafficRepository.Create(call)
+		return nil, ErrNoHealthyInstance
+	}
+
+	// Take turns across the agent's live instances.
+	picked, err := a.Picker.Pick(lo.Map(instances, func(instance *db.AgentInstance, _ int) string {
+		return instance.Id.String()
+	}), lb.Options{Strategy: lb.RoundRobin, Key: agent.Id.String()})
+	if err != nil {
+		return nil, err
+	}
+
+	return a.Forward(call, agent, instances[picked], "/message:send")
 }
 
-// SendSkillMessage sends a message from caller to a random live agent it may call for a skill.
-func (a *Agents) SendSkillMessage(ctx context.Context, workspaceId db.Id, caller *db.Agent, skill string, r *AgentsRequest) (*AgentsResponse, error) {
+// SendSkillMessage returns a proxy that sends caller's message to a random live agent it may call for a skill.
+func (a *Agents) SendSkillMessage(workspaceId db.Id, caller *db.Agent, skill string) (*httputil.ReverseProxy, error) {
 	offered, err := a.SkillRepository.GetSkill(workspaceId, skill)
 	if err != nil {
 		return nil, err
@@ -162,7 +160,12 @@ func (a *Agents) SendSkillMessage(ctx context.Context, workspaceId db.Id, caller
 		return nil, ErrSkillNotFound
 	}
 
-	call := newCall(workspaceId, caller.Name, "", skill, VerbSendMessage)
+	call := &db.TrafficCall{
+		WorkspaceId:    workspaceId,
+		SourceInstance: caller.Name,
+		Skill:          skill,
+		Verb:           VerbSendMessage,
+	}
 
 	// The same query as the catalog, so the caller can reach exactly the agents it was shown.
 	callable, _, err := a.SkillRepository.ListCallableAgents(workspaceId, skill, &db.ListCallableAgentsFilter{
@@ -173,13 +176,17 @@ func (a *Agents) SendSkillMessage(ctx context.Context, workspaceId db.Id, caller
 		return nil, err
 	}
 	if len(callable) == 0 {
-		a.record(call, db.TrafficResultDenied)
+		call.Decision = db.TrafficDecisionDeny
+		call.Result = db.TrafficResultDenied
+		_ = a.TrafficRepository.Create(call)
 		return nil, ErrCallDenied
 	}
 
 	live := lo.Filter(callable, func(agent *db.CallableAgent, _ int) bool { return agent.PassingInstances > 0 })
 	if len(live) == 0 {
-		a.record(call, db.TrafficResultNoInstance)
+		call.Decision = db.TrafficDecisionAllow
+		call.Result = db.TrafficResultNoInstance
+		_ = a.TrafficRepository.Create(call)
 		return nil, ErrNoHealthyInstance
 	}
 
@@ -190,11 +197,30 @@ func (a *Agents) SendSkillMessage(ctx context.Context, workspaceId db.Id, caller
 
 	call.DestinationInstance = agent.Name
 
-	return a.send(ctx, call, caller, agent, r)
+	instances, err := a.InstanceRepository.ListLiveByAgentId(agent.Id, time.Now().UTC())
+	if err != nil {
+		return nil, err
+	}
+	if len(instances) == 0 {
+		call.Decision = db.TrafficDecisionAllow
+		call.Result = db.TrafficResultNoInstance
+		_ = a.TrafficRepository.Create(call)
+		return nil, ErrNoHealthyInstance
+	}
+
+	// Take turns across the agent's live instances.
+	picked, err := a.Picker.Pick(lo.Map(instances, func(instance *db.AgentInstance, _ int) string {
+		return instance.Id.String()
+	}), lb.Options{Strategy: lb.RoundRobin, Key: agent.Id.String()})
+	if err != nil {
+		return nil, err
+	}
+
+	return a.Forward(call, agent, instances[picked], "/message:send")
 }
 
-// GetTask fetches a task caller started from the instance that accepted it.
-func (a *Agents) GetTask(ctx context.Context, workspaceId db.Id, caller *db.Agent, taskId string, r *AgentsRequest) (*AgentsResponse, error) {
+// GetTask returns a proxy that fetches a task caller started from the instance that accepted it.
+func (a *Agents) GetTask(workspaceId db.Id, caller *db.Agent, taskId string) (*httputil.ReverseProxy, error) {
 	// Tasks are looked up by their caller, so another agent's task is not found.
 	task, err := a.TaskRepository.GetBySourceAndTaskId(workspaceId, caller.Name, taskId)
 	if err != nil {
@@ -209,21 +235,31 @@ func (a *Agents) GetTask(ctx context.Context, workspaceId db.Id, caller *db.Agen
 		return nil, err
 	}
 
-	call := newCall(workspaceId, caller.Name, agent.Name, task.Skill, VerbGetTask)
+	call := &db.TrafficCall{
+		WorkspaceId:         workspaceId,
+		SourceInstance:      caller.Name,
+		DestinationInstance: agent.Name,
+		Skill:               task.Skill,
+		Verb:                VerbGetTask,
+	}
 
 	// Revoking the intention also stops the caller from reading tasks it already started.
-	allowed, err := a.allowed(workspaceId, caller.Name, agent.Name, task.Skill)
+	allowed, err := a.IsAllowed(workspaceId, caller.Name, agent.Name, task.Skill)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
-		a.record(call, db.TrafficResultDenied)
+		call.Decision = db.TrafficDecisionDeny
+		call.Result = db.TrafficResultDenied
+		_ = a.TrafficRepository.Create(call)
 		return nil, ErrCallDenied
 	}
 
 	// The task lives only on the instance that accepted it.
 	if task.InstanceId == nil {
-		a.record(call, db.TrafficResultNoInstance)
+		call.Decision = db.TrafficDecisionAllow
+		call.Result = db.TrafficResultNoInstance
+		_ = a.TrafficRepository.Create(call)
 		return nil, ErrNoHealthyInstance
 	}
 
@@ -232,119 +268,138 @@ func (a *Agents) GetTask(ctx context.Context, workspaceId db.Id, caller *db.Agen
 		return nil, err
 	}
 
-	return a.forward(ctx, call, agent, instance, http.MethodGet, "/tasks/"+url.PathEscape(taskId), r)
+	return a.Forward(call, agent, instance, fmt.Sprintf("/tasks/%s", taskId))
 }
 
-// send forwards a message:send to a random live instance of agent and remembers where a returned task lives.
-func (a *Agents) send(ctx context.Context, call *db.TrafficCall, caller, agent *db.Agent, r *AgentsRequest) (*AgentsResponse, error) {
-	instances, err := a.InstanceRepository.ListLiveByAgentId(agent.Id, time.Now().UTC())
-	if err != nil {
-		return nil, err
-	}
-	if len(instances) == 0 {
-		a.record(call, db.TrafficResultNoInstance)
-		return nil, ErrNoHealthyInstance
-	}
-
-	instance := lo.Sample(instances)
-
-	resp, err := a.forward(ctx, call, agent, instance, http.MethodPost, "/message:send", r)
+// Forward returns a reverse proxy to one instance at path that records the call and, for message:send, where a returned task lives.
+func (a *Agents) Forward(call *db.TrafficCall, agent *db.Agent, instance *db.AgentInstance, path string) (*httputil.ReverseProxy, error) {
+	target, err := a.GetTarget(agent, instance)
 	if err != nil {
 		return nil, err
 	}
 
-	var reply sendReply
-	_ = json.Unmarshal(resp.Body, &reply)
+	// Protected agents only accept calls that carry the credential Sloth holds for them.
+	protection, err := a.ProtectionRepository.GetByAgentId(agent.Id)
+	if err != nil {
+		return nil, err
+	}
 
-	if reply.Task.Id != "" {
-		err = a.TaskRepository.Save(&db.AgentTask{
-			WorkspaceId: call.WorkspaceId,
-			TaskId:      reply.Task.Id,
-			SourceAgent: caller.Name,
-			AgentId:     agent.Id,
-			InstanceId:  &instance.Id,
-			Skill:       call.Skill,
-		})
-		// The message is already delivered, so a lost record only stops the caller from polling the task.
+	var config ProtectionConfig
+	var secret string
+	if protection != nil && protection.IsActive {
+		_ = json.Unmarshal([]byte(protection.Config), &config)
+
+		secret, err = encrypt.Decrypt(config.SecretEncrypted)
 		if err != nil {
-			log.Error().
-				Err(err).
-				Str("workspaceId", call.WorkspaceId.String()).
-				Str("taskId", reply.Task.Id).
-				Msg("Failed to record agent task")
+			return nil, err
 		}
 	}
 
-	return resp, nil
-}
-
-// forward calls one instance, relays its reply and records the call.
-func (a *Agents) forward(ctx context.Context, call *db.TrafficCall, agent *db.Agent, instance *db.AgentInstance, method, path string, r *AgentsRequest) (*AgentsResponse, error) {
-	target, err := a.target(agent, instance)
-	if err != nil {
-		return nil, err
-	}
-
-	request := a.http.R().
-		SetContext(ctx).
-		SetHeader("Accept", "application/json").
-		DisableAutoReadResponse()
-
-	if r.Version != "" {
-		request.SetHeader("A2A-Version", r.Version)
-	}
-
-	if len(r.Body) > 0 {
-		request.SetContentType("application/json").SetBodyBytes(r.Body)
-	}
-
-	err = a.protect(request, agent.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	meta, _ := json.Marshal(AgentsTrafficMeta{AgentId: agent.Id, InstanceId: instance.Id})
+	meta, _ := json.Marshal(AgentsTrafficMeta{
+		AgentId:    agent.Id,
+		InstanceId: instance.Id,
+	})
 	call.DestinationInstance = instance.InstanceId
 	call.Meta = lo.ToPtr(string(meta))
+	call.Decision = db.TrafficDecisionAllow
 
 	start := time.Now()
-	resp, err := request.Send(method, target+path)
-	call.LatencyMs = int(time.Since(start).Milliseconds())
 
-	if err != nil {
-		var timeout interface{ Timeout() bool }
-		a.record(call, lo.Ternary(errors.As(err, &timeout) && timeout.Timeout(), db.TrafficResultTimeout, db.TrafficResultFailed))
+	return &httputil.ReverseProxy{
+		Transport: a.transport,
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.Out.URL.Scheme = target.Scheme
+			pr.Out.URL.Host = target.Host
+			pr.Out.URL.Path = target.Path + path
+			pr.Out.URL.RawPath = ""
+			pr.Out.Host = target.Host
+			pr.SetXForwarded()
 
-		return nil, fmt.Errorf("%w: %v", ErrAgentUnreachable, err)
-	}
+			// The caller's credentials prove who it is to Sloth and never reach the destination.
+			pr.Out.Header.Del("X-Source-Agent")
+			pr.Out.Header.Del("X-API-Key")
+			pr.Out.Header.Del("Authorization")
 
-	defer resp.Body.Close()
+			if secret != "" {
+				switch protection.Type {
+				case db.AgentProtectionTypeAPIKey:
+					pr.Out.Header.Set(config.Header, secret)
+				case db.AgentProtectionTypeBasicAuth:
+					pr.Out.SetBasicAuth(config.Username, secret)
+				}
+			}
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			success := resp.StatusCode >= 200 && resp.StatusCode < 300
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, MaxAgentsResponseSize))
-	if err != nil {
-		a.record(call, db.TrafficResultFailed)
-		return nil, fmt.Errorf("%w: %v", ErrAgentUnreachable, err)
-	}
+			// Only message:send can start a task, so only it reads the reply; GetTask streams through.
+			if success && call.Verb == VerbSendMessage {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return err
+				}
 
-	a.record(call, lo.Ternary(resp.IsSuccessState(), db.TrafficResultCompleted, db.TrafficResultFailed))
+				resp.Body = io.NopCloser(bytes.NewReader(body))
 
-	return &AgentsResponse{
-		StatusCode:  resp.StatusCode,
-		ContentType: resp.GetContentType(),
-		Body:        body,
+				var reply SendReply
+				_ = json.Unmarshal(body, &reply)
+
+				// The reply still reaches the caller, so a lost record only stops it from polling the task.
+				if reply.Task.Id != "" {
+					err = a.TaskRepository.Save(&db.AgentTask{
+						WorkspaceId: call.WorkspaceId,
+						TaskId:      reply.Task.Id,
+						SourceAgent: call.SourceInstance,
+						AgentId:     agent.Id,
+						InstanceId:  &instance.Id,
+						Skill:       call.Skill,
+					})
+					if err != nil {
+						log.Error().
+							Err(err).
+							Str("workspaceId", call.WorkspaceId.String()).
+							Str("taskId", reply.Task.Id).
+							Msg("Failed to record agent task")
+					}
+				}
+			}
+
+			call.LatencyMs = int(time.Since(start).Milliseconds())
+			call.Result = lo.Ternary(success, db.TrafficResultCompleted, db.TrafficResultFailed)
+			_ = a.TrafficRepository.Create(call)
+
+			return nil
+		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			var timeout interface{ Timeout() bool }
+			call.LatencyMs = int(time.Since(start).Milliseconds())
+			call.Result = lo.Ternary(
+				errors.As(err, &timeout) && timeout.Timeout(),
+				db.TrafficResultTimeout,
+				db.TrafficResultFailed,
+			)
+			_ = a.TrafficRepository.Create(call)
+
+			util.WriteJSON(w, http.StatusBadGateway, map[string]any{
+				"errorMessage": locale.TR(r, "agent_unreachable"),
+			})
+		},
 	}, nil
 }
 
-// target is the instance address with the scheme and path of the url the agent card advertised.
-func (a *Agents) target(agent *db.Agent, instance *db.AgentInstance) (string, error) {
-	target := url.URL{
+// GetTarget returns the instance address with the scheme and path of the url the agent card advertised.
+func (a *Agents) GetTarget(agent *db.Agent, instance *db.AgentInstance) (*url.URL, error) {
+	target := &url.URL{
 		Scheme: "http",
-		Host:   net.JoinHostPort(instance.Address, strconv.Itoa(instance.Port)),
+		Host: net.JoinHostPort(
+			instance.Address,
+			strconv.Itoa(instance.Port),
+		),
 	}
 
 	meta, err := a.AgentMetaRepository.Get(agent.Id, AgentMetaA2AURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if meta != nil {
 		advertised, _ := url.Parse(meta.Value)
@@ -352,69 +407,20 @@ func (a *Agents) target(agent *db.Agent, instance *db.AgentInstance) (string, er
 		target.Path = strings.TrimSuffix(advertised.Path, "/")
 	}
 
-	return target.String(), nil
+	return target, nil
 }
 
-// protect adds the credential a protected agent expects from Sloth.
-func (a *Agents) protect(request *req.Request, agentId db.Id) error {
-	protection, err := a.ProtectionRepository.GetByAgentId(agentId)
-	if err != nil {
-		return err
-	}
-	if protection == nil || !protection.IsActive {
-		return nil
-	}
-
-	var config ProtectionConfig
-	_ = json.Unmarshal([]byte(protection.Config), &config)
-
-	secret, err := encrypt.Decrypt(config.SecretEncrypted)
-	if err != nil {
-		return err
-	}
-
-	switch protection.Type {
-	case db.AgentProtectionTypeAPIKey:
-		request.SetHeader(config.Header, secret)
-	case db.AgentProtectionTypeBasicAuth:
-		request.SetBasicAuth(config.Username, secret)
-	}
-
-	return nil
-}
-
-// allowed reports whether an intention lets source call destination for skill; no intention means deny.
-func (a *Agents) allowed(workspaceId db.Id, source, destination, skill string) (bool, error) {
-	intention, err := a.IntentionRepository.Match(workspaceId, source, destination, skill)
+// IsAllowed reports whether an intention lets source call destination for skill; no intention means deny.
+func (a *Agents) IsAllowed(workspaceId db.Id, source, destination, skill string) (bool, error) {
+	intention, err := a.IntentionRepository.Match(
+		workspaceId,
+		source,
+		destination,
+		skill,
+	)
 	if err != nil {
 		return false, err
 	}
 
 	return intention != nil && intention.Action == db.IntentionActionAllow, nil
-}
-
-// record stores a call in traffic with its result; a failed write never fails the call.
-func (a *Agents) record(call *db.TrafficCall, result string) {
-	call.Result = result
-	call.Decision = lo.Ternary(result == db.TrafficResultDenied, db.TrafficDecisionDeny, db.TrafficDecisionAllow)
-
-	err := a.TrafficRepository.Create(call)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("workspaceId", call.WorkspaceId.String()).
-			Str("verb", call.Verb).
-			Msg("Failed to record agent traffic")
-	}
-}
-
-// newCall starts the traffic record of a call from source.
-func newCall(workspaceId db.Id, source, destination, skill, verb string) *db.TrafficCall {
-	return &db.TrafficCall{
-		WorkspaceId:         workspaceId,
-		SourceInstance:      source,
-		DestinationInstance: destination,
-		Skill:               skill,
-		Verb:                verb,
-	}
 }

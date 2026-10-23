@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrEmpty    = errors.New("lb: no agent instances")
+	ErrEmpty    = errors.New("lb: no ids to pick from")
 	ErrStrategy = errors.New("lb: unknown strategy")
 )
 
@@ -23,25 +23,22 @@ const (
 	LeastOutstandingTasks Strategy = "least_outstanding_tasks"
 )
 
-// Strategy is how Pick chooses among live replicas of an agent.
+// Strategy is how Pick chooses among ids.
 type Strategy string
 
-// AgentInstance is one live replica of an agent, mapped from db.AgentInstance plus outstanding tasks.
-type AgentInstance struct {
-	InstanceId  string
-	Address     string
-	Port        int
-	Outstanding int
-}
-
-// Options control how Pick chooses a replica.
+// Options control how Pick chooses an id.
 type Options struct {
-	Strategy  Strategy
-	Agent     string
+	// Strategy defaults to Random.
+	Strategy Strategy
+	// Key counts round robin turns separately, for example per agent.
+	Key string
+	// StickyKey always picks the same id for the same key while the ids stay the same.
 	StickyKey string
+	// Outstanding is the open work per id for LeastOutstandingTasks; a missing id has none.
+	Outstanding map[string]int
 }
 
-// Picker selects a live agent instance.
+// Picker chooses one of a set of ids, such as the live instances of an agent.
 type Picker struct {
 	mu   sync.Mutex
 	next map[string]int
@@ -56,90 +53,62 @@ func New() *Picker {
 	}
 }
 
-// Pick returns one live replica of an agent, pinning StickyKey tasks to the same replica.
-func (p *Picker) Pick(instances []AgentInstance, opts Options) (*AgentInstance, error) {
-	if len(instances) == 0 {
-		return nil, ErrEmpty
+// Pick returns the index in ids of the chosen id, so callers can index their own slice.
+func (p *Picker) Pick(ids []string, opts Options) (int, error) {
+	if len(ids) == 0 {
+		return 0, ErrEmpty
 	}
 
 	if opts.StickyKey != "" {
-		picked := sticky(instances, opts.StickyKey)
-		return &picked, nil
+		return slices.Index(ids, sticky(ids, opts.StickyKey)), nil
 	}
 
-	strategy := opts.Strategy
-	if strategy == "" {
-		strategy = Random
-	}
-
-	var picked AgentInstance
-	switch strategy {
+	switch cmp.Or(opts.Strategy, Random) {
 	case Random:
-		picked = instances[p.intn(len(instances))]
+		return p.intn(len(ids)), nil
 	case RoundRobin:
-		picked = p.roundRobin(opts.Agent, instances)
+		return slices.Index(ids, p.roundRobin(opts.Key, ids)), nil
 	case LeastOutstandingTasks:
-		picked = p.leastOutstanding(instances)
-	default:
-		return nil, ErrStrategy
+		return p.leastOutstanding(ids, opts.Outstanding), nil
 	}
 
-	return &picked, nil
+	return 0, ErrStrategy
 }
 
-// Shuffle returns a copy of agent instances in random order, like Consul DNS.
-func (p *Picker) Shuffle(instances []AgentInstance) []AgentInstance {
-	out := slices.Clone(instances)
-	for i := len(out) - 1; i > 0; i-- {
-		j := p.intn(i + 1)
-		out[i], out[j] = out[j], out[i]
-	}
-
-	return out
-}
-
-func (p *Picker) roundRobin(agent string, instances []AgentInstance) AgentInstance {
-	ordered := ordered(instances)
+// roundRobin takes turns per key in sorted id order, so the order does not depend on how ids arrive.
+func (p *Picker) roundRobin(key string, ids []string) string {
+	ordered := slices.Sorted(slices.Values(ids))
 
 	p.mu.Lock()
-	i := p.next[agent]
-	p.next[agent] = i + 1
+	i := p.next[key]
+	p.next[key] = i + 1
 	p.mu.Unlock()
 
 	return ordered[i%len(ordered)]
 }
 
-func (p *Picker) leastOutstanding(instances []AgentInstance) AgentInstance {
-	min := instances[0].Outstanding
-	for _, inst := range instances[1:] {
-		if inst.Outstanding < min {
-			min = inst.Outstanding
-		}
+// leastOutstanding returns the index of an id with the least open work, breaking ties at random.
+func (p *Picker) leastOutstanding(ids []string, outstanding map[string]int) int {
+	least := outstanding[ids[0]]
+	for _, id := range ids[1:] {
+		least = min(least, outstanding[id])
 	}
 
-	var tied []AgentInstance
-	for _, inst := range instances {
-		if inst.Outstanding == min {
-			tied = append(tied, inst)
+	var tied []int
+	for i, id := range ids {
+		if outstanding[id] == least {
+			tied = append(tied, i)
 		}
 	}
 
 	return tied[p.intn(len(tied))]
 }
 
-func ordered(instances []AgentInstance) []AgentInstance {
-	out := slices.Clone(instances)
-	slices.SortFunc(out, func(a, b AgentInstance) int {
-		return cmp.Compare(a.InstanceId, b.InstanceId)
-	})
-
-	return out
-}
-
-func sticky(instances []AgentInstance, key string) AgentInstance {
-	pool := ordered(instances)
+// sticky hashes key onto the sorted ids.
+func sticky(ids []string, key string) string {
+	ordered := slices.Sorted(slices.Values(ids))
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(key))
 
-	return pool[int(h.Sum32())%len(pool)]
+	return ordered[int(h.Sum32())%len(ordered)]
 }

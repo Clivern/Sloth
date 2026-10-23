@@ -374,10 +374,24 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 				agent.Name,
 			)
 
-			// Sloth forwards to the url the card advertised, so keep it before pointing the card at the gateway.
-			upstream := AdvertisedA2AURL(card)
-
 			interfaces, _ := card["supportedInterfaces"].([]any)
+
+			// Sloth forwards to the url the card advertised, so keep it before pointing the card at the gateway:
+			// the HTTP+JSON interface, else the first interface, else the legacy top-level url.
+			var upstream, first string
+			for _, iface := range interfaces {
+				entry, _ := iface.(map[string]any)
+				link, _ := entry["url"].(string)
+				first = lo.CoalesceOrEmpty(first, link)
+
+				if upstream == "" && entry["protocolBinding"] == "HTTP+JSON" {
+					upstream = link
+				}
+			}
+
+			legacy, _ := card["url"].(string)
+			upstream = lo.CoalesceOrEmpty(upstream, first, legacy)
+
 			if len(interfaces) == 0 {
 				interfaces = []any{map[string]any{}}
 			}
