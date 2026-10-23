@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS ai_agent_skills (
 	name VARCHAR(120) NOT NULL,
 	description TEXT,
 	tags JSONB,
+	input_modes JSONB NOT NULL DEFAULT '[]'::jsonb,
+	output_modes JSONB NOT NULL DEFAULT '[]'::jsonb,
 	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
 	UNIQUE (agent_id, skill_id)

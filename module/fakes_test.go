@@ -1263,29 +1263,15 @@ func (f *fakeIdentityTokens) GetByTokenHash(tokenHash string) (*db.AgentIdentity
 	return token, nil
 }
 
-type fakeCatalogInstances struct {
-	db.AgentInstanceRepository
-	live map[db.Id]int64
+type fakeAgentSkills struct {
+	db.AgentSkillRepository
+	skills []*db.CallableSkill
+	total  int64
+	filter *db.ListCallableSkillsFilter
+	err    error
 }
 
-func (f *fakeCatalogInstances) CountLiveByAgentId(agentId db.Id, now time.Time) (int64, error) {
-	return f.live[agentId], nil
-}
-
-// fakeCatalogIntentions matches "source/destination/skill" rules, preferring a skill rule over a "source/destination/" one.
-type fakeCatalogIntentions struct {
-	db.IntentionRepository
-	rules map[string]string
-}
-
-func (f *fakeCatalogIntentions) Match(workspaceId db.Id, source, destination, skill string) (*db.Intention, error) {
-	action, ok := f.rules[source+"/"+destination+"/"+skill]
-	if !ok {
-		action, ok = f.rules[source+"/"+destination+"/"]
-	}
-	if !ok {
-		return nil, nil
-	}
-
-	return &db.Intention{Action: action}, nil
+func (f *fakeAgentSkills) ListCallable(workspaceId db.Id, filter *db.ListCallableSkillsFilter) ([]*db.CallableSkill, int64, error) {
+	f.filter = filter
+	return f.skills, f.total, f.err
 }

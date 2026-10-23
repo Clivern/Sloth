@@ -95,7 +95,7 @@ func New() *API {
 		Identity:    module.NewIdentity(agents, identities, identityTokens),
 		Protection:  module.NewProtection(agents, protections),
 		Intention:   module.NewIntention(intentions, workspaces),
-		Catalog:     module.NewCatalog(agents, instances, intentions),
+		Catalog:     module.NewCatalog(db.NewAgentSkillRepository(conn)),
 		Integration: module.NewIntegration(integrations),
 		Event:       module.NewEvent(events),
 		KeyValue:    module.NewKeyValue(kv, workspaces),

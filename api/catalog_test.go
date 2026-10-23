@@ -4,7 +4,7 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -14,27 +14,15 @@ import (
 	"github.com/clivern/sloth/module"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUnitListCatalogSkillsAction(t *testing.T) {
 	caller := &db.Agent{Id: "agent-0", Name: "support-assistant"}
-	directory := &db.Agent{
-		Id:   "agent-1",
-		Name: "user-directory",
-		Card: lo.ToPtr(`{"skills":[{"id":"user.profile.get","name":"Get user profile","tags":["profile"]},{"id":"user.list","tags":["admin"]}]}`),
-	}
 
-	newRouter := func(intentions *fakeIntentions) *chi.Mux {
-		api := &API{
-			Catalog: module.NewCatalog(
-				&fakeAgentCatalog{list: []*db.Agent{caller, directory}, total: 2},
-				&fakeInstanceRecords{},
-				intentions,
-			),
-		}
+	newRouter := func(skills *fakeAgentSkills) *chi.Mux {
+		api := &API{Catalog: module.NewCatalog(skills)}
 
 		router := chi.NewRouter()
 		router.With(func(next http.Handler) http.Handler {
@@ -46,26 +34,44 @@ func TestUnitListCatalogSkillsAction(t *testing.T) {
 		return router
 	}
 
-	t.Run("returns the callable skills filtered by tag with pagination meta", func(t *testing.T) {
-		router := newRouter(&fakeIntentions{match: &db.Intention{Action: db.IntentionActionAllow}})
+	t.Run("returns the callable skills with pagination meta", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{
+			skills: []*db.CallableSkill{
+				{
+					SkillId:     "user.profile.get",
+					Name:        "Get user profile",
+					Tags:        []string{"profile"},
+					InputModes:  []string{"application/json"},
+					OutputModes: []string{"application/json"},
+					Agents:      1,
+				},
+			},
+			total: 1,
+		})
 
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills?tags=profile,ops", nil))
+		router.ServeHTTP(w, httptest.NewRequest(
+			http.MethodGet,
+			"/api/v1/workspaces/ws-1/agents/catalog/skills?tags=profile&limit=20",
+			nil,
+		).WithContext(module.WithAgent(context.Background(), caller)))
 		require.Equal(t, http.StatusOK, w.Code)
-
-		var body struct {
-			Skills []module.CatalogSkill `json:"skills"`
-			Meta   map[string]int        `json:"_meta"`
-		}
-		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
-		require.Len(t, body.Skills, 1)
-		assert.Equal(t, "user.profile.get", body.Skills[0].Id)
-		assert.Equal(t, 1, body.Skills[0].Agents)
-		assert.Equal(t, 1, body.Meta["total"])
+		assert.JSONEq(t, `{
+			"skills": [{
+				"id": "user.profile.get",
+				"name": "Get user profile",
+				"description": "",
+				"tags": ["profile"],
+				"inputModes": ["application/json"],
+				"outputModes": ["application/json"],
+				"agents": 1
+			}],
+			"_meta": {"limit": 20, "offset": 0, "total": 1}
+		}`, w.Body.String())
 	})
 
-	t.Run("returns an empty list when no intention allows a call", func(t *testing.T) {
-		router := newRouter(&fakeIntentions{})
+	t.Run("returns an empty list when nothing is callable", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{skills: []*db.CallableSkill{}})
 
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills", nil))
@@ -73,8 +79,8 @@ func TestUnitListCatalogSkillsAction(t *testing.T) {
 		assert.JSONEq(t, `{"skills":[],"_meta":{"limit":50,"offset":0,"total":0}}`, w.Body.String())
 	})
 
-	t.Run("returns 500 when intentions cannot be read", func(t *testing.T) {
-		router := newRouter(&fakeIntentions{matchErr: errors.New("db down")})
+	t.Run("returns 500 when the catalog cannot be read", func(t *testing.T) {
+		router := newRouter(&fakeAgentSkills{err: errors.New("db down")})
 
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/ws-1/agents/catalog/skills", nil))

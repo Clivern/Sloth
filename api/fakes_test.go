@@ -995,3 +995,14 @@ func newEventRouter(api *API) *chi.Mux {
 	router.Get("/api/v1/workspaces/{workspaceId}/events/{eventId}", api.GetEventAction)
 	return router
 }
+
+type fakeAgentSkills struct {
+	db.AgentSkillRepository
+	skills []*db.CallableSkill
+	total  int64
+	err    error
+}
+
+func (f *fakeAgentSkills) ListCallable(workspaceId db.Id, filter *db.ListCallableSkillsFilter) ([]*db.CallableSkill, int64, error) {
+	return f.skills, f.total, f.err
+}
