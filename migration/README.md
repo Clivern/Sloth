@@ -321,6 +321,8 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 | `name` | VARCHAR(120) | no |  |  |
 | `description` | TEXT | yes |  |  |
 | `tags` | JSONB | yes |  |  |
+| `input_modes` | JSONB | no | `'[]'` | skill modes, or the card defaults |
+| `output_modes` | JSONB | no | `'[]'` | skill modes, or the card defaults |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |
 | `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
 
@@ -549,24 +551,24 @@ Access tokens issued to `client_credentials` identities by `POST /api/v1/public/
 
 - Unique: `(async_task_id, key)`
 
-### `a2a_tasks`
+### `agents_tasks`
+
+Routes a task back to the instance that accepted it. The task itself lives on the agent.
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-| `id` | UUID | no |  | primary key, returned as the task id |
+| `id` | UUID | no |  | primary key |
 | `workspace_id` | UUID | no |  | → `workspaces.id` (cascade) |
-| `source_agent` | VARCHAR(100) | no |  |  |
-| `destination_agent` | VARCHAR(100) | no |  |  |
-| `skill` | VARCHAR(120) | yes |  |  |
-| `state` | VARCHAR(20) | no | `'submitted'` | `submitted`, `working`, `completed`, `failed`, `canceled` |
-| `request` | JSONB | no |  |  |
-| `response` | JSONB | yes |  |  |
-| `error` | JSONB | yes |  |  |
+| `task_id` | VARCHAR(100) | no |  | id the destination agent generated |
+| `source_agent` | VARCHAR(100) | no |  | calling agent; only it may read the task |
+| `agent_id` | UUID | no |  | → `agents.id` (cascade) |
+| `instance_id` | UUID | yes |  | → `agent_instances.id` (set null); instance holding the task |
+| `skill` | VARCHAR(120) | no | `''` | empty for calls addressed by agent name |
 | `created_at` | TIMESTAMP | yes | `now() UTC` |  |
 | `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
 
-- Index: `idx_a2a_tasks_workspace_id_created_at` on `(workspace_id, created_at DESC)`
-- Index: `idx_a2a_tasks_state_updated_at` on `(state, updated_at)`
+- Unique: `(workspace_id, source_agent, task_id)`
+- Index: `idx_agents_tasks_created_at` on `(created_at)`
 
 ### `events`
 
@@ -638,7 +640,7 @@ erDiagram
     workspaces ||--o{ agents : has
     workspaces ||--o{ intentions : has
     workspaces ||--o{ traffic : has
-    workspaces ||--o{ a2a_tasks : has
+    workspaces ||--o{ agents_tasks : has
     workspaces ||--o{ catalog_changes : has
     workspaces ||--o{ agent_skills : has
     workspaces ||--o{ integrations : has
@@ -658,6 +660,8 @@ erDiagram
     agents ||--o| agent_protection : has
     agent_protection ||--o{ agent_protection_tokens : issues
     agents ||--o{ agent_skills : has
+    agents ||--o{ agents_tasks : accepts
+    agent_instances |o--o{ agents_tasks : holds
     agent_instances ||--o{ agent_instances_meta : has
     agent_instances ||--o{ health_checks : reports
     health_checks ||--o{ health_checks_meta : has
