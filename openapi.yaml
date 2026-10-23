@@ -28,6 +28,7 @@ tags:
   - name: Access keys
   - name: Billing
   - name: Agents
+  - name: Catalog
   - name: Instances
   - name: Health checks
   - name: Identities
@@ -1090,49 +1091,126 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json:
+  /api/v1/workspaces/{workspaceId}/agents/catalog/skills:
     get:
-      tags: [Agents]
-      summary: Get agent card
+      tags: [Catalog]
+      summary: List the skills the calling agent may call
       description: |
-        Returns the stored A2A card exactly as `card` on the agent, with interface URLs
-        pointed at the gateway. The `ETag` is the card checksum, so send it back in
-        `If-None-Match` to get a 304 while the card is unchanged. Returns 404 with
-        `agent_card_pending` until an instance has supplied the card.
+        Lists the skills on agent cards in the workspace that the calling agent may call,
+        grouped by skill id and sorted by id. A skill is callable when the best matching
+        intention for the caller, the agent and the skill is `allow`; a rule for the exact
+        skill beats a rule for the whole agent, and no rule means deny. The caller never
+        appears in its own results. When cards disagree on a skill's name, description or
+        tags, the agent whose name sorts first describes it. A caller with no `allow`
+        intentions gets an empty list.
+
+        Authenticates the calling agent by its identity, not a user or access key: send
+        `X-Source-Agent` with `X-API-Key`, basic auth, or a client credentials bearer token.
+      security:
+        - agentSource: []
+          agentApiKey: []
+        - agentSource: []
+          agentBasicAuth: []
+        - agentSource: []
+          agentBearer: []
       parameters:
         - $ref: "#/components/parameters/workspaceId"
-        - $ref: "#/components/parameters/agentName"
-        - name: If-None-Match
-          in: header
+        - name: tags
+          in: query
           required: false
           schema:
             type: string
-          description: A previously returned `ETag`; weak (`W/`) form is accepted.
+          description: Comma-separated; keeps skills that have at least one of these tags.
+        - name: passing
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: When `true`, only count agents that have a live instance.
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
       responses:
         "200":
           description: OK
-          headers:
-            ETag:
-              description: The card checksum in double quotes
-              schema:
-                type: string
-            Cache-Control:
-              description: Always `no-cache`, so clients revalidate with the ETag
-              schema:
-                type: string
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
-        "304":
-          description: Not modified; the card still matches `If-None-Match`
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CatalogSkill"
+                  _meta:
+                    $ref: "#/components/schemas/PaginationMeta"
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
+          description: Missing or wrong agent credential, or a disabled identity (`invalid_agent_identity`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/workspaces/{workspaceId}/agents/catalog/skills/{skill}/agents:
+    get:
+      tags: [Catalog]
+      summary: List the agents the calling agent may call for a skill
+      description: |
+        Returns the skill, described by the first agent by name that offers it, and the
+        agents the caller may call for it, sorted by name. The same intention rule as the
+        skill list applies. `cardUrl` and `sendUrl` point at the Sloth gateway, never at an
+        instance. When agents offer the skill but the caller may call none of them, the
+        list is empty; when no agent offers it, the response is 404.
+
+        Authenticates the calling agent by its identity, like the skill list.
+      security:
+        - agentSource: []
+          agentApiKey: []
+        - agentSource: []
+          agentBasicAuth: []
+        - agentSource: []
+          agentBearer: []
+      parameters:
+        - $ref: "#/components/parameters/workspaceId"
+        - name: skill
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Exact skill id on the card.
+        - name: passing
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: When `true`, only return agents that have a live instance.
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skill:
+                    $ref: "#/components/schemas/CatalogSkillInfo"
+                  agents:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CatalogAgent"
+                  _meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          description: Missing or wrong agent credential, or a disabled identity (`invalid_agent_identity`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
-          description: Agent not found, or its card has not been fetched from an instance yet
+          description: No agent card in the workspace offers the skill (`skill_not_found`)
           content:
             application/json:
               schema:
@@ -2226,6 +2304,24 @@ components:
     metricsBasicAuth:
       type: http
       scheme: basic
+    agentSource:
+      type: apiKey
+      in: header
+      name: X-Source-Agent
+      description: Name of the calling agent; sent with every agent credential.
+    agentApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Secret of the calling agent's api_key identity.
+    agentBasicAuth:
+      type: http
+      scheme: basic
+      description: Username and secret of the calling agent's basic_auth identity.
+    agentBearer:
+      type: http
+      scheme: bearer
+      description: Token issued to the calling agent's client_credentials identity.
 
   parameters:
     workspaceId:
@@ -2391,6 +2487,75 @@ components:
       properties:
         errorMessage:
           type: string
+
+    CatalogSkill:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user.profile.get
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        inputModes:
+          type: array
+          items:
+            type: string
+          description: The skill's input modes, or the card's defaults.
+        outputModes:
+          type: array
+          items:
+            type: string
+          description: The skill's output modes, or the card's defaults.
+        agents:
+          type: integer
+          description: How many agents the caller may call for this skill.
+
+    CatalogSkillInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    CatalogAgent:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        status:
+          type: string
+          enum: [passing, critical]
+          description: "`passing` when at least one instance is live."
+        instances:
+          type: object
+          properties:
+            total:
+              type: integer
+            passing:
+              type: integer
+        cardUrl:
+          type: string
+          format: uri
+        sendUrl:
+          type: string
+          format: uri
 
     Status:
       type: object
