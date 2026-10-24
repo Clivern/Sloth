@@ -8,7 +8,7 @@ export SLOTH_WORKSPACE="<workspace-id>"
 export SLOTH_ACCESS_KEY="<access-key>"
 export SLOTH_AGENT_SECRET="<assistant-identity-secret>"
 export OPENROUTER_API_KEY="<openrouter-key>"
-export ASSISTANT_MODEL=openai/gpt-4o-mini
+export ASSISTANT_MODEL=deepseek/deepseek-v4-flash
 export PYTHONUNBUFFERED=1
 
 # Keep real values in run.local.sh, which git ignores.

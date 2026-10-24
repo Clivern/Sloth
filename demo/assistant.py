@@ -26,7 +26,7 @@ VERSION = "1.0.0"
 PORT = 9200
 SECRET = os.environ.get("SLOTH_AGENT_SECRET", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-MODEL = os.environ.get("ASSISTANT_MODEL", "openai/gpt-4o-mini")
+MODEL = os.environ.get("ASSISTANT_MODEL", "deepseek/deepseek-v4-flash")
 GATEWAY = f"{URL}/api/v1/workspaces/{WORKSPACE}/agents"
 MAX_CALLS = 3
 
@@ -37,10 +37,12 @@ description that ends with an example of its data. Reply with JSON only:
 Use only the listed skill ids, at most 3 calls, and fill data from the question
 using the same keys as the example. Reply {"calls": []} when no skill helps."""
 
-ANSWER = """You answer the user's question in two or three friendly sentences,
-using only the agent results you are given. Each result names the skill it came
+ANSWER = """You answer the user's question in two or three friendly sentences.
+Base live data such as weather, stock prices and user details only on the agent
+results you are given, and never invent it. Each result names the skill it came
 from and its HTTP status; say plainly when a call failed or was not allowed.
-Do not invent data."""
+When there are no results because no skill fits, answer general knowledge
+questions yourself and say which kinds of questions your agents can help with."""
 
 app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT, calls=["weather", "stock", "users"]))
 
@@ -246,6 +248,8 @@ PAGE = """<!doctype html>
   .play-btn.primary:hover { background: #2a2a2a; }
   .play-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .copyright { margin-top: 40px; text-align: center; font-size: 12px; color: var(--muted); }
+  .copyright a { color: inherit; text-decoration: none; }
+  .copyright a:hover { color: var(--ink); }
   @media (max-width: 700px) {
     body { padding: 28px 14px 60px; }
     .play-chat { min-height: 280px; }
@@ -287,7 +291,7 @@ PAGE = """<!doctype html>
     </div>
   </div>
 
-  <p class="copyright">Sloth demo agent</p>
+  <p class="copyright"><a href="https://clivern.com" target="_blank" rel="noopener">Copyright © 2026 Clivern</a></p>
 </div>
 <script>
   const EXAMPLES = [
