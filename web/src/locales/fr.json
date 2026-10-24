@@ -540,9 +540,13 @@
     "result_denied": "Refusé",
     "result_timeout": "Délai dépassé",
     "result_no_instance": "Aucune instance",
-    "instance": "Instance",
     "latency": "Latence",
-    "task": "Tâche"
+    "task": "Tâche",
+    "empty": "Aucun appel enregistré pour le moment.",
+    "showing": "Affichage de {from} à {to} sur {total}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "failed_load": "Impossible de charger le trafic."
   },
   "nav": {
     "menu": "Menu",

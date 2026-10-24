@@ -540,9 +540,13 @@
     "result_denied": "Denied",
     "result_timeout": "Timed out",
     "result_no_instance": "No instance",
-    "instance": "Instance",
     "latency": "Latency",
-    "task": "Task"
+    "task": "Task",
+    "empty": "No calls recorded yet.",
+    "showing": "Showing {from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "failed_load": "Failed to load traffic."
   },
   "nav": {
     "menu": "Menu",

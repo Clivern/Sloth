@@ -161,6 +161,12 @@ export const event_api = {
   get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/events/${id}`),
 }
 
+// API endpoints for workspace gateway traffic
+export const traffic_api = {
+  list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/traffic`, { params }),
+  get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/traffic/${id}`),
+}
+
 // API endpoints for the current user's workspace notifications
 export const notification_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/notifications`, { params }),
