@@ -3414,7 +3414,10 @@ components:
     SaveIntegrationRequest:
       type: object
       required: [type, name, events, isActive]
-      description: "webhook and slack need url; datadog needs site and secret (API key); splunk needs url and secret (HEC token); pagerduty needs site and secret (integration key)."
+      description: |
+        webhook and slack need url; datadog needs site and secret (API key); splunk needs url and secret (HEC token); pagerduty needs site and secret (integration key).
+
+        PagerDuty sends `info` events (`audit.log`, `agent.instance.changed`, `catalog.changed`) as change events, which show on the service timeline without opening an incident. `agent.health.changed` keeps one incident per check: it triggers on `warning`, `critical` or `unknown` with that severity, and resolves when the check is `passing` again. Other events trigger an incident each.
       properties:
         type:
           type: string
@@ -3481,6 +3484,11 @@ components:
 
     Event:
       type: object
+      description: |
+        Something that happened in the workspace. It is stored, then delivered to every active integration subscribed to its type.
+
+        - `agent.instance.changed` fires when an instance registers, moves to a new endpoint (scheme, address, port or path) or deregisters. Registering again at the same endpoint fires nothing. Resource type `agent_instance`.
+        - `agent.health.changed` fires when a check changes status, from a ttl report or an http or tcp probe. A first `passing` after `unknown` is not a change. A ttl check past its ttl counts as `critical` before the report. Resource type `health_check`.
       properties:
         id:
           type: string
@@ -3494,13 +3502,17 @@ components:
         actorId:
           type: string
           format: uuid
+          description: The user or access key behind the request. Absent for system events.
         actorName:
           type: string
+          description: The user's name or the access key's name.
         actorType:
           type: string
+          description: "`system` when no request caused the event, such as a probe result."
           enum: [user, access_key, system]
         resourceType:
           type: string
+          enum: [agent_instance, health_check]
         resourceId:
           type: string
           format: uuid
@@ -3512,6 +3524,19 @@ components:
           type: object
           additionalProperties:
             type: string
+          description: |
+            Depends on the type.
+
+            - `agent.instance.changed`: `action` (`registered`, `updated` or `deregistered`), `agentName`, `instanceId`, and on register or update `scheme`, `address`, `port` and `path`.
+            - `agent.health.changed`: `agentName`, `instanceId`, `checkId`, `from`, `to` and `output`.
+          example:
+            action: registered
+            agentName: users
+            instanceId: users-9203
+            scheme: http
+            address: 127.0.0.1
+            port: "9203"
+            path: /a2a/v1
         createdAt:
           type: string
           format: date-time

@@ -235,6 +235,13 @@ GET    /v1/workspaces/{workspace}/event/{name}
 
 Use KV for model pins, prompt refs, and feature flags — not secrets. Blocking `index` watches let agents long-poll and hot-reload cards and config.
 
+Workspace events are stored and delivered to the integrations subscribed to them (webhook, Slack, Datadog, Splunk, PagerDuty). Read them with `GET /api/v1/workspaces/{workspace}/events`.
+
+- `agent.instance.changed`: an instance registered, moved to a new endpoint, or deregistered. Re-registering at the same endpoint fires nothing.
+- `agent.health.changed`: a check changed status, from a ttl report or an http or tcp probe. A first `passing` after `unknown` is not a change.
+- The actor is the user or access key behind the request, or `system` for probe results.
+- PagerDuty gets info events as change events with no incident. Each check keeps one incident that triggers when the check fails and resolves when it passes again.
+
 ---
 
 ## 8. Data plane — A2A well-known cards
