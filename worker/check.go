@@ -23,6 +23,7 @@ import (
 // HandleHealthCheck probes one health check job and records the result and next run time.
 func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error {
 	var job module.HealthCheckJob
+	var result probe.Result
 
 	err := json.Unmarshal(msg.Data, &job)
 	if err != nil {
@@ -35,7 +36,6 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 	timeout := time.Duration(definition.Timeout) * time.Second
 	interval := time.Duration(definition.Interval) * time.Second
 
-	var result probe.Result
 	switch job.Type {
 	case db.HealthCheckTypeHTTP:
 		target := url.URL{
