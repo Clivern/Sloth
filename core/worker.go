@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/clivern/sloth/db"
-	"github.com/clivern/sloth/pkg/broker"
+	"github.com/clivern/sloth/module"
 	"github.com/clivern/sloth/worker"
 
 	"github.com/rs/zerolog/log"
@@ -33,12 +33,15 @@ func RunWorker() error {
 		}
 	}()
 
-	client, err := broker.New()
+	// Handlers trigger events, which enqueue deliveries on the shared bus.
+	err = module.StartBus()
 	if err != nil {
-		return fmt.Errorf("failed to connect to nats: %w", err)
+		return fmt.Errorf("failed to start nats bus: %w", err)
 	}
 
-	defer client.Close()
+	defer module.StopBus()
+
+	client := module.GetBus()
 
 	nats := client.Config().NATS
 
