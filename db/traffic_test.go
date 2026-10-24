@@ -20,6 +20,7 @@ func TestIntegrationTrafficRepository(t *testing.T) {
 		call := &TrafficCall{
 			WorkspaceId:         workspace.Id,
 			SourceInstance:      "support-assistant-2",
+			DestinationAgent:    "user-directory",
 			DestinationInstance: "user-directory-1",
 			Skill:               "user.profile.get",
 			Verb:                "message:send",
@@ -35,6 +36,7 @@ func TestIntegrationTrafficRepository(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, got)
 		assert.Equal(t, "support-assistant-2", got.SourceInstance)
+		assert.Equal(t, "user-directory", got.DestinationAgent)
 		assert.Equal(t, "user-directory-1", got.DestinationInstance)
 		assert.Equal(t, "user.profile.get", got.Skill)
 		assert.Equal(t, TrafficDecisionAllow, got.Decision)

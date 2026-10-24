@@ -25,6 +25,7 @@ type TrafficCall struct {
 	Id                  Id
 	WorkspaceId         Id
 	SourceInstance      string
+	DestinationAgent    string
 	DestinationInstance string
 	Skill               string
 	Verb                string
@@ -66,14 +67,15 @@ func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 
 	return r.db.QueryRow(
 		`INSERT INTO ai_traffic (
-			id, workspace_id, source_instance, destination_instance, skill, verb,
+			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
 		RETURNING created_at, updated_at`,
 		call.Id.String(),
 		call.WorkspaceId.String(),
 		call.SourceInstance,
+		call.DestinationAgent,
 		call.DestinationInstance,
 		call.Skill,
 		call.Verb,
@@ -90,7 +92,7 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 	call := &TrafficCall{}
 	err := r.db.QueryRow(
 		`SELECT
-			id, workspace_id, source_instance, destination_instance, skill, verb,
+			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
 		FROM ai_traffic
@@ -100,6 +102,7 @@ func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
 		&call.Id,
 		&call.WorkspaceId,
 		&call.SourceInstance,
+		&call.DestinationAgent,
 		&call.DestinationInstance,
 		&call.Skill,
 		&call.Verb,
@@ -123,7 +126,7 @@ func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId st
 	call := &TrafficCall{}
 	err := r.db.QueryRow(
 		`SELECT
-			id, workspace_id, source_instance, destination_instance, skill, verb,
+			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
 		FROM ai_traffic
@@ -137,6 +140,7 @@ func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId st
 		&call.Id,
 		&call.WorkspaceId,
 		&call.SourceInstance,
+		&call.DestinationAgent,
 		&call.DestinationInstance,
 		&call.Skill,
 		&call.Verb,
@@ -159,7 +163,7 @@ func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId st
 func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*TrafficCall, error) {
 	rows, err := r.db.Query(
 		`SELECT
-			id, workspace_id, source_instance, destination_instance, skill, verb,
+			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
 		FROM ai_traffic
@@ -183,6 +187,7 @@ func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, off
 			&call.Id,
 			&call.WorkspaceId,
 			&call.SourceInstance,
+			&call.DestinationAgent,
 			&call.DestinationInstance,
 			&call.Skill,
 			&call.Verb,

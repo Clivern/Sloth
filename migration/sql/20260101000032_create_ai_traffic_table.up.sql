@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS ai_traffic (
 	id UUID PRIMARY KEY,
 	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
 	source_instance VARCHAR(100) NOT NULL,
+	destination_agent VARCHAR(100) NOT NULL,
 	destination_instance VARCHAR(100) NOT NULL,
 	skill VARCHAR(120) NOT NULL,
 	verb VARCHAR(60) NOT NULL,

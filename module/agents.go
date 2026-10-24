@@ -104,10 +104,10 @@ func (a *Agents) SendMessage(workspaceId db.Id, caller *db.Agent, agentName stri
 	}
 
 	call := &db.TrafficCall{
-		WorkspaceId:         workspaceId,
-		SourceInstance:      caller.Name,
-		DestinationInstance: agent.Name,
-		Verb:                VerbSendMessage,
+		WorkspaceId:      workspaceId,
+		SourceInstance:   caller.Name,
+		DestinationAgent: agent.Name,
+		Verb:             VerbSendMessage,
 	}
 
 	allowed, err := a.IsAllowed(workspaceId, caller.Name, agent.Name, "")
@@ -189,7 +189,7 @@ func (a *Agents) SendSkillMessage(workspaceId db.Id, caller *db.Agent, skill str
 		return nil, err
 	}
 
-	call.DestinationInstance = agent.Name
+	call.DestinationAgent = agent.Name
 
 	instances, err := a.InstanceRepository.ListLiveByAgentId(agent.Id, time.Now().UTC())
 	if err != nil {
@@ -231,11 +231,11 @@ func (a *Agents) GetTask(workspaceId db.Id, caller *db.Agent, taskId string) (*h
 	}
 
 	call := &db.TrafficCall{
-		WorkspaceId:         workspaceId,
-		SourceInstance:      caller.Name,
-		DestinationInstance: agent.Name,
-		Skill:               task.Skill,
-		Verb:                VerbGetTask,
+		WorkspaceId:      workspaceId,
+		SourceInstance:   caller.Name,
+		DestinationAgent: agent.Name,
+		Skill:            task.Skill,
+		Verb:             VerbGetTask,
 	}
 
 	// Revoking the intention also stops the caller from reading tasks it already started.

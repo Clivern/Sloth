@@ -3561,6 +3561,8 @@ components:
           format: uuid
         sourceInstance:
           type: string
+        destinationAgent:
+          type: string
         destinationInstance:
           type: string
         skill:

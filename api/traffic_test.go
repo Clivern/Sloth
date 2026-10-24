@@ -23,7 +23,8 @@ func TestUnitTrafficActions(t *testing.T) {
 		Id:                  "call-1",
 		WorkspaceId:         "ws-1",
 		SourceInstance:      "frontend",
-		DestinationInstance: "users",
+		DestinationAgent:    "users",
+		DestinationInstance: "users-1",
 		Skill:               "lookup",
 		Verb:                "POST",
 		Decision:            "allow",
@@ -48,6 +49,8 @@ func TestUnitTrafficActions(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), `"latencyMs":42`)
+		assert.Contains(t, w.Body.String(), `"destinationAgent":"users"`)
+		assert.Contains(t, w.Body.String(), `"destinationInstance":"users-1"`)
 		assert.Contains(t, w.Body.String(), `"total":1`)
 	})
 

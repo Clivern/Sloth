@@ -106,6 +106,7 @@ func TestUnitAgents(t *testing.T) {
 		require.Len(t, f.traffic.list, 1)
 		assert.Equal(t, db.TrafficResultCompleted, f.traffic.list[0].Result)
 		assert.Equal(t, VerbSendMessage, f.traffic.list[0].Verb)
+		assert.Equal(t, "user-directory", f.traffic.list[0].DestinationAgent)
 		assert.Equal(t, "directory-1", f.traffic.list[0].DestinationInstance)
 	})
 
@@ -184,6 +185,8 @@ func TestUnitAgents(t *testing.T) {
 		assert.ErrorIs(t, err, ErrCallDenied)
 		require.Len(t, f.traffic.list, 1)
 		assert.Equal(t, db.TrafficDecisionDeny, f.traffic.list[0].Decision)
+		assert.Equal(t, "user-directory", f.traffic.list[0].DestinationAgent)
+		assert.Empty(t, f.traffic.list[0].DestinationInstance)
 	})
 
 	t.Run("send to an unknown agent is not found", func(t *testing.T) {

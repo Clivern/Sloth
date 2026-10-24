@@ -55,13 +55,14 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">
                     <router-link
-                      v-if="call.destinationInstance"
-                      :to="{ name: 'Agent', params: { name: call.destinationInstance } }"
+                      v-if="call.destinationAgent"
+                      :to="{ name: 'Agent', params: { name: call.destinationAgent } }"
                       class="text-primary-800 hover:underline"
                     >
-                      {{ call.destinationInstance }}
+                      {{ call.destinationAgent }}
                     </router-link>
                     <span v-else class="text-theme-textLight">—</span>
+                    <div v-if="call.destinationInstance" class="text-xs font-normal text-theme-textLight">{{ call.destinationInstance }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ call.skill || '—' }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ call.verb }}</td>
