@@ -531,6 +531,60 @@ func TestUnitInstance(t *testing.T) {
 		err := f.instance.DeregisterInstance("ws-1", "support-assistant", "node-1")
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"inst-1"}, f.instances.deleted)
+
+		assert.Equal(t, []string{EventAgentInstanceChanged}, f.events.types)
+		assert.Equal(t, db.Id("inst-1"), f.events.requests[0].ResourceId)
+		assert.Equal(t, "deregistered", f.events.requests[0].Data["action"])
+	})
+
+	t.Run("register triggers instance changed for a new instance", func(t *testing.T) {
+		f := defaultInstanceFixture()
+
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{EventAgentInstanceChanged}, f.events.types)
+		request := f.events.requests[0]
+		assert.Equal(t, db.EventResourceTypeAgentInstance, request.ResourceType)
+		assert.Equal(t, db.Id("inst-new"), request.ResourceId)
+		assert.Equal(t, "registered", request.Data["action"])
+		assert.Equal(t, "10.0.0.12", request.Data["address"])
+		assert.Equal(t, "8080", request.Data["port"])
+	})
+
+	t.Run("register triggers instance changed when the endpoint moves", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.instances.instance = &db.AgentInstance{
+			Id:         "inst-1",
+			AgentId:    "agent-1",
+			InstanceId: "node-1",
+			Address:    "10.0.0.12",
+			Port:       8080,
+			Scheme:     "http",
+		}
+
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.13", Port: 8080}, "en")
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{EventAgentInstanceChanged}, f.events.types)
+		assert.Equal(t, "updated", f.events.requests[0].Data["action"])
+		assert.Equal(t, "10.0.0.13", f.events.requests[0].Data["address"])
+	})
+
+	t.Run("register triggers nothing when the endpoint is unchanged", func(t *testing.T) {
+		f := defaultInstanceFixture()
+		f.instances.instance = &db.AgentInstance{
+			Id:         "inst-1",
+			AgentId:    "agent-1",
+			InstanceId: "node-1",
+			Address:    "10.0.0.12",
+			Port:       8080,
+			Scheme:     "http",
+		}
+
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		require.NoError(t, err)
+		assert.Empty(t, f.events.types)
 	})
 }
 

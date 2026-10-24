@@ -49,6 +49,9 @@ type EventRequest struct {
 	Data         map[string]string
 }
 
+// EventTrigger stores and delivers one workspace event. TriggerEvent is the default.
+type EventTrigger func(workspaceId db.Id, event string, request EventRequest)
+
 // EventResponse is an event shaped for API responses.
 type EventResponse struct {
 	Id           db.Id           `json:"id"`

@@ -87,6 +87,7 @@ type Check struct {
 	AgentCheckRepository  db.AgentCheckRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
+	TriggerEvent          EventTrigger
 }
 
 // NewCheck creates a check module with the given repositories.
@@ -96,6 +97,7 @@ func NewCheck(agents db.AgentRepository, agentChecks db.AgentCheckRepository, in
 		AgentCheckRepository:  agentChecks,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
+		TriggerEvent:          TriggerEvent,
 	}
 }
 
@@ -543,6 +545,7 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
+	previous := lo.Ternary(check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now), db.HealthCheckStatusCritical, check.Status)
 	output := req.Output
 	if len(output) > MaxCheckOutput {
 		output = output[:MaxCheckOutput]
@@ -578,6 +581,22 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 		Str("checkId", checkId).
 		Str("status", status).
 		Msg("Instance check reported")
+
+	// A first result that passes is the expected start, not a change.
+	if previous != status && !(previous == db.HealthCheckStatusUnknown && status == db.HealthCheckStatusPassing) {
+		c.TriggerEvent(workspaceId, EventAgentHealthChanged, EventRequest{
+			ActorType:    db.EventActorTypeSystem,
+			ResourceType: db.EventResourceTypeHealthCheck,
+			ResourceId:   check.Id,
+			Data: map[string]string{
+				"agentName":  agentName,
+				"instanceId": instanceId,
+				"checkId":    checkId,
+				"from":       previous,
+				"to":         status,
+			},
+		})
+	}
 
 	return response, nil
 }

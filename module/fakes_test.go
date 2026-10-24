@@ -489,6 +489,7 @@ type checkFixture struct {
 	agentChecks  *fakeAgentChecks
 	healthChecks *fakeHealthChecks
 	instances    *fakeInstances
+	events       *recordingTrigger
 }
 
 // newCheckFixture wires a Check module to in-memory fakes; a nil agent simulates a missing one.
@@ -504,6 +505,8 @@ func newCheckFixture(agent *db.Agent) *checkFixture {
 		f.instances,
 		f.healthChecks,
 	)
+	f.events = &recordingTrigger{}
+	f.check.TriggerEvent = f.events.Trigger
 
 	return f
 }
@@ -591,6 +594,7 @@ type instanceFixture struct {
 	instances    *fakeInstances
 	healthChecks *fakeHealthChecks
 	agentChecks  *fakeAgentChecks
+	events       *recordingTrigger
 }
 
 // newInstanceFixture wires an Instance module to in-memory fakes; a nil workspace or agent simulates a missing one.
@@ -614,6 +618,8 @@ func newInstanceFixture(workspace *db.Workspace, agent *db.Agent) *instanceFixtu
 	f.instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
 		return nil, errors.New("connection refused")
 	}
+	f.events = &recordingTrigger{}
+	f.instance.TriggerEvent = f.events.Trigger
 
 	return f
 }
@@ -1232,6 +1238,17 @@ func (f *fakeNotifications) Dismiss(id, workspaceId, userId db.Id, admin bool) (
 
 	f.dismissed = append(f.dismissed, id)
 	return true, f.err
+}
+
+// recordingTrigger captures the events a module triggers.
+type recordingTrigger struct {
+	types    []string
+	requests []EventRequest
+}
+
+func (f *recordingTrigger) Trigger(workspaceId db.Id, event string, request EventRequest) {
+	f.types = append(f.types, event)
+	f.requests = append(f.requests, request)
 }
 
 type fakeEvents struct {

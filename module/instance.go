@@ -42,6 +42,7 @@ type Instance struct {
 	AgentCheckRepository  db.AgentCheckRepository
 	WorkspaceRepository   db.WorkspaceRepository
 	FetchCard             func(ctx context.Context, address string, port int, path string) (map[string]any, error)
+	TriggerEvent          EventTrigger
 }
 
 // RegisterInstanceRequest is the body for registering or updating an instance.
@@ -96,6 +97,7 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 		AgentCheckRepository:  agentChecks,
 		WorkspaceRepository:   workspaces,
 		FetchCard:             NewCard().Fetch,
+		TriggerEvent:          TriggerEvent,
 	}
 }
 
@@ -330,10 +332,15 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		instance = &db.AgentInstance{AgentId: agent.Id, InstanceId: instanceId}
 	}
 
+	// A re-register to the same endpoint is routine and raises no event.
+	endpoint := fmt.Sprintf("%s://%s:%d%s", instance.Scheme, instance.Address, instance.Port, instance.Path)
+
 	instance.Address = req.Address
 	instance.Port = req.Port
 	instance.Scheme = lo.CoalesceOrEmpty(req.Scheme, "http")
 	instance.Path = strings.TrimSuffix(req.Path, "/")
+
+	moved := endpoint != fmt.Sprintf("%s://%s:%d%s", instance.Scheme, instance.Address, instance.Port, instance.Path)
 	instance.Meta = nil
 	if len(req.Meta) > 0 {
 		meta := string(req.Meta)
@@ -459,6 +466,23 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		Int("port", instance.Port).
 		Bool("created", created).
 		Msg("Agent instance registered")
+
+	if created || moved {
+		i.TriggerEvent(workspaceId, EventAgentInstanceChanged, EventRequest{
+			ActorType:    db.EventActorTypeSystem,
+			ResourceType: db.EventResourceTypeAgentInstance,
+			ResourceId:   instance.Id,
+			Data: map[string]string{
+				"action":     lo.Ternary(created, "registered", "updated"),
+				"agentName":  agentName,
+				"instanceId": instanceId,
+				"address":    instance.Address,
+				"port":       fmt.Sprint(instance.Port),
+				"scheme":     instance.Scheme,
+				"path":       instance.Path,
+			},
+		})
+	}
 
 	return item, created, nil
 }
@@ -645,6 +669,17 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		Str("agentName", agentName).
 		Str("instanceId", instanceId).
 		Msg("Agent instance deregistered")
+
+	i.TriggerEvent(workspaceId, EventAgentInstanceChanged, EventRequest{
+		ActorType:    db.EventActorTypeSystem,
+		ResourceType: db.EventResourceTypeAgentInstance,
+		ResourceId:   instance.Id,
+		Data: map[string]string{
+			"action":     "deregistered",
+			"agentName":  agentName,
+			"instanceId": instanceId,
+		},
+	})
 
 	return nil
 }

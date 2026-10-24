@@ -46,6 +46,8 @@ func RunWorker() error {
 		Tasks:        db.NewAsyncTaskRepository(db.GetDB(false)),
 		Checks:       db.NewHealthCheckRepository(db.GetDB(true)),
 		Integrations: db.NewIntegrationRepository(db.GetDB(true)),
+		Instances:    db.NewAgentInstanceRepository(db.GetDB()),
+		Agents:       db.NewAgentRepository(db.GetDB()),
 	})
 
 	err = worker.Bind(client, nats.Queue)

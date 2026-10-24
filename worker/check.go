@@ -60,10 +60,43 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 		Str("status", result.Status).
 		Msg("Health check probed")
 
-	return h.checks.Record(
+	err = h.checks.Record(
 		db.Id(job.CheckId),
 		result.Status,
 		result.Output,
 		time.Now().UTC().Add(interval),
 	)
+	if err != nil {
+		return err
+	}
+
+	// A first result that passes is the expected start, not a change.
+	if job.Status == result.Status || (job.Status == db.HealthCheckStatusUnknown && result.Status == db.HealthCheckStatusPassing) {
+		return nil
+	}
+
+	instance, err := h.instances.GetById(db.Id(job.InstanceId))
+	if err != nil {
+		return err
+	}
+
+	agent, err := h.agents.GetById(instance.AgentId)
+	if err != nil {
+		return err
+	}
+
+	h.trigger(agent.WorkspaceId, module.EventAgentHealthChanged, module.EventRequest{
+		ActorType:    db.EventActorTypeSystem,
+		ResourceType: db.EventResourceTypeHealthCheck,
+		ResourceId:   db.Id(job.CheckId),
+		Data: map[string]string{
+			"agentName":  agent.Name,
+			"instanceId": instance.InstanceId,
+			"checkId":    job.CheckKey,
+			"from":       job.Status,
+			"to":         result.Status,
+		},
+	})
+
+	return nil
 }

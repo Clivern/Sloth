@@ -353,14 +353,15 @@ func newCheckAPI(
 	instance *fakeCheckInstances,
 	health *fakeHealthChecks,
 ) *API {
-	return &API{
-		Check: module.NewCheck(
-			agent,
-			checks,
-			instance,
-			health,
-		),
-	}
+	check := module.NewCheck(
+		agent,
+		checks,
+		instance,
+		health,
+	)
+	check.TriggerEvent = func(workspaceId db.Id, event string, request module.EventRequest) {}
+
+	return &API{Check: check}
 }
 
 func newCheckRouter(api *API) *chi.Mux {
@@ -495,6 +496,7 @@ func newInstanceAPI(
 	instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
 		return nil, errors.New("connection refused")
 	}
+	instance.TriggerEvent = func(workspaceId db.Id, event string, request module.EventRequest) {}
 
 	return &API{Instance: instance}
 }

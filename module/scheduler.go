@@ -25,7 +25,10 @@ type HealthCheckPublisher interface {
 // HealthCheckJob is one due check with the instance address a worker needs to probe it.
 type HealthCheckJob struct {
 	CheckId    string          `json:"checkId"`
+	CheckKey   string          `json:"checkKey"`
+	InstanceId string          `json:"instanceId"`
 	Type       string          `json:"type"`
+	Status     string          `json:"status"`
 	Address    string          `json:"address"`
 	Port       int             `json:"port"`
 	Definition json.RawMessage `json:"definition,omitempty"`
@@ -113,7 +116,10 @@ func (s *Scheduler) Tick(now time.Time) error {
 
 		raw, err := json.Marshal(HealthCheckJob{
 			CheckId:    check.Id.String(),
+			CheckKey:   check.CheckId,
+			InstanceId: check.InstanceId.String(),
 			Type:       check.Type,
+			Status:     check.Status,
 			Address:    instance.Address,
 			Port:       instance.Port,
 			Definition: def,
