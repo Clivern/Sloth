@@ -32,10 +32,10 @@
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
               <tr v-if="loading">
-                <td colspan="6" class="px-6 py-4 text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
               <tr v-else-if="!events.length">
-                <td colspan="6" class="px-6 py-4 text-sm text-theme-textLight">{{ $t('events_page.empty') }}</td>
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('events_page.empty') }}</td>
               </tr>
               <template v-else>
                 <template v-for="item in events" :key="item.id">

@@ -41,10 +41,10 @@
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
               <tr v-if="loading">
-                <td :colspan="columns" class="px-6 py-4 text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
+                <td :colspan="columns" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
               <tr v-else-if="!rules.length">
-                <td :colspan="columns" class="px-6 py-4 text-sm text-theme-textLight">{{ $t('intentions_page.empty') }}</td>
+                <td :colspan="columns" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('intentions_page.empty') }}</td>
               </tr>
               <template v-else>
                 <tr v-for="rule in rules" :key="rule.id" class="hover:bg-theme-hover">
