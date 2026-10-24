@@ -45,7 +45,7 @@ uv run uvicorn stock:app --port 9202
 uv run uvicorn users:app --port 9203
 ```
 
-Or fill in the exports at the top of `run.sh` and start all four agents at once. Each log line is prefixed with the agent's name, and Ctrl+C stops them all and deregisters their instances:
+Or put your values in `run.local.sh` (git ignores it; `run.sh` sources it over its placeholder exports) and start all four agents at once. Each log line is prefixed with the agent's name, and Ctrl+C stops them all and deregisters their instances:
 
 ```sh
 ./run.sh
