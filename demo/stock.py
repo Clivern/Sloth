@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from util import lifespan
 
 NAME = "stock"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PORT = 9202
 COMPANIES = {
     "AAPL": "Apple Inc.",
@@ -68,6 +68,11 @@ SKILLS = {
 }
 
 
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 @app.get("/.well-known/agent-card.json")
 def agent_card():
     return {
@@ -87,7 +92,7 @@ def agent_card():
             {
                 "id": "stock.quote.get",
                 "name": "Stock quote",
-                "description": "Return the latest price, previous close and daily change for a ticker",
+                "description": "Return the latest price, previous close and daily change for a ticker. Data: {\"symbol\": \"AAPL\"}",
                 "tags": ["stock", "quote", "finance"],
                 "inputModes": ["application/json"],
                 "examples": ['{"symbol": "AAPL"}'],
@@ -95,7 +100,7 @@ def agent_card():
             {
                 "id": "stock.history.get",
                 "name": "Price history",
-                "description": "Return daily closing prices for a ticker over the last N days",
+                "description": "Return daily closing prices for a ticker over the last N days. Data: {\"symbol\": \"NVDA\", \"days\": 10}",
                 "tags": ["stock", "history", "finance"],
                 "inputModes": ["application/json"],
                 "examples": ['{"symbol": "NVDA", "days": 10}'],
@@ -103,7 +108,7 @@ def agent_card():
             {
                 "id": "stock.profile.get",
                 "name": "Company profile",
-                "description": "Return company name, exchange and market cap for a ticker",
+                "description": "Return company name, exchange and market cap for a ticker. Data: {\"symbol\": \"MSFT\"}",
                 "tags": ["stock", "company", "finance"],
                 "inputModes": ["application/json"],
                 "examples": ['{"symbol": "MSFT"}'],
