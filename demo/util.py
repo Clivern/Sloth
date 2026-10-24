@@ -78,6 +78,6 @@ def lifespan(name, version, port, protection=None, calls=None):
             task.cancel()
 
             # Kept registered so a stopped agent goes critical and alerts can be tested.
-            # await client.delete(f"{base}/instances/{instance}")
+            await client.delete(f"{base}/instances/{instance}")
 
     return run
