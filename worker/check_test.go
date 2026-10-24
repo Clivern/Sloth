@@ -173,6 +173,7 @@ func TestUnitHandleHealthCheck(t *testing.T) {
 			"checkId":    "http-health",
 			"from":       db.HealthCheckStatusPassing,
 			"to":         db.HealthCheckStatusCritical,
+			"output":     "500 Internal Server Error",
 		}, request.Data)
 	})
 

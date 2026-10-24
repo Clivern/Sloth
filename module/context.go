@@ -67,12 +67,12 @@ func AppCtxFrom(ctx context.Context) (*AppCtx, bool) {
 	return ac, ok
 }
 
-// IsUser reports whether the principal is an authenticated user. TODO: remove if not used in future.
+// IsUser reports whether the principal is an authenticated user.
 func (p *Principal) IsUser() bool {
 	return p != nil && p.User != nil
 }
 
-// IsAccessKey reports whether the principal is a workspace access key. TODO: remove if not used in future.
+// IsAccessKey reports whether the principal is a workspace access key.
 func (p *Principal) IsAccessKey() bool {
 	return p != nil && p.AccessKey != nil
 }

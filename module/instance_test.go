@@ -259,6 +259,7 @@ func TestUnitInstance(t *testing.T) {
 				Meta:    json.RawMessage(`{"region":"eu"}`),
 			},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -276,7 +277,7 @@ func TestUnitInstance(t *testing.T) {
 	t.Run("register defaults the endpoint to http with no path", func(t *testing.T) {
 		f := defaultInstanceFixture()
 
-		item, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		item, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en", EventRequest{})
 		require.NoError(t, err)
 		assert.Equal(t, "http", item.Scheme)
 		assert.Equal(t, "", item.Path)
@@ -292,6 +293,7 @@ func TestUnitInstance(t *testing.T) {
 			"node-1",
 			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8443, Scheme: "https", Path: "/a2a/v1/"},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Equal(t, "https", item.Scheme)
@@ -320,6 +322,7 @@ func TestUnitInstance(t *testing.T) {
 			"node-1",
 			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Equal(t, "10.0.0.12:8080/.well-known/agent-card.json", fetched)
@@ -344,6 +347,7 @@ func TestUnitInstance(t *testing.T) {
 			"node-1",
 			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		require.Len(t, f.agents.cards, 1)
@@ -363,6 +367,7 @@ func TestUnitInstance(t *testing.T) {
 			"node-1",
 			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.True(t, created)
@@ -383,6 +388,7 @@ func TestUnitInstance(t *testing.T) {
 			"node-1",
 			&RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Empty(t, f.agents.cards)
@@ -407,6 +413,7 @@ func TestUnitInstance(t *testing.T) {
 					Port:    9090,
 				},
 				"en",
+				EventRequest{},
 			)
 			require.NoError(t, err)
 			assert.False(t, created)
@@ -443,6 +450,7 @@ func TestUnitInstance(t *testing.T) {
 				Port:    8080,
 			},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 
@@ -483,6 +491,7 @@ func TestUnitInstance(t *testing.T) {
 				Port:    8080,
 			},
 			"en",
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"retired"}, f.healthChecks.deleted)
@@ -495,7 +504,7 @@ func TestUnitInstance(t *testing.T) {
 
 			_, _, err := defaultInstanceFixture().
 				instance.
-				RegisterInstance("ws-1", "support-assistant", "bad id!", req, "en")
+				RegisterInstance("ws-1", "support-assistant", "bad id!", req, "en", EventRequest{})
 			assert.ErrorIs(t, err, ErrInvalidInstanceId)
 
 			_, _, err = newInstanceFixture(
@@ -508,6 +517,7 @@ func TestUnitInstance(t *testing.T) {
 				"node-1",
 				req,
 				"en",
+				EventRequest{},
 			)
 			assert.ErrorIs(t, err, ErrAgentNotFound)
 		},
@@ -516,7 +526,7 @@ func TestUnitInstance(t *testing.T) {
 	t.Run("deregister returns not found for a missing instance", func(t *testing.T) {
 		err := defaultInstanceFixture().
 			instance.
-			DeregisterInstance("ws-1", "support-assistant", "node-1")
+			DeregisterInstance("ws-1", "support-assistant", "node-1", EventRequest{})
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 	})
 
@@ -528,7 +538,7 @@ func TestUnitInstance(t *testing.T) {
 			InstanceId: "node-1",
 		}
 
-		err := f.instance.DeregisterInstance("ws-1", "support-assistant", "node-1")
+		err := f.instance.DeregisterInstance("ws-1", "support-assistant", "node-1", EventRequest{})
 		require.NoError(t, err)
 		assert.Equal(t, []db.Id{"inst-1"}, f.instances.deleted)
 
@@ -539,12 +549,17 @@ func TestUnitInstance(t *testing.T) {
 
 	t.Run("register triggers instance changed for a new instance", func(t *testing.T) {
 		f := defaultInstanceFixture()
+		actor := EventRequest{ActorId: "key-1", ActorName: "demo", ActorType: db.EventActorTypeAccessKey, IPAddress: "127.0.0.1"}
 
-		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en", actor)
 		require.NoError(t, err)
 
 		assert.Equal(t, []string{EventAgentInstanceChanged}, f.events.types)
 		request := f.events.requests[0]
+		assert.Equal(t, db.Id("key-1"), request.ActorId)
+		assert.Equal(t, "demo", request.ActorName)
+		assert.Equal(t, db.EventActorTypeAccessKey, request.ActorType)
+		assert.Equal(t, "127.0.0.1", request.IPAddress)
 		assert.Equal(t, db.EventResourceTypeAgentInstance, request.ResourceType)
 		assert.Equal(t, db.Id("inst-new"), request.ResourceId)
 		assert.Equal(t, "registered", request.Data["action"])
@@ -563,7 +578,7 @@ func TestUnitInstance(t *testing.T) {
 			Scheme:     "http",
 		}
 
-		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.13", Port: 8080}, "en")
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.13", Port: 8080}, "en", EventRequest{})
 		require.NoError(t, err)
 
 		assert.Equal(t, []string{EventAgentInstanceChanged}, f.events.types)
@@ -582,7 +597,7 @@ func TestUnitInstance(t *testing.T) {
 			Scheme:     "http",
 		}
 
-		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en")
+		_, _, err := f.instance.RegisterInstance("ws-1", "support-assistant", "node-1", &RegisterInstanceRequest{Address: "10.0.0.12", Port: 8080}, "en", EventRequest{})
 		require.NoError(t, err)
 		assert.Empty(t, f.events.types)
 	})

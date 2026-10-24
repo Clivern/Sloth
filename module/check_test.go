@@ -252,6 +252,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 
@@ -263,6 +264,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrCheckNotFound)
 	})
@@ -283,6 +285,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrCheckNotReportable)
 
@@ -308,6 +311,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusWarning,
 			&ReportCheckRequest{Output: "queue is slow"},
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Equal(t, db.HealthCheckStatusWarning, response.Status)
@@ -337,7 +341,7 @@ func TestUnitCheck(t *testing.T) {
 			Definition:   &definition,
 		}
 
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusWarning, &ReportCheckRequest{})
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusWarning, &ReportCheckRequest{Output: "queue is slow"}, EventRequest{})
 		require.NoError(t, err)
 
 		assert.Equal(t, []string{EventAgentHealthChanged}, f.events.types)
@@ -347,6 +351,7 @@ func TestUnitCheck(t *testing.T) {
 			"checkId":    "heartbeat",
 			"from":       db.HealthCheckStatusPassing,
 			"to":         db.HealthCheckStatusWarning,
+			"output":     "queue is slow",
 		}, f.events.requests[0].Data)
 	})
 
@@ -365,7 +370,7 @@ func TestUnitCheck(t *testing.T) {
 			Definition:   &definition,
 		}
 
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{}, EventRequest{})
 		require.NoError(t, err)
 
 		require.Len(t, f.events.requests, 1)
@@ -388,7 +393,7 @@ func TestUnitCheck(t *testing.T) {
 			Definition:   &definition,
 		}
 
-		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{})
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{}, EventRequest{})
 		require.NoError(t, err)
 		assert.Empty(t, f.events.types)
 	})
@@ -413,6 +418,7 @@ func TestUnitCheck(t *testing.T) {
 			&ReportCheckRequest{
 				Output: strings.Repeat("a", MaxCheckOutput+10),
 			},
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Len(t, f.healthChecks.reports[0].output, MaxCheckOutput)

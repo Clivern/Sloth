@@ -216,6 +216,7 @@ func (a *API) PassCheckAction(w http.ResponseWriter, r *http.Request) {
 		chi.URLParam(r, "checkId"),
 		db.HealthCheckStatusPassing,
 		&req,
+		a.EventActor(r),
 	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
@@ -287,6 +288,7 @@ func (a *API) WarnCheckAction(w http.ResponseWriter, r *http.Request) {
 		chi.URLParam(r, "checkId"),
 		db.HealthCheckStatusWarning,
 		&req,
+		a.EventActor(r),
 	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
@@ -358,6 +360,7 @@ func (a *API) FailCheckAction(w http.ResponseWriter, r *http.Request) {
 		chi.URLParam(r, "checkId"),
 		db.HealthCheckStatusCritical,
 		&req,
+		a.EventActor(r),
 	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{

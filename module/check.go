@@ -487,7 +487,7 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 }
 
 // ReportCheck records an instance's report for one of its TTL checks and restarts the TTL.
-func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest) (*HealthCheckResponse, error) {
+func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest, actor EventRequest) (*HealthCheckResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		log.Error().
@@ -584,18 +584,18 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	// A first result that passes is the expected start, not a change.
 	if previous != status && !(previous == db.HealthCheckStatusUnknown && status == db.HealthCheckStatusPassing) {
-		c.TriggerEvent(workspaceId, EventAgentHealthChanged, EventRequest{
-			ActorType:    db.EventActorTypeSystem,
-			ResourceType: db.EventResourceTypeHealthCheck,
-			ResourceId:   check.Id,
-			Data: map[string]string{
-				"agentName":  agentName,
-				"instanceId": instanceId,
-				"checkId":    checkId,
-				"from":       previous,
-				"to":         status,
-			},
-		})
+		actor.ResourceType = db.EventResourceTypeHealthCheck
+		actor.ResourceId = check.Id
+		actor.Data = map[string]string{
+			"agentName":  agentName,
+			"instanceId": instanceId,
+			"checkId":    checkId,
+			"from":       previous,
+			"to":         status,
+			"output":     output,
+		}
+
+		c.TriggerEvent(workspaceId, EventAgentHealthChanged, actor)
 	}
 
 	return response, nil

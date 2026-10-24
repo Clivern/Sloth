@@ -30,7 +30,7 @@ func NewSlack(url string) *Slack {
 	}
 }
 
-// Send posts the event name and its data as one Slack message.
+// Send posts the event title and its data as one Slack message.
 func (s *Slack) Send(ctx context.Context, e Event) error {
 	keys := lo.Keys(e.Data)
 	slices.Sort(keys)
@@ -41,7 +41,7 @@ func (s *Slack) Send(ctx context.Context, e Event) error {
 
 	resp, err := s.http.R().
 		SetContext(ctx).
-		SetBody(slack.Payload{Text: fmt.Sprintf("*%s*\n%s", e.Event, strings.Join(lines, "\n"))}).
+		SetBody(slack.Payload{Text: fmt.Sprintf("*%s*\n%s", Title(e), strings.Join(lines, "\n"))}).
 		Post(s.url)
 	if err != nil {
 		return fmt.Errorf("slack request: %w", err)

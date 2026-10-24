@@ -298,7 +298,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 }
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
-func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest, lang string) (*InstanceResponse, bool, error) {
+func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest, lang string, actor EventRequest) (*InstanceResponse, bool, error) {
 	if !InstanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
@@ -468,20 +468,19 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		Msg("Agent instance registered")
 
 	if created || moved {
-		i.TriggerEvent(workspaceId, EventAgentInstanceChanged, EventRequest{
-			ActorType:    db.EventActorTypeSystem,
-			ResourceType: db.EventResourceTypeAgentInstance,
-			ResourceId:   instance.Id,
-			Data: map[string]string{
-				"action":     lo.Ternary(created, "registered", "updated"),
-				"agentName":  agentName,
-				"instanceId": instanceId,
-				"address":    instance.Address,
-				"port":       fmt.Sprint(instance.Port),
-				"scheme":     instance.Scheme,
-				"path":       instance.Path,
-			},
-		})
+		actor.ResourceType = db.EventResourceTypeAgentInstance
+		actor.ResourceId = instance.Id
+		actor.Data = map[string]string{
+			"action":     lo.Ternary(created, "registered", "updated"),
+			"agentName":  agentName,
+			"instanceId": instanceId,
+			"address":    instance.Address,
+			"port":       fmt.Sprint(instance.Port),
+			"scheme":     instance.Scheme,
+			"path":       instance.Path,
+		}
+
+		i.TriggerEvent(workspaceId, EventAgentInstanceChanged, actor)
 	}
 
 	return item, created, nil
@@ -625,7 +624,7 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 }
 
 // DeregisterInstance removes an instance and its health checks.
-func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
+func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string, actor EventRequest) error {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		log.Error().
@@ -670,16 +669,15 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		Str("instanceId", instanceId).
 		Msg("Agent instance deregistered")
 
-	i.TriggerEvent(workspaceId, EventAgentInstanceChanged, EventRequest{
-		ActorType:    db.EventActorTypeSystem,
-		ResourceType: db.EventResourceTypeAgentInstance,
-		ResourceId:   instance.Id,
-		Data: map[string]string{
-			"action":     "deregistered",
-			"agentName":  agentName,
-			"instanceId": instanceId,
-		},
-	})
+	actor.ResourceType = db.EventResourceTypeAgentInstance
+	actor.ResourceId = instance.Id
+	actor.Data = map[string]string{
+		"action":     "deregistered",
+		"agentName":  agentName,
+		"instanceId": instanceId,
+	}
+
+	i.TriggerEvent(workspaceId, EventAgentInstanceChanged, actor)
 
 	return nil
 }

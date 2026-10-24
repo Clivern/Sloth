@@ -95,6 +95,7 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 			"checkId":    job.CheckKey,
 			"from":       job.Status,
 			"to":         result.Status,
+			"output":     result.Output,
 		},
 	})
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/clivern/sloth/db"
 	"github.com/clivern/sloth/middleware"
+	"github.com/clivern/sloth/module"
 	"github.com/clivern/sloth/pkg/util"
 )
 
@@ -62,4 +63,27 @@ func (a *API) WriteError(w http.ResponseWriter, err error, mappings []ErrorMappi
 	}
 
 	return false
+}
+
+// EventActor is the user or access key behind the request, as the actor of the events it triggers.
+func (a *API) EventActor(r *http.Request) module.EventRequest {
+	principal, _ := module.PrincipalFrom(r.Context())
+
+	actor := module.EventRequest{
+		IPAddress: middleware.GetClientIP(r),
+		UserAgent: r.UserAgent(),
+	}
+
+	switch {
+	case principal.IsUser():
+		actor.ActorType = db.EventActorTypeUser
+		actor.ActorId = principal.User.Id
+		actor.ActorName = principal.User.Name
+	case principal.IsAccessKey():
+		actor.ActorType = db.EventActorTypeAccessKey
+		actor.ActorId = principal.AccessKey.Id
+		actor.ActorName = principal.AccessKey.Name
+	}
+
+	return actor
 }
