@@ -73,7 +73,7 @@ import { useI18n } from 'vue-i18n'
 import { auth_api, setup_api } from '@/api'
 import { saveUser } from '@/lib/auth'
 import { applyUserPreferences } from '@/lib/preferences'
-import AppLogo from '@/components/AppLogo.vue'
+import AppLogo from '@/comp/AppLogo.vue'
 import { errorText } from '@/lib/error'
 
 const { t } = useI18n()

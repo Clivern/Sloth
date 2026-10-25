@@ -65,7 +65,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { setup_api } from '@/api'
 import { showFlash } from '@/lib/flash'
-import AppLogo from '@/components/AppLogo.vue'
+import AppLogo from '@/comp/AppLogo.vue'
 import { errorText } from '@/lib/error'
 
 const { t } = useI18n()

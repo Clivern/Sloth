@@ -7,8 +7,8 @@
 </template>
 
 <script setup>
-import CookieConsent from '@/components/CookieConsent.vue'
-import FlashNotice from '@/components/FlashNotice.vue'
+import CookieConsent from '@/comp/CookieConsent.vue'
+import FlashNotice from '@/comp/FlashNotice.vue'
 import { flashMessage, flashDuration, clearFlash } from '@/lib/flash'
 </script>
 

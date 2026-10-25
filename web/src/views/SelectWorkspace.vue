@@ -136,7 +136,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { workspace_api } from '@/api'
 import { loadWorkspaceFromStorage, saveWorkspaceToStorage } from '@/utils/storage'
-import AppLogo from '@/components/AppLogo.vue'
+import AppLogo from '@/comp/AppLogo.vue'
 import { errorText } from '@/lib/error'
 
 const { t } = useI18n()

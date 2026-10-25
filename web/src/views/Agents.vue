@@ -129,12 +129,12 @@
 </template>
 
 <script setup>
-import StatusBreakdown from '@/components/StatusBreakdown.vue'
+import StatusBreakdown from '@/comp/StatusBreakdown.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
-import AgentCardModal from '@/components/AgentCardModal.vue'
+import AppNav from '@/comp/AppNav.vue'
+import AgentCardModal from '@/comp/AgentCardModal.vue'
 import { agent_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useUrlPagination } from '@/lib/pagination'

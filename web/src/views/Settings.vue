@@ -324,8 +324,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
-import ConfirmModal from '@/components/ConfirmModal.vue'
+import AppNav from '@/comp/AppNav.vue'
+import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { workspace_api, workspace_access_key_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { WORKSPACE_KEY_PERMISSION_GROUPS, WORKSPACE_KEY_PERMISSIONS, useWorkspaceContext } from '@/lib/permission'

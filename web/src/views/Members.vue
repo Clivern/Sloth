@@ -164,7 +164,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import AppNav from '@/components/AppNav.vue'
+import AppNav from '@/comp/AppNav.vue'
 import { showFlash } from '@/lib/flash'
 import { workspace_invite_api, workspace_member_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'

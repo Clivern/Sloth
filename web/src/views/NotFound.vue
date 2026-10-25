@@ -24,5 +24,5 @@
 </template>
 
 <script setup>
-import AppLogo from '@/components/AppLogo.vue'
+import AppLogo from '@/comp/AppLogo.vue'
 </script>

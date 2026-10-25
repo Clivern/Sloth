@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import AppNav from '@/components/AppNav.vue'
+import AppNav from '@/comp/AppNav.vue'
 
 defineProps({
   title: {

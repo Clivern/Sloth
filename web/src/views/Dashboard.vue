@@ -172,7 +172,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
+import AppNav from '@/comp/AppNav.vue'
 import { user } from '@/lib/auth'
 import { useWorkspaceContext } from '@/lib/permission'
 import { isSaaS } from '@/lib/edition'

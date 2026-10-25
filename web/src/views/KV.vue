@@ -162,8 +162,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
-import ConfirmModal from '@/components/ConfirmModal.vue'
+import AppNav from '@/comp/AppNav.vue'
+import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { kv_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { formatRelative } from '@/utils/date'

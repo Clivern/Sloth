@@ -143,7 +143,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
+import AppNav from '@/comp/AppNav.vue'
 import { event_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'

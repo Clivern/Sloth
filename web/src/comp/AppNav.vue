@@ -124,7 +124,7 @@ import { user, clearUser } from '@/lib/auth'
 import { applyLocale, applyTheme, applyUserPreferences, readStoredLocale, readStoredTheme } from '@/lib/preferences'
 import { canManageWorkspace } from '@/lib/permission'
 import { isSaaS } from '@/lib/edition'
-import AppLogo from '@/components/AppLogo.vue'
+import AppLogo from '@/comp/AppLogo.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -704,16 +704,16 @@
 </template>
 
 <script setup>
-import StatusBreakdown from '@/components/StatusBreakdown.vue'
+import StatusBreakdown from '@/comp/StatusBreakdown.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
-import AgentCardModal from '@/components/AgentCardModal.vue'
-import AgentCheckModal from '@/components/AgentCheckModal.vue'
-import AgentIdentityModal from '@/components/AgentIdentityModal.vue'
-import AgentProtectionModal from '@/components/AgentProtectionModal.vue'
-import ConfirmModal from '@/components/ConfirmModal.vue'
+import AppNav from '@/comp/AppNav.vue'
+import AgentCardModal from '@/comp/AgentCardModal.vue'
+import AgentCheckModal from '@/comp/AgentCheckModal.vue'
+import AgentIdentityModal from '@/comp/AgentIdentityModal.vue'
+import AgentProtectionModal from '@/comp/AgentProtectionModal.vue'
+import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { agent_api, agent_check_api, agent_identity_api, agent_instance_api, agent_protection_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useWorkspaceContext } from '@/lib/permission'

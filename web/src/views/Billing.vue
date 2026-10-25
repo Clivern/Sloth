@@ -181,7 +181,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppNav from '@/components/AppNav.vue'
+import AppNav from '@/comp/AppNav.vue'
 import { billing_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
