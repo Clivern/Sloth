@@ -1,40 +1,50 @@
-/** Short date for tables (e.g. "Mar 27, 2026"). Pass `locale` from `useI18n()` for correct formatting. */
-export function formatCreatedAt(iso, locale = 'en') {
-  if (!iso) return '—'
-  try {
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return '—'
-    return d.toLocaleDateString(locale || 'en', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return '—'
-  }
+import { i18n } from '@/i18n'
+
+const units = [
+  ['year', 31536000],
+  ['month', 2592000],
+  ['week', 604800],
+  ['day', 86400],
+  ['hour', 3600],
+  ['minute', 60],
+]
+
+// Reading the locale ref inside a template call makes the output follow language changes.
+function locale() {
+  return i18n.global.locale.value
 }
 
-export function formatRelative(dateString, fallback = '—') {
-  if (dateString == null || dateString === '') return fallback
-  try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime()) || date.getFullYear() < 1970) return fallback
+/** Short date, e.g. "Mar 27, 2026". */
+export function formatDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString(locale(), { dateStyle: 'medium' })
+}
 
-    const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
+/** Date with hours and minutes, e.g. "Mar 27, 2026, 3:04 PM". */
+export function formatDateTime(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' })
+}
 
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`
-    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`
-    if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`
+/** Full timestamp down to the second, for tooltips on relative times. */
+export function formatTimestamp(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'medium' })
+}
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const month = months[date.getMonth()]
-    const day = date.getDate()
-    const year = date.getFullYear()
-    const isCurrentYear = year === now.getFullYear()
+/** Relative time in the current locale, e.g. "5 minutes ago" or "il y a 5 minutes". */
+export function formatRelative(iso, fallback = '—') {
+  if (!iso) return fallback
 
-    return isCurrentYear ? `${month} ${day}` : `${month} ${day}, ${year}`
-  } catch {
-    return fallback
+  const date = new Date(iso)
+  if (date.getFullYear() < 1970) return fallback
+
+  const seconds = Math.round((date.getTime() - Date.now()) / 1000)
+  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: 'auto' })
+
+  for (const [unit, size] of units) {
+    if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit)
   }
+
+  return rtf.format(0, 'second')
 }

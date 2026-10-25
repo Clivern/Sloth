@@ -87,46 +87,35 @@
       <p v-if="error" class="mt-4 text-sm text-red-600 text-center">{{ error }}</p>
     </div>
 
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="showCreateModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-workspace-title"
-          @click.self="closeCreateModal"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="create-workspace-title" class="text-lg font-semibold text-theme-text">{{ $t('select_workspace.create_modal_title') }}</h2>
-            <p class="mt-1 text-sm text-theme-textLight">{{ $t('select_workspace.create_modal_description') }}</p>
-            <div v-if="createModalError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3" role="alert">
-              <p class="text-sm text-red-800">{{ createModalError }}</p>
-            </div>
-            <form @submit.prevent="handleCreate" class="mt-4 space-y-4">
-              <div>
-                <label for="workspace-name" class="form-label">{{ $t('select_workspace.workspace_name') }}</label>
-                <input
-                  id="workspace-name"
-                  v-model="newWorkspaceName"
-                  type="text"
-                  required
-                  class="input-field"
-                  :placeholder="$t('select_workspace.workspace_name_placeholder')"
-                  autofocus
-                />
-              </div>
-              <div class="flex gap-3 justify-end">
-                <button type="button" @click="closeCreateModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
-                <button type="submit" :disabled="createLoading" class="btn-primary">
-                  {{ createLoading ? $t('common.loading') : $t('common.create') }}
-                </button>
-              </div>
-            </form>
-          </div>
+    <BaseModal
+      :open="showCreateModal"
+      :title="$t('select_workspace.create_modal_title')"
+      :description="$t('select_workspace.create_modal_description')"
+      :error="createModalError"
+      size="sm"
+      @close="closeCreateModal"
+    >
+      <form @submit.prevent="handleCreate" class="mt-4 space-y-4">
+        <div>
+          <label for="workspace-name" class="form-label">{{ $t('select_workspace.workspace_name') }}</label>
+          <input
+            id="workspace-name"
+            v-model="newWorkspaceName"
+            type="text"
+            required
+            class="input-field"
+            :placeholder="$t('select_workspace.workspace_name_placeholder')"
+            autofocus
+          />
         </div>
-      </Transition>
-    </Teleport>
+        <div class="flex gap-3 justify-end">
+          <button type="button" @click="closeCreateModal" class="btn-secondary">{{ $t('common.cancel') }}</button>
+          <button type="submit" :disabled="createLoading" class="btn-primary">
+            {{ createLoading ? $t('common.loading') : $t('common.create') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
   </div>
 </template>
 
@@ -138,6 +127,8 @@ import { workspace_api } from '@/api'
 import { loadWorkspaceFromStorage, saveWorkspaceToStorage } from '@/utils/storage'
 import AppLogo from '@/comp/AppLogo.vue'
 import { errorText } from '@/lib/error'
+import { formatDate } from '@/utils/date'
+import BaseModal from '@/comp/BaseModal.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -169,15 +160,6 @@ const pageDescription = computed(() => {
   }
   return t('select_workspace.no_workspaces')
 })
-
-function formatDate(iso) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return iso
-  }
-}
 
 function openCreateModal() {
   createModalError.value = null

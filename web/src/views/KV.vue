@@ -74,76 +74,62 @@
       </section>
     </main>
 
-    <div
-      v-if="showForm"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="kv-form-title"
-      @click.self="closeForm"
+    <BaseModal
+      :open="showForm"
+      :title="isEditing ? $t('kv_page.edit_title') : $t('kv_page.add_title')"
+      :description="isEditing ? $t('kv_page.edit_desc') : $t('kv_page.add_desc')"
+      :error="formError"
+      @close="closeForm"
     >
-      <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6">
-        <h2 id="kv-form-title" class="text-lg font-semibold text-theme-text">
-          {{ isEditing ? $t('kv_page.edit_title') : $t('kv_page.add_title') }}
-        </h2>
-        <p class="mt-1 text-sm text-theme-textLight">
-          {{ isEditing ? $t('kv_page.edit_desc') : $t('kv_page.add_desc') }}
-        </p>
-
-        <div v-if="formError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {{ formError }}
+      <form class="mt-4 space-y-4" @submit.prevent="submit">
+        <div>
+          <label for="kv-key" class="form-label">{{ $t('kv_page.key') }}</label>
+          <input
+            id="kv-key"
+            v-model="form.key"
+            type="text"
+            required
+            class="input-field font-mono"
+            placeholder="agents/invoice-extractor/model"
+            autocomplete="off"
+            :disabled="saving || isEditing"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('kv_page.key_hint') }}</p>
         </div>
 
-        <form class="mt-4 space-y-4" @submit.prevent="submit">
-          <div>
-            <label for="kv-key" class="form-label">{{ $t('kv_page.key') }}</label>
-            <input
-              id="kv-key"
-              v-model="form.key"
-              type="text"
-              required
-              class="input-field font-mono"
-              placeholder="agents/invoice-extractor/model"
-              autocomplete="off"
-              :disabled="saving || isEditing"
-            />
-            <p class="mt-1 text-xs text-theme-textLight">{{ $t('kv_page.key_hint') }}</p>
-          </div>
+        <div>
+          <label for="kv-value" class="form-label">{{ $t('kv_page.value') }}</label>
+          <textarea
+            id="kv-value"
+            v-model="form.value"
+            rows="3"
+            required
+            class="input-field font-mono text-sm"
+            :disabled="saving"
+          />
+        </div>
 
-          <div>
-            <label for="kv-value" class="form-label">{{ $t('kv_page.value') }}</label>
-            <textarea
-              id="kv-value"
-              v-model="form.value"
-              rows="3"
-              required
-              class="input-field font-mono text-sm"
-              :disabled="saving"
-            />
-          </div>
+        <div>
+          <label for="kv-expires" class="form-label">{{ $t('kv_page.expires_at') }}</label>
+          <input
+            id="kv-expires"
+            v-model="form.expiresAt"
+            type="datetime-local"
+            class="input-field"
+            :disabled="saving"
+          />
+        </div>
 
-          <div>
-            <label for="kv-expires" class="form-label">{{ $t('kv_page.expires_at') }}</label>
-            <input
-              id="kv-expires"
-              v-model="form.expiresAt"
-              type="datetime-local"
-              class="input-field"
-              :disabled="saving"
-            />
-          </div>
-
-          <div class="flex gap-3 justify-end">
-            <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
-              {{ $t('common.cancel') }}
-            </button>
-            <button type="submit" class="btn-primary" :disabled="saving">
-              {{ saving ? $t('kv_page.saving') : $t('common.save') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div class="flex gap-3 justify-end">
+          <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
+            {{ $t('common.cancel') }}
+          </button>
+          <button type="submit" class="btn-primary" :disabled="saving">
+            {{ saving ? $t('kv_page.saving') : $t('common.save') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
 
     <ConfirmModal
       :open="!!deleteTarget"
@@ -168,6 +154,7 @@ import { kv_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { formatRelative } from '@/utils/date'
 import { errorText } from '@/lib/error'
+import BaseModal from '@/comp/BaseModal.vue'
 
 const { t } = useI18n()
 const { currentWorkspace, canManage } = useWorkspaceContext()

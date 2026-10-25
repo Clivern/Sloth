@@ -151,182 +151,170 @@
       </section>
     </main>
 
-    <div
-      v-if="showForm"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="integration-form-title"
-      @click.self="closeForm"
+    <BaseModal
+      :open="showForm"
+      :title="isEditing ? $t('integrations_page.edit_title') : $t('integrations_page.add_title')"
+      :description="$t(`integrations_page.type_${form.type}_desc`)"
+      :error="formError"
+      @close="closeForm"
     >
-      <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6">
-        <h2 id="integration-form-title" class="text-lg font-semibold text-theme-text">
-          {{ isEditing ? $t('integrations_page.edit_title') : $t('integrations_page.add_title') }}
-        </h2>
-        <p class="mt-1 text-sm text-theme-textLight">{{ $t(`integrations_page.type_${form.type}_desc`) }}</p>
-
-        <div v-if="formError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {{ formError }}
+      <form class="mt-4 space-y-4" @submit.prevent="submit">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="integration-type" class="form-label">{{ $t('integrations_page.type') }}</label>
+            <select
+              id="integration-type"
+              v-model="form.type"
+              class="input-field"
+              :disabled="saving || isEditing"
+            >
+              <option v-for="type in TYPES" :key="type" :value="type">{{ $t(`integrations_page.type_${type}`) }}</option>
+            </select>
+          </div>
+          <div>
+            <label for="integration-name" class="form-label">{{ $t('integrations_page.name') }}</label>
+            <input
+              id="integration-name"
+              v-model="form.name"
+              type="text"
+              required
+              maxlength="60"
+              class="input-field"
+              :placeholder="$t('integrations_page.name_placeholder')"
+              autocomplete="off"
+              :disabled="saving"
+            />
+          </div>
         </div>
 
-        <form class="mt-4 space-y-4" @submit.prevent="submit">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="integration-type" class="form-label">{{ $t('integrations_page.type') }}</label>
-              <select
-                id="integration-type"
-                v-model="form.type"
-                class="input-field"
-                :disabled="saving || isEditing"
-              >
-                <option v-for="type in TYPES" :key="type" :value="type">{{ $t(`integrations_page.type_${type}`) }}</option>
-              </select>
-            </div>
-            <div>
-              <label for="integration-name" class="form-label">{{ $t('integrations_page.name') }}</label>
-              <input
-                id="integration-name"
-                v-model="form.name"
-                type="text"
-                required
-                maxlength="60"
-                class="input-field"
-                :placeholder="$t('integrations_page.name_placeholder')"
-                autocomplete="off"
-                :disabled="saving"
-              />
-            </div>
-          </div>
+        <div v-if="URL_PLACEHOLDERS[form.type]">
+          <label for="integration-url" class="form-label">{{ $t(`integrations_page.url_${form.type}`) }}</label>
+          <input
+            id="integration-url"
+            v-model="form.url"
+            type="url"
+            required
+            maxlength="2048"
+            class="input-field font-mono"
+            :placeholder="URL_PLACEHOLDERS[form.type]"
+            autocomplete="off"
+            :disabled="saving"
+          />
+        </div>
 
-          <div v-if="URL_PLACEHOLDERS[form.type]">
-            <label for="integration-url" class="form-label">{{ $t(`integrations_page.url_${form.type}`) }}</label>
+        <div v-if="form.type === 'datadog'">
+          <label for="integration-site" class="form-label">{{ $t('integrations_page.site') }}</label>
+          <select
+            id="integration-site"
+            v-model="form.site"
+            required
+            class="input-field font-mono"
+            :disabled="saving"
+          >
+            <option v-for="site in DATADOG_SITES" :key="site" :value="site">{{ site }}</option>
+          </select>
+        </div>
+
+        <div v-if="form.type === 'pagerduty'">
+          <label for="integration-region" class="form-label">{{ $t('integrations_page.region') }}</label>
+          <select
+            id="integration-region"
+            v-model="form.region"
+            required
+            class="input-field"
+            :disabled="saving"
+          >
+            <option v-for="region in PAGERDUTY_REGIONS" :key="region" :value="region">{{ $t(`integrations_page.region_${region === PAGERDUTY_REGIONS[0] ? 'us' : 'eu'}`) }}</option>
+          </select>
+        </div>
+
+        <div v-if="form.type === 'splunk'">
+          <label for="integration-index" class="form-label">{{ $t('integrations_page.index') }}</label>
+          <input
+            id="integration-index"
+            v-model="form.index"
+            type="text"
+            maxlength="100"
+            class="input-field font-mono"
+            placeholder="main"
+            autocomplete="off"
+            :disabled="saving"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('integrations_page.index_hint') }}</p>
+        </div>
+
+        <div v-if="form.type !== 'slack'">
+          <label for="integration-secret" class="form-label">{{ $t(`integrations_page.secret_${form.type}`) }}</label>
+          <input
+            id="integration-secret"
+            v-model="form.secret"
+            type="password"
+            :required="secretRequired"
+            minlength="8"
+            maxlength="512"
+            class="input-field font-mono"
+            autocomplete="new-password"
+            :disabled="saving"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ secretHint }}</p>
+        </div>
+
+        <fieldset>
+          <legend class="form-label">{{ $t('integrations_page.events') }}</legend>
+          <p class="text-xs text-theme-textLight">{{ $t('integrations_page.events_hint') }}</p>
+          <label
+            v-for="event in EVENTS"
+            :key="event"
+            class="mt-2 flex items-start gap-2 text-sm text-theme-text"
+          >
             <input
-              id="integration-url"
-              v-model="form.url"
-              type="url"
-              required
-              maxlength="2048"
-              class="input-field font-mono"
-              :placeholder="URL_PLACEHOLDERS[form.type]"
-              autocomplete="off"
+              v-model="form.events"
+              type="checkbox"
+              :value="event"
+              class="mt-0.5 rounded border-theme-border"
               :disabled="saving"
             />
-          </div>
+            <span>
+              {{ $t(`integrations_page.event_${event.replaceAll('.', '_')}`) }}
+              <span class="block text-xs text-theme-textLight">{{ $t(`integrations_page.event_${event.replaceAll('.', '_')}_desc`) }}</span>
+            </span>
+          </label>
+        </fieldset>
 
-          <div v-if="form.type === 'datadog'">
-            <label for="integration-site" class="form-label">{{ $t('integrations_page.site') }}</label>
-            <select
-              id="integration-site"
-              v-model="form.site"
-              required
-              class="input-field font-mono"
-              :disabled="saving"
-            >
-              <option v-for="site in DATADOG_SITES" :key="site" :value="site">{{ site }}</option>
-            </select>
+        <div class="flex items-start justify-between gap-4 rounded-lg border border-theme-border px-4 py-3">
+          <div>
+            <p id="integration-active-label" class="text-sm font-medium text-theme-text">
+              {{ form.isActive ? $t('integrations_page.enabled') : $t('integrations_page.disabled') }}
+            </p>
+            <p class="text-xs text-theme-textLight">{{ $t('integrations_page.active_hint') }}</p>
           </div>
-
-          <div v-if="form.type === 'pagerduty'">
-            <label for="integration-region" class="form-label">{{ $t('integrations_page.region') }}</label>
-            <select
-              id="integration-region"
-              v-model="form.region"
-              required
-              class="input-field"
-              :disabled="saving"
-            >
-              <option v-for="region in PAGERDUTY_REGIONS" :key="region" :value="region">{{ $t(`integrations_page.region_${region === PAGERDUTY_REGIONS[0] ? 'us' : 'eu'}`) }}</option>
-            </select>
-          </div>
-
-          <div v-if="form.type === 'splunk'">
-            <label for="integration-index" class="form-label">{{ $t('integrations_page.index') }}</label>
-            <input
-              id="integration-index"
-              v-model="form.index"
-              type="text"
-              maxlength="100"
-              class="input-field font-mono"
-              placeholder="main"
-              autocomplete="off"
-              :disabled="saving"
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="form.isActive"
+            aria-labelledby="integration-active-label"
+            class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50"
+            :class="form.isActive ? 'bg-emerald-600' : 'bg-gray-300'"
+            :disabled="saving"
+            @click="form.isActive = !form.isActive"
+          >
+            <span
+              class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
+              :class="form.isActive ? 'translate-x-5' : 'translate-x-0.5'"
             />
-            <p class="mt-1 text-xs text-theme-textLight">{{ $t('integrations_page.index_hint') }}</p>
-          </div>
+          </button>
+        </div>
 
-          <div v-if="form.type !== 'slack'">
-            <label for="integration-secret" class="form-label">{{ $t(`integrations_page.secret_${form.type}`) }}</label>
-            <input
-              id="integration-secret"
-              v-model="form.secret"
-              type="password"
-              :required="secretRequired"
-              minlength="8"
-              maxlength="512"
-              class="input-field font-mono"
-              autocomplete="new-password"
-              :disabled="saving"
-            />
-            <p class="mt-1 text-xs text-theme-textLight">{{ secretHint }}</p>
-          </div>
-
-          <fieldset>
-            <legend class="form-label">{{ $t('integrations_page.events') }}</legend>
-            <p class="text-xs text-theme-textLight">{{ $t('integrations_page.events_hint') }}</p>
-            <label
-              v-for="event in EVENTS"
-              :key="event"
-              class="mt-2 flex items-start gap-2 text-sm text-theme-text"
-            >
-              <input
-                v-model="form.events"
-                type="checkbox"
-                :value="event"
-                class="mt-0.5 rounded border-theme-border"
-                :disabled="saving"
-              />
-              <span>
-                {{ $t(`integrations_page.event_${event.replaceAll('.', '_')}`) }}
-                <span class="block text-xs text-theme-textLight">{{ $t(`integrations_page.event_${event.replaceAll('.', '_')}_desc`) }}</span>
-              </span>
-            </label>
-          </fieldset>
-
-          <div class="flex items-start justify-between gap-4 rounded-lg border border-theme-border px-4 py-3">
-            <div>
-              <p id="integration-active-label" class="text-sm font-medium text-theme-text">
-                {{ form.isActive ? $t('integrations_page.enabled') : $t('integrations_page.disabled') }}
-              </p>
-              <p class="text-xs text-theme-textLight">{{ $t('integrations_page.active_hint') }}</p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="form.isActive"
-              aria-labelledby="integration-active-label"
-              class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50"
-              :class="form.isActive ? 'bg-emerald-600' : 'bg-gray-300'"
-              :disabled="saving"
-              @click="form.isActive = !form.isActive"
-            >
-              <span
-                class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
-                :class="form.isActive ? 'translate-x-5' : 'translate-x-0.5'"
-              />
-            </button>
-          </div>
-
-          <div class="flex gap-3 justify-end">
-            <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
-              {{ $t('common.cancel') }}
-            </button>
-            <button type="submit" class="btn-primary" :disabled="saving">
-              {{ saving ? $t('integrations_page.saving') : $t('common.save') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div class="flex gap-3 justify-end">
+          <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
+            {{ $t('common.cancel') }}
+          </button>
+          <button type="submit" class="btn-primary" :disabled="saving">
+            {{ saving ? $t('integrations_page.saving') : $t('common.save') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
 
     <ConfirmModal
       :open="!!deleteTarget"
@@ -352,6 +340,7 @@ import { integration_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
+import BaseModal from '@/comp/BaseModal.vue'
 
 const TYPES = ['webhook', 'slack', 'datadog', 'splunk', 'pagerduty']
 const PAGERDUTY_REGIONS = ['events.pagerduty.com', 'events.eu.pagerduty.com']

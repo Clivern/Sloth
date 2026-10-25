@@ -331,6 +331,7 @@ import { showFlash } from '@/lib/flash'
 import { WORKSPACE_KEY_PERMISSION_GROUPS, WORKSPACE_KEY_PERMISSIONS, useWorkspaceContext } from '@/lib/permission'
 import { saveWorkspaceToStorage } from '@/utils/storage'
 import { errorText } from '@/lib/error'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 
@@ -363,24 +364,6 @@ const minExpiresAt = computed(() => {
 const canSaveWorkspace = computed(() => {
   return workspaceName.value.trim() !== workspace.value?.name
 })
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
-  } catch {
-    return iso
-  }
-}
-
-function formatDateTime(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-  } catch {
-    return iso
-  }
-}
 
 function countSelected(group) {
   return group.permissions.filter((perm) => selectedPermissions.value.includes(perm.value)).length

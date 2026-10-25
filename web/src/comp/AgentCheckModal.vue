@@ -1,162 +1,148 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-show="open"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="agent-check-modal-title"
-        @click.self="close"
-      >
-        <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-          <h2 id="agent-check-modal-title" class="text-lg font-semibold text-theme-text">
-            {{ isEdit ? $t('agents_page.check_edit_title') : $t('agents_page.check_add_title') }}
-          </h2>
-          <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.check_modal_desc') }}</p>
+  <BaseModal
+    :open="open"
+    :title="isEdit ? $t('agents_page.check_edit_title') : $t('agents_page.check_add_title')"
+    :description="$t('agents_page.check_modal_desc')"
+    :error="error"
+    :busy="saving"
+    @close="close"
+  >
+    <form class="mt-4 space-y-4" @submit.prevent="submit">
+      <div>
+        <label for="check-id" class="form-label">{{ $t('agents_page.check_id') }}</label>
+        <input
+          id="check-id"
+          v-model="form.checkId"
+          type="text"
+          required
+          class="input-field font-mono"
+          placeholder="http"
+          autocomplete="off"
+          :disabled="saving || isEdit"
+        />
+        <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_id_hint') }}</p>
+      </div>
+      <div>
+        <label for="check-name" class="form-label">{{ $t('agents_page.name') }}</label>
+        <input
+          id="check-name"
+          v-model="form.name"
+          type="text"
+          maxlength="120"
+          class="input-field"
+          :placeholder="$t('agents_page.check_name_placeholder')"
+          autocomplete="off"
+          :disabled="saving"
+        />
+        <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_name_hint') }}</p>
+      </div>
 
-          <div v-if="error" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-            {{ error }}
-          </div>
+      <div>
+        <label for="check-type" class="form-label">{{ $t('agents_page.check_type') }}</label>
+        <select id="check-type" v-model="form.type" class="input-field" :disabled="saving">
+          <option value="http">{{ $t('agents_page.check_type_http') }}</option>
+          <option value="tcp">{{ $t('agents_page.check_type_tcp') }}</option>
+          <option value="ttl">{{ $t('agents_page.check_type_ttl') }}</option>
+        </select>
+        <p class="mt-1 text-xs text-theme-textLight">{{ $t(`agents_page.check_type_${form.type}_hint`) }}</p>
+      </div>
 
-          <form class="mt-4 space-y-4" @submit.prevent="submit">
-            <div>
-              <label for="check-id" class="form-label">{{ $t('agents_page.check_id') }}</label>
-              <input
-                id="check-id"
-                v-model="form.checkId"
-                type="text"
-                required
-                class="input-field font-mono"
-                placeholder="http"
-                autocomplete="off"
-                :disabled="saving || isEdit"
-              />
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_id_hint') }}</p>
-            </div>
-            <div>
-              <label for="check-name" class="form-label">{{ $t('agents_page.name') }}</label>
-              <input
-                id="check-name"
-                v-model="form.name"
-                type="text"
-                maxlength="120"
-                class="input-field"
-                :placeholder="$t('agents_page.check_name_placeholder')"
-                autocomplete="off"
-                :disabled="saving"
-              />
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_name_hint') }}</p>
-            </div>
-
-            <div>
-              <label for="check-type" class="form-label">{{ $t('agents_page.check_type') }}</label>
-              <select id="check-type" v-model="form.type" class="input-field" :disabled="saving">
-                <option value="http">{{ $t('agents_page.check_type_http') }}</option>
-                <option value="tcp">{{ $t('agents_page.check_type_tcp') }}</option>
-                <option value="ttl">{{ $t('agents_page.check_type_ttl') }}</option>
-              </select>
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t(`agents_page.check_type_${form.type}_hint`) }}</p>
-            </div>
-
-            <div v-if="form.type === 'http'" class="grid gap-4 sm:grid-cols-[120px_1fr]">
-              <div>
-                <label for="check-scheme" class="form-label">{{ $t('agents_page.check_scheme') }}</label>
-                <select id="check-scheme" v-model="form.scheme" class="input-field" :disabled="saving">
-                  <option value="http">http</option>
-                  <option value="https">https</option>
-                </select>
-              </div>
-              <div>
-                <label for="check-path" class="form-label">{{ $t('agents_page.check_path') }}</label>
-                <input
-                  id="check-path"
-                  v-model="form.path"
-                  type="text"
-                  required
-                  maxlength="255"
-                  class="input-field font-mono"
-                  placeholder="/healthz"
-                  autocomplete="off"
-                  :disabled="saving"
-                />
-              </div>
-            </div>
-
-            <div v-if="form.type !== 'ttl'" class="grid gap-4 sm:grid-cols-3">
-              <div>
-                <label for="check-port" class="form-label">{{ $t('agents_page.check_port') }}</label>
-                <input
-                  id="check-port"
-                  v-model.number="form.port"
-                  type="number"
-                  min="1"
-                  max="65535"
-                  class="input-field"
-                  :placeholder="$t('agents_page.check_port_placeholder')"
-                  :disabled="saving"
-                />
-              </div>
-              <div>
-                <label for="check-interval" class="form-label">{{ $t('agents_page.check_interval') }}</label>
-                <input
-                  id="check-interval"
-                  v-model.number="form.interval"
-                  type="number"
-                  min="5"
-                  max="3600"
-                  required
-                  class="input-field"
-                  :disabled="saving"
-                />
-              </div>
-              <div>
-                <label for="check-timeout" class="form-label">{{ $t('agents_page.check_timeout') }}</label>
-                <input
-                  id="check-timeout"
-                  v-model.number="form.timeout"
-                  type="number"
-                  min="1"
-                  max="60"
-                  required
-                  class="input-field"
-                  :disabled="saving"
-                />
-              </div>
-            </div>
-
-            <div v-else>
-              <label for="check-ttl" class="form-label">{{ $t('agents_page.check_ttl') }}</label>
-              <input
-                id="check-ttl"
-                v-model.number="form.ttl"
-                type="number"
-                min="5"
-                max="86400"
-                required
-                class="input-field"
-                :disabled="saving"
-              />
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_ttl_hint') }}</p>
-            </div>
-
-            <div class="flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="saving" @click="close">
-                {{ $t('common.cancel') }}
-              </button>
-              <button type="submit" class="btn-primary" :disabled="saving">
-                {{ saving ? $t('agents_page.saving') : $t('common.save') }}
-              </button>
-            </div>
-          </form>
+      <div v-if="form.type === 'http'" class="grid gap-4 sm:grid-cols-[120px_1fr]">
+        <div>
+          <label for="check-scheme" class="form-label">{{ $t('agents_page.check_scheme') }}</label>
+          <select id="check-scheme" v-model="form.scheme" class="input-field" :disabled="saving">
+            <option value="http">http</option>
+            <option value="https">https</option>
+          </select>
+        </div>
+        <div>
+          <label for="check-path" class="form-label">{{ $t('agents_page.check_path') }}</label>
+          <input
+            id="check-path"
+            v-model="form.path"
+            type="text"
+            required
+            maxlength="255"
+            class="input-field font-mono"
+            placeholder="/healthz"
+            autocomplete="off"
+            :disabled="saving"
+          />
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div v-if="form.type !== 'ttl'" class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label for="check-port" class="form-label">{{ $t('agents_page.check_port') }}</label>
+          <input
+            id="check-port"
+            v-model.number="form.port"
+            type="number"
+            min="1"
+            max="65535"
+            class="input-field"
+            :placeholder="$t('agents_page.check_port_placeholder')"
+            :disabled="saving"
+          />
+        </div>
+        <div>
+          <label for="check-interval" class="form-label">{{ $t('agents_page.check_interval') }}</label>
+          <input
+            id="check-interval"
+            v-model.number="form.interval"
+            type="number"
+            min="5"
+            max="3600"
+            required
+            class="input-field"
+            :disabled="saving"
+          />
+        </div>
+        <div>
+          <label for="check-timeout" class="form-label">{{ $t('agents_page.check_timeout') }}</label>
+          <input
+            id="check-timeout"
+            v-model.number="form.timeout"
+            type="number"
+            min="1"
+            max="60"
+            required
+            class="input-field"
+            :disabled="saving"
+          />
+        </div>
+      </div>
+
+      <div v-else>
+        <label for="check-ttl" class="form-label">{{ $t('agents_page.check_ttl') }}</label>
+        <input
+          id="check-ttl"
+          v-model.number="form.ttl"
+          type="number"
+          min="5"
+          max="86400"
+          required
+          class="input-field"
+          :disabled="saving"
+        />
+        <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.check_ttl_hint') }}</p>
+      </div>
+
+      <div class="flex gap-3 justify-end">
+        <button type="button" class="btn-secondary" :disabled="saving" @click="close">
+          {{ $t('common.cancel') }}
+        </button>
+        <button type="submit" class="btn-primary" :disabled="saving">
+          {{ saving ? $t('agents_page.saving') : $t('common.save') }}
+        </button>
+      </div>
+    </form>
+  </BaseModal>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
+import BaseModal from '@/comp/BaseModal.vue'
 import { useI18n } from 'vue-i18n'
 import { agent_check_api } from '@/api'
 import { AGENT_NAME_PATTERN } from '@/lib/agent'

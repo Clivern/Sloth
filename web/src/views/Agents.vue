@@ -44,7 +44,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
-              <tr v-if="loading">
+              <tr v-if="loading && !agents.length">
                 <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
               <tr v-else-if="!agents.length">
@@ -138,6 +138,7 @@ import AgentCardModal from '@/comp/AgentCardModal.vue'
 import { agent_api } from '@/api'
 import { showFlash } from '@/lib/flash'
 import { useUrlPagination } from '@/lib/pagination'
+import { usePolling } from '@/lib/polling'
 import { useWorkspaceContext } from '@/lib/permission'
 import { healthClass, healthDotClass, parseCard } from '@/lib/agent'
 import { formatRelative } from '@/utils/date'
@@ -201,4 +202,7 @@ function onRegistered(agent) {
 watch(() => route.query.page, loadPage)
 
 onMounted(loadPage)
+
+// Agent health changes as instances report in, so keep the list live
+usePolling(loadPage)
 </script>

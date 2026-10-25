@@ -170,6 +170,7 @@ import { workspace_invite_api, workspace_member_api } from '@/api'
 import { useWorkspaceContext } from '@/lib/permission'
 import { useI18n } from 'vue-i18n'
 import { errorText } from '@/lib/error'
+import { formatDate } from '@/utils/date'
 
 const { t } = useI18n()
 const { currentUser, currentWorkspace } = useWorkspaceContext()
@@ -188,15 +189,6 @@ const inviteForm = reactive({
   email: '',
   role: 'regular'
 })
-
-function formatDate(iso) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return iso
-  }
-}
 
 function formatRole(role) {
   if (role === 'regular') return t('members_page.role_regular')

@@ -31,7 +31,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
-              <tr v-if="loading">
+              <tr v-if="loading && !events.length">
                 <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
               <tr v-else-if="!events.length">
@@ -61,7 +61,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ item.ipAddress || '—' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">
-                      <time :datetime="item.createdAt" :title="formatDate(item.createdAt)">{{ formatRelative(item.createdAt) }}</time>
+                      <time :datetime="item.createdAt" :title="formatTimestamp(item.createdAt)">{{ formatRelative(item.createdAt) }}</time>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                       <button
@@ -146,11 +146,12 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/comp/AppNav.vue'
 import { event_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
+import { usePolling } from '@/lib/polling'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
-import { formatRelative } from '@/utils/date'
+import { formatTimestamp, formatRelative } from '@/utils/date'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const { currentWorkspace } = useWorkspaceContext()
 const { offset, limit, goToOffset } = useUrlPagination({ limit: 50 })
@@ -160,10 +161,6 @@ const total = ref(0)
 const loading = ref(false)
 const errorMessage = ref(null)
 const expandedId = ref(null)
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleString(locale.value, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-}
 
 async function loadEvents() {
   loading.value = true
@@ -190,4 +187,9 @@ function goToPage(newOffset) {
 
 watch(() => route.query.page, loadEvents)
 onMounted(loadEvents)
+
+// New rows land on the first page, so only that page follows them live
+usePolling(() => {
+  if (offset.value === 0) loadEvents()
+})
 </script>

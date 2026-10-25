@@ -34,7 +34,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
-              <tr v-if="loading">
+              <tr v-if="loading && !calls.length">
                 <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
               <tr v-else-if="!calls.length">
@@ -43,7 +43,7 @@
               <template v-else>
                 <tr v-for="call in calls" :key="call.id" class="hover:bg-theme-hover">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">
-                    <time :datetime="call.createdAt" :title="formatDate(call.createdAt)">{{ formatRelative(call.createdAt) }}</time>
+                    <time :datetime="call.createdAt" :title="formatTimestamp(call.createdAt)">{{ formatRelative(call.createdAt) }}</time>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">
                     <router-link
@@ -128,11 +128,12 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/comp/AppNav.vue'
 import { traffic_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
+import { usePolling } from '@/lib/polling'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
-import { formatRelative } from '@/utils/date'
+import { formatTimestamp, formatRelative } from '@/utils/date'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const route = useRoute()
 const { currentWorkspace } = useWorkspaceContext()
 const { offset, limit, goToOffset } = useUrlPagination({ limit: 50 })
@@ -141,10 +142,6 @@ const calls = ref([])
 const total = ref(0)
 const loading = ref(false)
 const errorMessage = ref(null)
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleString(locale.value, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-}
 
 function resultClass(result) {
   return {
@@ -180,4 +177,9 @@ function goToPage(newOffset) {
 
 watch(() => route.query.page, loadTraffic)
 onMounted(loadTraffic)
+
+// New rows land on the first page, so only that page follows them live
+usePolling(() => {
+  if (offset.value === 0) loadTraffic()
+})
 </script>

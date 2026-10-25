@@ -161,118 +161,88 @@
     </main>
 
     <!-- Create workspace modal -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="showCreateModal"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-workspace-title"
-          @click.self="closeCreateModal"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="create-workspace-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('workspaces_page.create_title') }}
-            </h2>
-            <p class="mt-1 text-sm text-theme-textLight">
-              {{ $t('workspaces_page.create_desc') }}
-            </p>
-            <div v-if="createModalError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ createModalError }}
-            </div>
-            <form @submit.prevent="handleCreate" class="mt-4 space-y-4">
-              <div>
-                <label for="create-workspace-name" class="form-label">{{ $t('workspaces_page.name') }}</label>
-                <input
-                  id="create-workspace-name"
-                  v-model="newWorkspaceName"
-                  type="text"
-                  required
-                  class="input-field"
-                  placeholder="My Workspace"
-                  autofocus
-                />
-              </div>
-              <div class="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  @click="closeCreateModal"
-                  class="btn-secondary"
-                  :disabled="createLoading"
-                >
-                  {{ $t('common.cancel') }}
-                </button>
-                <button
-                  type="submit"
-                  :disabled="createLoading"
-                  class="btn-primary"
-                >
-                  {{ createLoading ? $t('workspaces_page.creating') : $t('common.create') }}
-                </button>
-              </div>
-            </form>
-          </div>
+    <BaseModal
+      :open="showCreateModal"
+      :title="$t('workspaces_page.create_title')"
+      :description="$t('workspaces_page.create_desc')"
+      :error="createModalError"
+      size="sm"
+      @close="closeCreateModal"
+    >
+      <form @submit.prevent="handleCreate" class="mt-4 space-y-4">
+        <div>
+          <label for="create-workspace-name" class="form-label">{{ $t('workspaces_page.name') }}</label>
+          <input
+            id="create-workspace-name"
+            v-model="newWorkspaceName"
+            type="text"
+            required
+            class="input-field"
+            placeholder="My Workspace"
+            autofocus
+          />
         </div>
-      </Transition>
-    </Teleport>
+        <div class="flex gap-3 justify-end">
+          <button
+            type="button"
+            @click="closeCreateModal"
+            class="btn-secondary"
+            :disabled="createLoading"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            :disabled="createLoading"
+            class="btn-primary"
+          >
+            {{ createLoading ? $t('workspaces_page.creating') : $t('common.create') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
 
     <!-- Edit workspace modal -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div
-          v-show="editModalWorkspace"
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-workspace-title"
-          @click.self="closeEditModal"
-        >
-          <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-sm p-6">
-            <h2 id="edit-workspace-title" class="text-lg font-semibold text-theme-text">
-              {{ $t('workspaces_page.edit_title') }}
-            </h2>
-            <p class="mt-1 text-sm text-theme-textLight">
-              {{ $t('workspaces_page.edit_desc') }}
-            </p>
-            <div v-if="editModalError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-              {{ editModalError }}
-            </div>
-            <form @submit.prevent="handleUpdate" class="mt-4 space-y-4">
-              <div>
-                <label for="edit-workspace-name" class="form-label">{{ $t('workspaces_page.name') }}</label>
-                <input
-                  id="edit-workspace-name"
-                  v-model="editWorkspaceName"
-                  type="text"
-                  required
-                  class="input-field"
-                  placeholder="My Workspace"
-                  autofocus
-                />
-              </div>
-              <div class="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  @click="closeEditModal"
-                  class="btn-secondary"
-                  :disabled="updateLoadingId"
-                >
-                  {{ $t('common.cancel') }}
-                </button>
-                <button
-                  type="submit"
-                  :disabled="updateLoadingId || editWorkspaceName.trim() === editModalWorkspace?.name"
-                  class="btn-primary"
-                >
-                  {{ updateLoadingId ? $t('workspaces_page.saving') : $t('common.save') }}
-                </button>
-              </div>
-            </form>
-          </div>
+    <BaseModal
+      :open="!!editModalWorkspace"
+      :title="$t('workspaces_page.edit_title')"
+      :description="$t('workspaces_page.edit_desc')"
+      :error="editModalError"
+      size="sm"
+      @close="closeEditModal"
+    >
+      <form @submit.prevent="handleUpdate" class="mt-4 space-y-4">
+        <div>
+          <label for="edit-workspace-name" class="form-label">{{ $t('workspaces_page.name') }}</label>
+          <input
+            id="edit-workspace-name"
+            v-model="editWorkspaceName"
+            type="text"
+            required
+            class="input-field"
+            placeholder="My Workspace"
+            autofocus
+          />
         </div>
-      </Transition>
-    </Teleport>
+        <div class="flex gap-3 justify-end">
+          <button
+            type="button"
+            @click="closeEditModal"
+            class="btn-secondary"
+            :disabled="updateLoadingId"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            :disabled="updateLoadingId || editWorkspaceName.trim() === editModalWorkspace?.name"
+            class="btn-primary"
+          >
+            {{ updateLoadingId ? $t('workspaces_page.saving') : $t('common.save') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
 
     <ConfirmModal
       :open="!!deleteModalWorkspace"
@@ -316,6 +286,8 @@ import { workspace_api } from '@/api'
 import { saveWorkspaceToStorage, removeWorkspaceFromStorage } from '@/utils/storage'
 import { canManageWorkspace, useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
+import { formatDate } from '@/utils/date'
+import BaseModal from '@/comp/BaseModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -435,16 +407,6 @@ const canConfirmDelete = computed(() => {
   const name = deleteModalWorkspace.value?.name
   return name && deleteConfirmName.value.trim() === name
 })
-
-function formatDate(iso) {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return iso
-  }
-}
 
 function isCurrent(workspace) {
   return currentWorkspace.id === workspace.id

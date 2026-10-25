@@ -1,96 +1,80 @@
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div
-        v-show="open"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="agent-card-modal-title"
-        @click.self="close"
-      >
-        <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-          <h2 id="agent-card-modal-title" class="text-lg font-semibold text-theme-text">
-            {{ isEdit ? $t('agents_page.edit_card_title') : $t('agents_page.register_title') }}
-          </h2>
-          <p class="mt-1 text-sm text-theme-textLight">
-            {{ isEdit ? $t('agents_page.edit_card_desc') : $t('agents_page.register_desc') }}
-          </p>
-
-          <div v-if="error" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-            {{ error }}
-          </div>
-
-          <form class="mt-4 space-y-4" @submit.prevent="submit">
-            <div class="space-y-4">
-              <div>
-                <label for="agent-card-name" class="form-label">{{ $t('agents_page.name') }}</label>
-                <input
-                  id="agent-card-name"
-                  v-model="form.name"
-                  type="text"
-                  required
-                  class="input-field font-mono"
-                  placeholder="support-assistant"
-                  autocomplete="off"
-                  :disabled="saving || isEdit"
-                />
-                <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.name_hint') }}</p>
-              </div>
-              <div>
-                <label for="agent-card-version" class="form-label">{{ $t('agents_page.version') }}</label>
-                <input
-                  id="agent-card-version"
-                  v-model="form.version"
-                  type="text"
-                  required
-                  maxlength="40"
-                  class="input-field font-mono"
-                  placeholder="1.0.0"
-                  autocomplete="off"
-                  :disabled="saving"
-                />
-                <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.version_hint') }}</p>
-              </div>
-              <div>
-                <label for="agent-card-path" class="form-label">{{ $t('agents_page.card_path') }}</label>
-                <input
-                  id="agent-card-path"
-                  v-model="form.cardPath"
-                  type="text"
-                  maxlength="255"
-                  pattern="/.*"
-                  :title="$t('agents_page.card_path_hint')"
-                  class="input-field font-mono"
-                  :placeholder="AGENT_CARD_PATH"
-                  autocomplete="off"
-                  :disabled="saving"
-                />
-                <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.card_path_hint') }}</p>
-              </div>
-            </div>
-
-            <div class="flex gap-3 justify-end">
-              <button type="button" class="btn-secondary" :disabled="saving" @click="close">
-                {{ $t('common.cancel') }}
-              </button>
-              <button
-                type="submit"
-                class="btn-primary"
-                :disabled="saving"
-              >
-                {{ saving ? $t('agents_page.saving') : (isEdit ? $t('common.save') : $t('agents_page.register')) }}
-              </button>
-            </div>
-          </form>
+  <BaseModal
+    :open="open"
+    :title="isEdit ? $t('agents_page.edit_card_title') : $t('agents_page.register_title')"
+    :description="isEdit ? $t('agents_page.edit_card_desc') : $t('agents_page.register_desc')"
+    :error="error"
+    :busy="saving"
+    @close="close"
+  >
+    <form class="mt-4 space-y-4" @submit.prevent="submit">
+      <div class="space-y-4">
+        <div>
+          <label for="agent-card-name" class="form-label">{{ $t('agents_page.name') }}</label>
+          <input
+            id="agent-card-name"
+            v-model="form.name"
+            type="text"
+            required
+            class="input-field font-mono"
+            placeholder="support-assistant"
+            autocomplete="off"
+            :disabled="saving || isEdit"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.name_hint') }}</p>
+        </div>
+        <div>
+          <label for="agent-card-version" class="form-label">{{ $t('agents_page.version') }}</label>
+          <input
+            id="agent-card-version"
+            v-model="form.version"
+            type="text"
+            required
+            maxlength="40"
+            class="input-field font-mono"
+            placeholder="1.0.0"
+            autocomplete="off"
+            :disabled="saving"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.version_hint') }}</p>
+        </div>
+        <div>
+          <label for="agent-card-path" class="form-label">{{ $t('agents_page.card_path') }}</label>
+          <input
+            id="agent-card-path"
+            v-model="form.cardPath"
+            type="text"
+            maxlength="255"
+            pattern="/.*"
+            :title="$t('agents_page.card_path_hint')"
+            class="input-field font-mono"
+            :placeholder="AGENT_CARD_PATH"
+            autocomplete="off"
+            :disabled="saving"
+          />
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.card_path_hint') }}</p>
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div class="flex gap-3 justify-end">
+        <button type="button" class="btn-secondary" :disabled="saving" @click="close">
+          {{ $t('common.cancel') }}
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          :disabled="saving"
+        >
+          {{ saving ? $t('agents_page.saving') : (isEdit ? $t('common.save') : $t('agents_page.register')) }}
+        </button>
+      </div>
+    </form>
+  </BaseModal>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
+import BaseModal from '@/comp/BaseModal.vue'
 import { useI18n } from 'vue-i18n'
 import { agent_api } from '@/api'
 import { AGENT_CARD_PATH, AGENT_NAME_PATTERN } from '@/lib/agent'

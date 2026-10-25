@@ -110,95 +110,81 @@
       </section>
     </main>
 
-    <div
-      v-if="showForm"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="intention-form-title"
-      @click.self="closeForm"
+    <BaseModal
+      :open="showForm"
+      :title="isEditing ? $t('intentions_page.edit_title') : $t('intentions_page.add_title')"
+      :description="isEditing ? $t('intentions_page.edit_desc') : $t('intentions_page.add_desc')"
+      :error="formError"
+      @close="closeForm"
     >
-      <div class="bg-white rounded-lg shadow-xl border border-theme-border w-full max-w-lg p-6">
-        <h2 id="intention-form-title" class="text-lg font-semibold text-theme-text">
-          {{ isEditing ? $t('intentions_page.edit_title') : $t('intentions_page.add_title') }}
-        </h2>
-        <p class="mt-1 text-sm text-theme-textLight">
-          {{ isEditing ? $t('intentions_page.edit_desc') : $t('intentions_page.add_desc') }}
-        </p>
-
-        <div v-if="formError" class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {{ formError }}
+      <form class="mt-4 space-y-4" @submit.prevent="submit">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="intention-source" class="form-label">{{ $t('intentions_page.source') }}</label>
+            <select
+              id="intention-source"
+              v-model="form.source"
+              required
+              class="input-field font-mono"
+              :disabled="saving"
+            >
+              <option value="" disabled>{{ $t('intentions_page.select_agent') }}</option>
+              <option v-for="agent in agents" :key="agent.name" :value="agent.name">{{ agent.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label for="intention-destination" class="form-label">{{ $t('intentions_page.destination') }}</label>
+            <select
+              id="intention-destination"
+              v-model="form.destination"
+              required
+              class="input-field font-mono"
+              :disabled="saving"
+            >
+              <option value="" disabled>{{ $t('intentions_page.select_agent') }}</option>
+              <option v-for="agent in agents" :key="agent.name" :value="agent.name">{{ agent.name }}</option>
+            </select>
+          </div>
         </div>
 
-        <form class="mt-4 space-y-4" @submit.prevent="submit">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="intention-source" class="form-label">{{ $t('intentions_page.source') }}</label>
-              <select
-                id="intention-source"
-                v-model="form.source"
-                required
-                class="input-field font-mono"
-                :disabled="saving"
-              >
-                <option value="" disabled>{{ $t('intentions_page.select_agent') }}</option>
-                <option v-for="agent in agents" :key="agent.name" :value="agent.name">{{ agent.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label for="intention-destination" class="form-label">{{ $t('intentions_page.destination') }}</label>
-              <select
-                id="intention-destination"
-                v-model="form.destination"
-                required
-                class="input-field font-mono"
-                :disabled="saving"
-              >
-                <option value="" disabled>{{ $t('intentions_page.select_agent') }}</option>
-                <option v-for="agent in agents" :key="agent.name" :value="agent.name">{{ agent.name }}</option>
-              </select>
-            </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="intention-skill" class="form-label">{{ $t('intentions_page.skill') }}</label>
+            <input
+              id="intention-skill"
+              v-model="form.skill"
+              type="text"
+              class="input-field font-mono"
+              placeholder="user.profile.get"
+              autocomplete="off"
+              :disabled="saving"
+            />
+            <p class="mt-1 text-xs text-theme-textLight">{{ $t('intentions_page.skill_hint') }}</p>
           </div>
+          <div>
+            <label for="intention-action" class="form-label">{{ $t('intentions_page.action') }}</label>
+            <select
+              id="intention-action"
+              v-model="form.action"
+              class="input-field"
+              :disabled="saving"
+            >
+              <option value="allow">{{ $t('intentions_page.action_allow') }}</option>
+              <option value="deny">{{ $t('intentions_page.action_deny') }}</option>
+            </select>
+          </div>
+        </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label for="intention-skill" class="form-label">{{ $t('intentions_page.skill') }}</label>
-              <input
-                id="intention-skill"
-                v-model="form.skill"
-                type="text"
-                class="input-field font-mono"
-                placeholder="user.profile.get"
-                autocomplete="off"
-                :disabled="saving"
-              />
-              <p class="mt-1 text-xs text-theme-textLight">{{ $t('intentions_page.skill_hint') }}</p>
-            </div>
-            <div>
-              <label for="intention-action" class="form-label">{{ $t('intentions_page.action') }}</label>
-              <select
-                id="intention-action"
-                v-model="form.action"
-                class="input-field"
-                :disabled="saving"
-              >
-                <option value="allow">{{ $t('intentions_page.action_allow') }}</option>
-                <option value="deny">{{ $t('intentions_page.action_deny') }}</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="flex gap-3 justify-end">
-            <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
-              {{ $t('common.cancel') }}
-            </button>
-            <button type="submit" class="btn-primary" :disabled="saving">
-              {{ saving ? $t('intentions_page.saving') : $t('common.save') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div class="flex gap-3 justify-end">
+          <button type="button" class="btn-secondary" :disabled="saving" @click="closeForm">
+            {{ $t('common.cancel') }}
+          </button>
+          <button type="submit" class="btn-primary" :disabled="saving">
+            {{ saving ? $t('intentions_page.saving') : $t('common.save') }}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
 
     <ConfirmModal
       :open="!!deleteTarget"
@@ -224,6 +210,7 @@ import { agent_api, intention_api } from '@/api'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
+import BaseModal from '@/comp/BaseModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()

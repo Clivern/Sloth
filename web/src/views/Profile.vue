@@ -258,6 +258,7 @@ import { showFlash } from '@/lib/flash'
 import { user, saveUser } from '@/lib/auth'
 import { applyUserPreferences, USER_LANGUAGE_EN, USER_THEME_DEFAULT } from '@/lib/preferences'
 import { errorText } from '@/lib/error'
+import { formatDate, formatDateTime } from '@/utils/date'
 
 const { t } = useI18n()
 const loading = ref(false)
@@ -292,24 +293,6 @@ watch(user, (userData) => {
     form.theme = userData.theme ?? USER_THEME_DEFAULT
   }
 }, { immediate: true, deep: true })
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
-  } catch {
-    return iso
-  }
-}
-
-function formatDateTime(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-  } catch {
-    return iso
-  }
-}
 
 async function loadApiKeys() {
   apiKeysLoading.value = true
