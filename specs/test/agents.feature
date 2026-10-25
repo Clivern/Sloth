@@ -3,16 +3,14 @@ Feature: Agents
   An agent is registered in a workspace by name and version. Its A2A card is
   not sent on registration: the first instance to register serves it at the
   agent's card path, and Sloth fetches and stores it, pointing every
-  interface URL at its own gateway so callers always go through it. Clients
-  fetch the card and cache it by ETag, so the checksum must change exactly
-  when the card does.
+  interface URL at its own gateway so callers always go through it. The
+  checksum must change exactly when the card does.
 
   Routes (shapes in openapi.yaml):
     GET    /api/v1/workspaces/{workspaceId}/agents
     PUT    /api/v1/workspaces/{workspaceId}/agents/{agentName}
     GET    /api/v1/workspaces/{workspaceId}/agents/{agentName}
     DELETE /api/v1/workspaces/{workspaceId}/agents/{agentName}
-    GET    /api/v1/workspaces/{workspaceId}/agents/{agentName}/.well-known/agent-card.json
     PUT    /api/v1/workspaces/{workspaceId}/agents/{agentName}/instances/{instanceId}
 
   A card server is a local HTTP server the runner starts on 127.0.0.1 that
@@ -94,7 +92,7 @@ Feature: Agents
     Given the agent "spec-<runId>-echo" has its card
     When the user GETs the agent
     Then every card.supportedInterfaces[].url ends with
-      "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+      "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
     And none of them is "http://127.0.0.1:9000"
 
   @mutates
@@ -102,7 +100,7 @@ Feature: Agents
     Given the agent "spec-<runId>-echo" is registered
     And a card server serving a card that also has "url": "http://127.0.0.1:9000"
     When instance "i-1" registers with the card server's address and port
-    Then card.url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+    Then card.url ends with "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
 
   @mutates
   Scenario: A card without supportedInterfaces gets one pointing at the gateway
@@ -110,7 +108,7 @@ Feature: Agents
     And a card server serving {"name": "spec-<runId>-echo", "version": "1.0.0"}
     When instance "i-1" registers with the card server's address and port
     Then card.supportedInterfaces has 1 entry
-    And its url ends with "/api/v1/workspaces/<workspaceId>/a2a/agents/spec-<runId>-echo"
+    And its url ends with "/api/v1/workspaces/<workspaceId>/agents/spec-<runId>-echo"
 
   @mutates
   Scenario: A card that is not a JSON object is not stored
@@ -188,48 +186,6 @@ Feature: Agents
   Scenario: Reading an agent that does not exist returns not found
     When the user GETs agents/spec-<runId>-missing
     Then the response is 404
-
-  # ---------------------------------------------------------------------------
-  # The public card
-  # ---------------------------------------------------------------------------
-
-  @mutates
-  Scenario: The well-known card is not found until it has been fetched
-    Given the agent "spec-<runId>-echo" is registered
-    When the user GETs agents/spec-<runId>-echo/.well-known/agent-card.json
-    Then the response is 404
-    And errorMessage is "The agent card has not been fetched from an instance yet."
-    And there is no ETag header
-
-  @readonly
-  Scenario: The well-known card of an agent that does not exist is not found
-    When the user GETs agents/spec-<runId>-missing/.well-known/agent-card.json
-    Then the response is 404
-    And errorMessage is "Agent not found."
-
-  @mutates
-  Scenario: The well-known card is the stored card with an ETag
-    Given the agent "spec-<runId>-echo" has its card
-    When the user GETs agents/spec-<runId>-echo/.well-known/agent-card.json
-    Then the response is 200
-    And the body equals the card from reading the agent
-    And the ETag header is the cardChecksum in double quotes
-    And Cache-Control is "no-cache"
-
-  @mutates
-  Scenario: A client with the current ETag gets 304
-    Given the agent "spec-<runId>-echo" has its card
-    When the user GETs the well-known card with If-None-Match set to its ETag
-    Then the response is 304 with no body
-
-  @mutates
-  Scenario: Changing the card changes the ETag
-    Given the agent "spec-<runId>-echo" has its card and its ETag is remembered
-    When the user PUTs {"version": "1.1.0"} to agents/spec-<runId>-echo
-    And a card server serves a card with "description": "changed" and instance "i-1" registers with it
-    And the user GETs the well-known card with If-None-Match set to the old ETag
-    Then the response is 200
-    And the ETag differs from the remembered one
 
   # ---------------------------------------------------------------------------
   # Deleting and access

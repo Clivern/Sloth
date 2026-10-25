@@ -87,6 +87,7 @@ type Check struct {
 	AgentCheckRepository  db.AgentCheckRepository
 	InstanceRepository    db.AgentInstanceRepository
 	HealthCheckRepository db.HealthCheckRepository
+	TriggerEvent          EventTrigger
 }
 
 // NewCheck creates a check module with the given repositories.
@@ -96,6 +97,7 @@ func NewCheck(agents db.AgentRepository, agentChecks db.AgentCheckRepository, in
 		AgentCheckRepository:  agentChecks,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
+		TriggerEvent:          TriggerEvent,
 	}
 }
 
@@ -485,7 +487,7 @@ func (c *Check) DeleteAgentCheck(workspaceId db.Id, agentName, checkId string) e
 }
 
 // ReportCheck records an instance's report for one of its TTL checks and restarts the TTL.
-func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest) (*HealthCheckResponse, error) {
+func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, status string, req *ReportCheckRequest, actor EventRequest) (*HealthCheckResponse, error) {
 	agent, err := c.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		log.Error().
@@ -543,6 +545,7 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(definition.TTL) * time.Second)
+	previous := lo.Ternary(check.TTLExpiresAt == nil || !check.TTLExpiresAt.After(now), db.HealthCheckStatusCritical, check.Status)
 	output := req.Output
 	if len(output) > MaxCheckOutput {
 		output = output[:MaxCheckOutput]
@@ -578,6 +581,22 @@ func (c *Check) ReportCheck(workspaceId db.Id, agentName, instanceId, checkId, s
 		Str("checkId", checkId).
 		Str("status", status).
 		Msg("Instance check reported")
+
+	// A first result that passes is the expected start, not a change.
+	if previous != status && !(previous == db.HealthCheckStatusUnknown && status == db.HealthCheckStatusPassing) {
+		actor.ResourceType = db.EventResourceTypeHealthCheck
+		actor.ResourceId = check.Id
+		actor.Data = map[string]string{
+			"agentName":  agentName,
+			"instanceId": instanceId,
+			"checkId":    checkId,
+			"from":       previous,
+			"to":         status,
+			"output":     output,
+		}
+
+		c.TriggerEvent(workspaceId, EventAgentHealthChanged, actor)
+	}
 
 	return response, nil
 }

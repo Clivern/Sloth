@@ -8,7 +8,7 @@ Feature: Gateway traffic
     GET /api/v1/workspaces/{workspaceId}/traffic
     GET /api/v1/workspaces/{workspaceId}/traffic/{trafficId}
 
-  Note: the A2A gateway is not implemented yet (see pending.feature), so
+  Note: the A2A gateway is not implemented yet, so
   nothing records traffic and a new workspace's list is empty. When the gateway
   ships, add scenarios that make a call and find it here.
 

@@ -533,3 +533,27 @@ msgstr "Échec du listage des événements."
 
 msgid "failed_get_event"
 msgstr "Échec de la lecture de l'événement."
+
+msgid "invalid_agent_identity"
+msgstr "Identité d'agent invalide."
+
+msgid "a2a_call_denied"
+msgstr "Aucune intention n'autorise cet agent à effectuer cet appel."
+
+msgid "skill_not_found"
+msgstr "Aucun agent de l'espace de travail ne propose cette compétence."
+
+msgid "task_not_found"
+msgstr "Tâche introuvable."
+
+msgid "no_healthy_instance"
+msgstr "Aucune instance d'agent saine n'est disponible."
+
+msgid "agent_unreachable"
+msgstr "L'instance de l'agent est injoignable."
+
+msgid "failed_a2a_request"
+msgstr "Échec de la requête A2A."
+
+msgid "failed_catalog_request"
+msgstr "Échec du chargement du catalogue d’agents."

@@ -31,6 +31,7 @@ type TrafficCallResponse struct {
 	Id                  db.Id  `json:"id"`
 	WorkspaceId         db.Id  `json:"workspaceId"`
 	SourceInstance      string `json:"sourceInstance"`
+	DestinationAgent    string `json:"destinationAgent"`
 	DestinationInstance string `json:"destinationInstance"`
 	Skill               string `json:"skill"`
 	Verb                string `json:"verb"`
@@ -83,6 +84,7 @@ func (t *Traffic) ListTraffic(workspaceId db.Id, limit, offset int) (*ListTraffi
 			Id:                  call.Id,
 			WorkspaceId:         call.WorkspaceId,
 			SourceInstance:      call.SourceInstance,
+			DestinationAgent:    call.DestinationAgent,
 			DestinationInstance: call.DestinationInstance,
 			Skill:               call.Skill,
 			Verb:                call.Verb,
@@ -118,6 +120,7 @@ func (t *Traffic) GetTraffic(workspaceId, trafficId db.Id) (*TrafficCallResponse
 		Id:                  call.Id,
 		WorkspaceId:         call.WorkspaceId,
 		SourceInstance:      call.SourceInstance,
+		DestinationAgent:    call.DestinationAgent,
 		DestinationInstance: call.DestinationInstance,
 		Skill:               call.Skill,
 		Verb:                call.Verb,

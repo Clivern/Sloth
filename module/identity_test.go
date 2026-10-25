@@ -235,3 +235,76 @@ func TestUnitIdentity(t *testing.T) {
 		assert.Empty(t, f.tokens.created)
 	})
 }
+
+func TestUnitIdentityAuthenticate(t *testing.T) {
+	hash, err := util.HashPassword("agent-secret")
+	require.NoError(t, err)
+
+	newFixture := func() *identityFixture {
+		f := newIdentityFixture(&db.Agent{Id: "agent-1", WorkspaceId: "ws-1", Name: "support-assistant"})
+		f.identities.list = []*db.AgentIdentity{
+			{Id: "identity-1", AgentId: "agent-1", Type: db.AgentIdentityTypeAPIKey, Config: `{"secretHash":"` + hash + `"}`, IsActive: true},
+			{Id: "identity-2", AgentId: "agent-1", Type: db.AgentIdentityTypeBasicAuth, Config: `{"username":"support","secretHash":"` + hash + `"}`, IsActive: true},
+		}
+
+		return f
+	}
+
+	t.Run("authenticate accepts an api key and basic auth", func(t *testing.T) {
+		f := newFixture()
+
+		agent, err := f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", APIKey: "agent-secret"})
+		require.NoError(t, err)
+		assert.Equal(t, "support-assistant", agent.Name)
+
+		agent, err = f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", Username: "support", Password: "agent-secret"})
+		require.NoError(t, err)
+		assert.Equal(t, "support-assistant", agent.Name)
+	})
+
+	t.Run("authenticate rejects a wrong secret, a wrong username and a disabled identity", func(t *testing.T) {
+		f := newFixture()
+
+		_, err := f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", APIKey: "wrong"})
+		assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+
+		_, err = f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", Username: "other", Password: "agent-secret"})
+		assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+
+		f.identities.list[0].IsActive = false
+		_, err = f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", APIKey: "agent-secret"})
+		assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+	})
+
+	t.Run("authenticate rejects an unknown agent", func(t *testing.T) {
+		f := newIdentityFixture(nil)
+
+		_, err := f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "ghost", APIKey: "agent-secret"})
+		assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+	})
+
+	t.Run("authenticate accepts a token issued to the agent before it expires", func(t *testing.T) {
+		f := newFixture()
+		f.identities.list = append(f.identities.list, &db.AgentIdentity{Id: "identity-3", AgentId: "agent-1", Type: db.AgentIdentityTypeClientCredentials, IsActive: true})
+
+		sum := sha256.Sum256([]byte("live-token"))
+		f.tokens.created = append(f.tokens.created, &db.AgentIdentityToken{IdentityId: "identity-3", TokenHash: hex.EncodeToString(sum[:]), ExpiresAt: time.Now().Add(time.Minute)})
+		sum = sha256.Sum256([]byte("old-token"))
+		f.tokens.created = append(f.tokens.created, &db.AgentIdentityToken{IdentityId: "identity-3", TokenHash: hex.EncodeToString(sum[:]), ExpiresAt: time.Now().Add(-time.Minute)})
+		sum = sha256.Sum256([]byte("other-token"))
+		f.tokens.created = append(f.tokens.created, &db.AgentIdentityToken{IdentityId: "identity-9", TokenHash: hex.EncodeToString(sum[:]), ExpiresAt: time.Now().Add(time.Minute)})
+
+		agent, err := f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", Token: "live-token"})
+		require.NoError(t, err)
+		assert.Equal(t, "support-assistant", agent.Name)
+
+		for _, token := range []string{"old-token", "other-token", "unknown"} {
+			_, err = f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", Token: token})
+			assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+		}
+
+		f.identities.list[2].IsActive = false
+		_, err = f.identity.Authenticate("ws-1", &AgentCredential{SourceAgent: "support-assistant", Token: "live-token"})
+		assert.ErrorIs(t, err, ErrInvalidAgentIdentity)
+	})
+}

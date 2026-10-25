@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from util import lifespan
 
 NAME = "weather"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PORT = 9201
 CONDITIONS = ["sunny", "cloudy", "rain", "snow", "windy", "fog"]
 DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -64,6 +64,11 @@ SKILLS = {
 }
 
 
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 @app.get("/.well-known/agent-card.json")
 def agent_card():
     return {
@@ -83,7 +88,7 @@ def agent_card():
             {
                 "id": "weather.current.get",
                 "name": "Current weather",
-                "description": "Return temperature, humidity, wind and condition for a city",
+                "description": "Return temperature, humidity, wind and condition for a city. Data: {\"city\": \"Berlin\"}",
                 "tags": ["weather", "current"],
                 "inputModes": ["application/json"],
                 "examples": ['{"city": "Berlin"}'],
@@ -91,7 +96,7 @@ def agent_card():
             {
                 "id": "weather.forecast.get",
                 "name": "Weather forecast",
-                "description": "Return a daily high, low and condition forecast for a city",
+                "description": "Return a daily high, low and condition forecast for a city. Data: {\"city\": \"Berlin\", \"days\": 3}",
                 "tags": ["weather", "forecast"],
                 "inputModes": ["application/json"],
                 "examples": ['{"city": "Cairo", "days": 5}'],
@@ -99,7 +104,7 @@ def agent_card():
             {
                 "id": "weather.alerts.list",
                 "name": "Weather alerts",
-                "description": "List active severe weather alerts for a city",
+                "description": "List active severe weather alerts for a city. Data: {\"city\": \"Miami\"}",
                 "tags": ["weather", "alerts"],
                 "inputModes": ["application/json"],
                 "examples": ['{"city": "Miami"}'],

@@ -23,6 +23,7 @@ import (
 // HandleHealthCheck probes one health check job and records the result and next run time.
 func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error {
 	var job module.HealthCheckJob
+	var result probe.Result
 
 	err := json.Unmarshal(msg.Data, &job)
 	if err != nil {
@@ -35,7 +36,6 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 	timeout := time.Duration(definition.Timeout) * time.Second
 	interval := time.Duration(definition.Interval) * time.Second
 
-	var result probe.Result
 	switch job.Type {
 	case db.HealthCheckTypeHTTP:
 		target := url.URL{
@@ -60,10 +60,44 @@ func (h *handlers) HandleHealthCheck(ctx context.Context, msg *broker.Msg) error
 		Str("status", result.Status).
 		Msg("Health check probed")
 
-	return h.checks.Record(
+	err = h.checks.Record(
 		db.Id(job.CheckId),
 		result.Status,
 		result.Output,
 		time.Now().UTC().Add(interval),
 	)
+	if err != nil {
+		return err
+	}
+
+	// A first result that passes is the expected start, not a change.
+	if job.Status == result.Status || (job.Status == db.HealthCheckStatusUnknown && result.Status == db.HealthCheckStatusPassing) {
+		return nil
+	}
+
+	instance, err := h.instances.GetById(db.Id(job.InstanceId))
+	if err != nil {
+		return err
+	}
+
+	agent, err := h.agents.GetById(instance.AgentId)
+	if err != nil {
+		return err
+	}
+
+	h.trigger(agent.WorkspaceId, module.EventAgentHealthChanged, module.EventRequest{
+		ActorType:    db.EventActorTypeSystem,
+		ResourceType: db.EventResourceTypeHealthCheck,
+		ResourceId:   db.Id(job.CheckId),
+		Data: map[string]string{
+			"agentName":  agent.Name,
+			"instanceId": instance.InstanceId,
+			"checkId":    job.CheckKey,
+			"from":       job.Status,
+			"to":         result.Status,
+			"output":     result.Output,
+		},
+	})
+
+	return nil
 }

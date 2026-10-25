@@ -13,6 +13,9 @@ const (
 	EventActorTypeUser      = "user"
 	EventActorTypeAccessKey = "access_key"
 	EventActorTypeSystem    = "system"
+
+	EventResourceTypeAgentInstance = "agent_instance"
+	EventResourceTypeHealthCheck   = "health_check"
 )
 
 // Event is a single row in the events table.

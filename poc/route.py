@@ -71,7 +71,7 @@ def arguments(client, question, skill):
         "https://openrouter.ai/api/v1/chat/completions",
         headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
         json={
-            "model": "openai/gpt-4o-mini",
+            "model": "deepseek/deepseek-v4-flash",
             "response_format": {"type": "json_object"},
             "messages": [
                 {
@@ -109,7 +109,7 @@ def reply(client, question, results):
         "https://openrouter.ai/api/v1/chat/completions",
         headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
         json={
-            "model": "openai/gpt-4o-mini",
+            "model": "deepseek/deepseek-v4-flash",
             "messages": [
                 {
                     "role": "user",

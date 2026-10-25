@@ -145,7 +145,14 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 
 // Update updates an agent card, card path and version.
 func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
-	_, err := r.db.Exec(
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
 		`UPDATE ai_agents
 		SET name = $1, card = $2::jsonb, card_checksum = $3, card_path = $4, version = $5, updated_at = $6
 		WHERE id = $7`,
@@ -157,13 +164,28 @@ func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 		time.Now().UTC(),
 		agent.Id.String(),
 	)
+	if err != nil {
+		return err
+	}
 
-	return err
+	err = r.SyncSkills(tx, agent.Id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // SetCardIfMissing stores a fetched card only when the agent has none yet and reports whether it did.
 func (r *AgentRepositoryPostgres) SetCardIfMissing(id Id, card, checksum string) (bool, error) {
-	result, err := r.db.Exec(
+	tx, err := r.db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	defer tx.Rollback()
+
+	result, err := tx.Exec(
 		`UPDATE ai_agents
 		SET card = $1::jsonb, card_checksum = $2, updated_at = $3
 		WHERE id = $4 AND card IS NULL`,
@@ -177,8 +199,45 @@ func (r *AgentRepositoryPostgres) SetCardIfMissing(id Id, card, checksum string)
 	}
 
 	affected, err := result.RowsAffected()
+	if err != nil || affected == 0 {
+		return false, err
+	}
 
-	return affected > 0, err
+	err = r.SyncSkills(tx, id)
+	if err != nil {
+		return false, err
+	}
+
+	return true, tx.Commit()
+}
+
+// SyncSkills rebuilds the agent's ai_agent_skills rows from its stored card inside tx; a missing card leaves none.
+func (r *AgentRepositoryPostgres) SyncSkills(tx *sql.Tx, id Id) error {
+	_, err := tx.Exec(`DELETE FROM ai_agent_skills WHERE agent_id = $1`, id.String())
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO ai_agent_skills (id, workspace_id, agent_id, skill_id, name, description, tags, input_modes, output_modes)
+		SELECT
+			gen_random_uuid(),
+			a.workspace_id,
+			a.id,
+			s.skill->>'id',
+			COALESCE(s.skill->>'name', s.skill->>'id'),
+			s.skill->>'description',
+			COALESCE(s.skill->'tags', '[]'::jsonb),
+			COALESCE(s.skill->'inputModes', a.card->'defaultInputModes', '[]'::jsonb),
+			COALESCE(s.skill->'outputModes', a.card->'defaultOutputModes', '[]'::jsonb)
+		FROM ai_agents a
+		CROSS JOIN LATERAL jsonb_array_elements(a.card->'skills') AS s(skill)
+		WHERE a.id = $1 AND a.card IS NOT NULL AND s.skill->>'id' IS NOT NULL
+		ON CONFLICT (agent_id, skill_id) DO NOTHING`,
+		id.String(),
+	)
+
+	return err
 }
 
 // Delete removes an agent row.

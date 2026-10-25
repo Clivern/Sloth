@@ -201,7 +201,6 @@
     "delete": "Delete",
     "delete_title": "Delete agent",
     "delete_confirm": "Delete \"{name}\" and all its sessions? This cannot be undone.",
-    "loading": "Loading agents…",
     "creating": "Creating…",
     "deleting": "Deleting…",
     "saving": "Saving…",
@@ -218,7 +217,6 @@
     "previous": "Previous",
     "next": "Next",
     "no_agents": "No agents yet.",
-    "no_agents_hint": "Register an agent card, or let your agents register themselves with a workspace access key.",
     "no_sessions": "No sessions for this agent yet.",
     "not_found": "Agent not found.",
     "session_not_found": "Session not found.",
@@ -542,9 +540,13 @@
     "result_denied": "Denied",
     "result_timeout": "Timed out",
     "result_no_instance": "No instance",
-    "instance": "Instance",
     "latency": "Latency",
-    "task": "Task"
+    "task": "Task",
+    "empty": "No calls recorded yet.",
+    "showing": "Showing {from}–{to} of {total}",
+    "previous": "Previous",
+    "next": "Next",
+    "failed_load": "Failed to load traffic."
   },
   "nav": {
     "menu": "Menu",

@@ -35,7 +35,7 @@ DELETE /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
 
 `POST` takes `name`, `type` (`api_key`, `basic_auth` or `client_credentials`), `username` for basic auth and an optional `tokenTtl` (60–86400 seconds, default 300) for client credentials. The response carries `secret` once. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
 
-A `client_credentials` identity never sends its secret to the gateway. It exchanges the identity id (`client_id`) and secret for a short-lived bearer token, then sends `Authorization: Bearer <token>`:
+A `client_credentials` identity never sends its secret to the gateway. It exchanges the identity id (`client_id`) and secret for a short-lived bearer token, then sends `X-Source-Agent: <agent>` and `Authorization: Bearer <token>`:
 
 ```http
 POST /api/v1/public/oauth/token

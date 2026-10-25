@@ -33,17 +33,29 @@ type Dependencies struct {
 	Tasks        db.AsyncTaskRepository
 	Checks       db.HealthCheckRepository
 	Integrations db.IntegrationRepository
+	Instances    db.AgentInstanceRepository
+	Agents       db.AgentRepository
 }
 
 type handlers struct {
 	tasks        db.AsyncTaskRepository
 	checks       db.HealthCheckRepository
 	integrations db.IntegrationRepository
+	instances    db.AgentInstanceRepository
+	agents       db.AgentRepository
+	trigger      module.EventTrigger
 }
 
 // Register attaches all worker handlers.
 func Register(deps Dependencies) {
-	h := &handlers{tasks: deps.Tasks, checks: deps.Checks, integrations: deps.Integrations}
+	h := &handlers{
+		tasks:        deps.Tasks,
+		checks:       deps.Checks,
+		integrations: deps.Integrations,
+		instances:    deps.Instances,
+		agents:       deps.Agents,
+		trigger:      module.TriggerEvent,
+	}
 
 	On(db.AsyncTaskTypeNoop, h.HandleNoop)
 	On(module.HealthCheckRunSubject, h.HandleHealthCheck)

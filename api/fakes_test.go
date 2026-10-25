@@ -353,14 +353,15 @@ func newCheckAPI(
 	instance *fakeCheckInstances,
 	health *fakeHealthChecks,
 ) *API {
-	return &API{
-		Check: module.NewCheck(
-			agent,
-			checks,
-			instance,
-			health,
-		),
-	}
+	check := module.NewCheck(
+		agent,
+		checks,
+		instance,
+		health,
+	)
+	check.TriggerEvent = func(workspaceId db.Id, event string, request module.EventRequest) {}
+
+	return &API{Check: check}
 }
 
 func newCheckRouter(api *API) *chi.Mux {
@@ -495,6 +496,7 @@ func newInstanceAPI(
 	instance.FetchCard = func(ctx context.Context, address string, port int, path string) (map[string]any, error) {
 		return nil, errors.New("connection refused")
 	}
+	instance.TriggerEvent = func(workspaceId db.Id, event string, request module.EventRequest) {}
 
 	return &API{Instance: instance}
 }
@@ -994,4 +996,47 @@ func newEventRouter(api *API) *chi.Mux {
 	router.Get("/api/v1/workspaces/{workspaceId}/events", api.ListEventsAction)
 	router.Get("/api/v1/workspaces/{workspaceId}/events/{eventId}", api.GetEventAction)
 	return router
+}
+
+type fakeAgentSkills struct {
+	db.AgentSkillRepository
+	skills []*db.CallableSkill
+	total  int64
+	skill  *db.AgentSkill
+	agents []*db.CallableAgent
+	err    error
+}
+
+func (f *fakeAgentSkills) ListCallable(workspaceId db.Id, filter *db.ListCallableSkillsFilter) ([]*db.CallableSkill, int64, error) {
+	return f.skills, f.total, f.err
+}
+
+func (f *fakeAgentSkills) GetSkill(workspaceId db.Id, skillId string) (*db.AgentSkill, error) {
+	return f.skill, f.err
+}
+
+func (f *fakeAgentSkills) ListCallableAgents(workspaceId db.Id, skillId string, filter *db.ListCallableAgentsFilter) ([]*db.CallableAgent, int64, error) {
+	return f.agents, f.total, f.err
+}
+
+func (f *fakeTrafficCalls) Create(call *db.TrafficCall) error {
+	f.calls = append(f.calls, call)
+	return nil
+}
+
+type fakeAgentTasks struct {
+	db.AgentTaskRepository
+	task *db.AgentTask
+}
+
+func (f *fakeAgentTasks) Save(task *db.AgentTask) error {
+	return nil
+}
+
+func (f *fakeAgentTasks) GetBySourceAndTaskId(workspaceId db.Id, sourceAgent, taskId string) (*db.AgentTask, error) {
+	return f.task, nil
+}
+
+func (f *fakeInstanceRecords) GetById(id db.Id) (*db.AgentInstance, error) {
+	return f.instance, f.getErr
 }

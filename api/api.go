@@ -35,6 +35,8 @@ type API struct {
 	Identity    *module.Identity
 	Protection  *module.Protection
 	Intention   *module.Intention
+	Catalog     *module.Catalog
+	Agents      *module.Agents
 	Integration *module.Integration
 	Event       *module.Event
 	KeyValue    *module.KeyValue
@@ -63,6 +65,7 @@ func New() *API {
 	purchases := db.NewTokenPurchaseRepository(conn)
 	stats := db.NewWorkspaceStatsRepository(conn)
 	agents := db.NewAgentRepository(conn)
+	skills := db.NewAgentSkillRepository(conn)
 	instances := db.NewAgentInstanceRepository(conn)
 	healthChecks := db.NewHealthCheckRepository(conn)
 	agentChecks := db.NewAgentCheckRepository(conn)
@@ -94,6 +97,8 @@ func New() *API {
 		Identity:    module.NewIdentity(agents, identities, identityTokens),
 		Protection:  module.NewProtection(agents, protections),
 		Intention:   module.NewIntention(intentions, workspaces),
+		Catalog:     module.NewCatalog(skills),
+		Agents:      module.NewAgents(agents, instances, intentions, protections, traffic, db.NewAgentTaskRepository(conn), skills),
 		Integration: module.NewIntegration(integrations),
 		Event:       module.NewEvent(events),
 		KeyValue:    module.NewKeyValue(kv, workspaces),

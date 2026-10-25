@@ -252,6 +252,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrInstanceNotFound)
 
@@ -263,6 +264,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrCheckNotFound)
 	})
@@ -283,6 +285,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusPassing,
 			&ReportCheckRequest{},
+			EventRequest{},
 		)
 		assert.ErrorIs(t, err, ErrCheckNotReportable)
 
@@ -308,6 +311,7 @@ func TestUnitCheck(t *testing.T) {
 			"heartbeat",
 			db.HealthCheckStatusWarning,
 			&ReportCheckRequest{Output: "queue is slow"},
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Equal(t, db.HealthCheckStatusWarning, response.Status)
@@ -320,6 +324,78 @@ func TestUnitCheck(t *testing.T) {
 		assert.Equal(t, db.HealthCheckStatusWarning, report.status)
 		require.NotNil(t, report.ttlExpiresAt)
 		assert.WithinDuration(t, time.Now().Add(30*time.Second), *report.ttlExpiresAt, 5*time.Second)
+	})
+
+	t.Run("report triggers agent health changed when the status changes", func(t *testing.T) {
+		f := defaultCheckFixture()
+		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
+		definition := `{"ttl":30}`
+		expiresAt := time.Now().Add(time.Minute)
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:           "check-1",
+			CheckId:      "heartbeat",
+			Type:         db.HealthCheckTypeTTL,
+			Source:       db.HealthCheckSourceAgent,
+			Status:       db.HealthCheckStatusPassing,
+			TTLExpiresAt: &expiresAt,
+			Definition:   &definition,
+		}
+
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusWarning, &ReportCheckRequest{Output: "queue is slow"}, EventRequest{})
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{EventAgentHealthChanged}, f.events.types)
+		assert.Equal(t, map[string]string{
+			"agentName":  "support-assistant",
+			"instanceId": "inst-1",
+			"checkId":    "heartbeat",
+			"from":       db.HealthCheckStatusPassing,
+			"to":         db.HealthCheckStatusWarning,
+			"output":     "queue is slow",
+		}, f.events.requests[0].Data)
+	})
+
+	t.Run("report treats an expired ttl check as critical before the report", func(t *testing.T) {
+		f := defaultCheckFixture()
+		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
+		definition := `{"ttl":30}`
+		expiresAt := time.Now().Add(-time.Minute)
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:           "check-1",
+			CheckId:      "heartbeat",
+			Type:         db.HealthCheckTypeTTL,
+			Source:       db.HealthCheckSourceAgent,
+			Status:       db.HealthCheckStatusPassing,
+			TTLExpiresAt: &expiresAt,
+			Definition:   &definition,
+		}
+
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{}, EventRequest{})
+		require.NoError(t, err)
+
+		require.Len(t, f.events.requests, 1)
+		assert.Equal(t, db.HealthCheckStatusCritical, f.events.requests[0].Data["from"])
+		assert.Equal(t, db.HealthCheckStatusPassing, f.events.requests[0].Data["to"])
+	})
+
+	t.Run("report triggers nothing when the status is unchanged", func(t *testing.T) {
+		f := defaultCheckFixture()
+		f.instances.instance = &db.AgentInstance{Id: "inst-1", AgentId: "agent-1"}
+		definition := `{"ttl":30}`
+		expiresAt := time.Now().Add(time.Minute)
+		f.healthChecks.byInstance["inst-1"] = &db.HealthCheck{
+			Id:           "check-1",
+			CheckId:      "heartbeat",
+			Type:         db.HealthCheckTypeTTL,
+			Source:       db.HealthCheckSourceAgent,
+			Status:       db.HealthCheckStatusPassing,
+			TTLExpiresAt: &expiresAt,
+			Definition:   &definition,
+		}
+
+		_, err := f.check.ReportCheck("ws-1", "support-assistant", "inst-1", "heartbeat", db.HealthCheckStatusPassing, &ReportCheckRequest{}, EventRequest{})
+		require.NoError(t, err)
+		assert.Empty(t, f.events.types)
 	})
 
 	t.Run("report truncates output to the maximum size", func(t *testing.T) {
@@ -342,6 +418,7 @@ func TestUnitCheck(t *testing.T) {
 			&ReportCheckRequest{
 				Output: strings.Repeat("a", MaxCheckOutput+10),
 			},
+			EventRequest{},
 		)
 		require.NoError(t, err)
 		assert.Len(t, f.healthChecks.reports[0].output, MaxCheckOutput)

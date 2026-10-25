@@ -168,6 +168,7 @@ func (a *API) RegisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 		instanceId,
 		&req,
 		locale.GetLangFromRequest(r),
+		a.EventActor(r),
 	)
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
@@ -225,7 +226,7 @@ func (a *API) DeregisterInstanceAction(w http.ResponseWriter, r *http.Request) {
 		Str("instance", instanceId).
 		Msg("Deregistering instance")
 
-	err := a.Instance.DeregisterInstance(db.Id(wid), agentName, instanceId)
+	err := a.Instance.DeregisterInstance(db.Id(wid), agentName, instanceId, a.EventActor(r))
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
 			{module.ErrAgentNotFound, http.StatusNotFound, locale.TR(r, "agent_not_found")},

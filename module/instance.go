@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/clivern/sloth/db"
@@ -41,12 +42,15 @@ type Instance struct {
 	AgentCheckRepository  db.AgentCheckRepository
 	WorkspaceRepository   db.WorkspaceRepository
 	FetchCard             func(ctx context.Context, address string, port int, path string) (map[string]any, error)
+	TriggerEvent          EventTrigger
 }
 
 // RegisterInstanceRequest is the body for registering or updating an instance.
 type RegisterInstanceRequest struct {
 	Address string          `json:"address" validate:"required,max=255" label:"Address"`
 	Port    int             `json:"port" validate:"required,min=1,max=65535" label:"Port"`
+	Scheme  string          `json:"scheme" validate:"omitempty,oneof=http https" label:"Scheme"`
+	Path    string          `json:"path" validate:"omitempty,max=255,startswith=/" label:"Path"`
 	Meta    json.RawMessage `json:"meta" label:"Meta"`
 }
 
@@ -69,6 +73,8 @@ type InstanceResponse struct {
 	InstanceId string                 `json:"instanceId"`
 	Address    string                 `json:"address"`
 	Port       int                    `json:"port"`
+	Scheme     string                 `json:"scheme"`
+	Path       string                 `json:"path"`
 	Meta       json.RawMessage        `json:"meta,omitempty"`
 	Status     string                 `json:"status"`
 	Checks     []*HealthCheckResponse `json:"checks"`
@@ -91,6 +97,7 @@ func NewInstance(agents db.AgentRepository, instances db.AgentInstanceRepository
 		AgentCheckRepository:  agentChecks,
 		WorkspaceRepository:   workspaces,
 		FetchCard:             NewCard().Fetch,
+		TriggerEvent:          TriggerEvent,
 	}
 }
 
@@ -148,6 +155,8 @@ func (i *Instance) ListInstances(workspaceId db.Id, agentName string, limit, off
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
+			Scheme:     instance.Scheme,
+			Path:       instance.Path,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			Checks:     checks,
@@ -217,6 +226,8 @@ func (i *Instance) ListHealthyInstances(workspaceId db.Id, agentName string, lim
 			InstanceId: instance.InstanceId,
 			Address:    instance.Address,
 			Port:       instance.Port,
+			Scheme:     instance.Scheme,
+			Path:       instance.Path,
 			Meta:       util.JSONRawFromString(instance.Meta),
 			Status:     status,
 			Checks:     checks,
@@ -276,6 +287,8 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
+		Scheme:     instance.Scheme,
+		Path:       instance.Path,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     status,
 		Checks:     checks,
@@ -285,7 +298,7 @@ func (i *Instance) GetInstance(workspaceId db.Id, agentName, instanceId string) 
 }
 
 // RegisterInstance creates or updates an instance and syncs its checks with the agent's templates.
-func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest, lang string) (*InstanceResponse, bool, error) {
+func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId string, req *RegisterInstanceRequest, lang string, actor EventRequest) (*InstanceResponse, bool, error) {
 	if !InstanceIdPattern.MatchString(instanceId) {
 		return nil, false, ErrInvalidInstanceId
 	}
@@ -319,8 +332,15 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		instance = &db.AgentInstance{AgentId: agent.Id, InstanceId: instanceId}
 	}
 
+	// A re-register to the same endpoint is routine and raises no event.
+	endpoint := fmt.Sprintf("%s://%s:%d%s", instance.Scheme, instance.Address, instance.Port, instance.Path)
+
 	instance.Address = req.Address
 	instance.Port = req.Port
+	instance.Scheme = lo.CoalesceOrEmpty(req.Scheme, "http")
+	instance.Path = strings.TrimSuffix(req.Path, "/")
+
+	moved := endpoint != fmt.Sprintf("%s://%s:%d%s", instance.Scheme, instance.Address, instance.Port, instance.Path)
 	instance.Meta = nil
 	if len(req.Meta) > 0 {
 		meta := string(req.Meta)
@@ -366,13 +386,14 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 				Msg("Failed to fetch agent card")
 		} else {
 			gateway := fmt.Sprintf(
-				"%s/api/v1/workspaces/%s/a2a/agents/%s",
+				"%s/api/v1/workspaces/%s/agents/%s",
 				viper.GetString("app.url"),
 				workspaceId,
 				agent.Name,
 			)
 
 			interfaces, _ := card["supportedInterfaces"].([]any)
+
 			if len(interfaces) == 0 {
 				interfaces = []any{map[string]any{}}
 			}
@@ -428,6 +449,8 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		InstanceId: instance.InstanceId,
 		Address:    instance.Address,
 		Port:       instance.Port,
+		Scheme:     instance.Scheme,
+		Path:       instance.Path,
 		Meta:       util.JSONRawFromString(instance.Meta),
 		Status:     status,
 		Checks:     checks,
@@ -443,6 +466,22 @@ func (i *Instance) RegisterInstance(workspaceId db.Id, agentName, instanceId str
 		Int("port", instance.Port).
 		Bool("created", created).
 		Msg("Agent instance registered")
+
+	if created || moved {
+		actor.ResourceType = db.EventResourceTypeAgentInstance
+		actor.ResourceId = instance.Id
+		actor.Data = map[string]string{
+			"action":     lo.Ternary(created, "registered", "updated"),
+			"agentName":  agentName,
+			"instanceId": instanceId,
+			"address":    instance.Address,
+			"port":       fmt.Sprint(instance.Port),
+			"scheme":     instance.Scheme,
+			"path":       instance.Path,
+		}
+
+		i.TriggerEvent(workspaceId, EventAgentInstanceChanged, actor)
+	}
 
 	return item, created, nil
 }
@@ -585,7 +624,7 @@ func (i *Instance) SyncChecks(instanceId, agentId db.Id, lang string) error {
 }
 
 // DeregisterInstance removes an instance and its health checks.
-func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string) error {
+func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId string, actor EventRequest) error {
 	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, agentName)
 	if err != nil {
 		log.Error().
@@ -629,6 +668,16 @@ func (i *Instance) DeregisterInstance(workspaceId db.Id, agentName, instanceId s
 		Str("agentName", agentName).
 		Str("instanceId", instanceId).
 		Msg("Agent instance deregistered")
+
+	actor.ResourceType = db.EventResourceTypeAgentInstance
+	actor.ResourceId = instance.Id
+	actor.Data = map[string]string{
+		"action":     "deregistered",
+		"agentName":  agentName,
+		"instanceId": instanceId,
+	}
+
+	i.TriggerEvent(workspaceId, EventAgentInstanceChanged, actor)
 
 	return nil
 }

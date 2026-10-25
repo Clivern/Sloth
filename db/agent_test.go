@@ -128,6 +128,64 @@ func TestIntegrationAgentRepository(t *testing.T) {
 		assert.Contains(t, *got.Card, "first")
 		assert.Equal(t, "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", lo.FromPtr(got.CardChecksum))
 	})
+
+	t.Run("storing a card flattens its skills and clearing it removes them", func(t *testing.T) {
+		agent := &Agent{
+			WorkspaceId: workspace.Id,
+			Name:        "skilled-agent",
+			CardPath:    "/.well-known/agent-card.json",
+			Version:     "1.0.0",
+		}
+		require.NoError(t, repo.Create(agent))
+
+		card := `{
+			"defaultInputModes": ["application/json"],
+			"defaultOutputModes": ["application/json"],
+			"skills": [
+				{"id": "user.profile.get", "name": "Get user profile", "tags": ["profile"], "outputModes": ["text/plain"]},
+				{"id": "user.delete"},
+				{"id": "user.delete", "name": "Duplicate"},
+				{"name": "No id"}
+			]
+		}`
+		stored, err := repo.SetCardIfMissing(agent.Id, card, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+		require.NoError(t, err)
+		require.True(t, stored)
+
+		type skillRow struct {
+			SkillId, Name, Tags, InputModes, OutputModes string
+		}
+		listSkills := func() []skillRow {
+			rows, err := database.Query(
+				`SELECT skill_id, name, tags::text, input_modes::text, output_modes::text
+				FROM ai_agent_skills WHERE agent_id = $1 ORDER BY skill_id`,
+				agent.Id.String(),
+			)
+			require.NoError(t, err)
+			defer rows.Close()
+
+			var list []skillRow
+			for rows.Next() {
+				var row skillRow
+				require.NoError(t, rows.Scan(&row.SkillId, &row.Name, &row.Tags, &row.InputModes, &row.OutputModes))
+				list = append(list, row)
+			}
+
+			return list
+		}
+
+		assert.Equal(t, []skillRow{
+			{SkillId: "user.delete", Name: "user.delete", Tags: "[]", InputModes: `["application/json"]`, OutputModes: `["application/json"]`},
+			{SkillId: "user.profile.get", Name: "Get user profile", Tags: `["profile"]`, InputModes: `["application/json"]`, OutputModes: `["text/plain"]`},
+		}, listSkills())
+
+		got, err := repo.GetById(agent.Id)
+		require.NoError(t, err)
+		got.Card = nil
+		got.CardChecksum = nil
+		require.NoError(t, repo.Update(got))
+		assert.Empty(t, listSkills())
+	})
 }
 
 func TestIntegrationAgentMetaRepository(t *testing.T) {

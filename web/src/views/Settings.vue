@@ -135,7 +135,7 @@
 
               <div v-if="WORKSPACE_KEY_PERMISSIONS.length">
                 <p class="form-label mb-2">{{ $t('workspace_settings_page.permissions') }}</p>
-                <div class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 items-start gap-3">
                   <details
                     v-for="group in WORKSPACE_KEY_PERMISSION_GROUPS"
                     :key="group.labelKey"
@@ -145,7 +145,7 @@
                       <span>{{ $t(group.labelKey) }}</span>
                       <span class="text-theme-textLight">{{ countSelected(group) }}/{{ group.permissions.length }}</span>
                     </summary>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 px-2.5 pb-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 px-2.5 pb-2.5">
                       <label
                         v-for="perm in group.permissions"
                         :key="perm.value"

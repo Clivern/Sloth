@@ -8,10 +8,6 @@
         <p class="text-theme-textLight mt-2">{{ $t('agents_page.subtitle') }}</p>
       </div>
 
-      <div v-if="errorMessage" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        {{ errorMessage }}
-      </div>
-
       <section class="rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-theme-border px-6 py-4">
           <div>
@@ -31,20 +27,11 @@
           </button>
         </div>
 
-        <div v-if="loading" class="p-12 text-center">
-          <svg class="animate-spin h-8 w-8 mx-auto text-theme-text" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p class="text-theme-textLight mt-3">{{ $t('agents_page.loading') }}</p>
+        <div v-if="errorMessage" class="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {{ errorMessage }}
         </div>
 
-        <div v-else-if="agents.length === 0" class="p-12 text-center">
-          <p class="text-theme-textLight">{{ $t('agents_page.no_agents') }}</p>
-          <p class="text-sm text-theme-textLight mt-1">{{ $t('agents_page.no_agents_hint') }}</p>
-        </div>
-
-        <div v-else class="overflow-x-auto">
+        <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-theme-border">
             <thead class="bg-theme-hover">
               <tr>
@@ -57,40 +44,48 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
-              <tr v-for="agent in rows" :key="agent.id" class="hover:bg-theme-hover">
-                <td class="px-6 py-4">
-                  <router-link
-                    :to="{ name: 'Agent', params: { name: agent.name } }"
-                    class="text-sm font-medium text-theme-text font-mono hover:underline"
-                  >
-                    {{ agent.name }}
-                  </router-link>
-                  <p v-if="agent.description" class="mt-0.5 text-sm text-theme-textLight">{{ agent.description }}</p>
-                  <span
-                    v-if="agent.cardPending"
-                    class="mt-1 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
-                  >
-                    {{ $t('agents_page.card_pending') }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ agent.version }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
-                  {{ $t('agents_page.skills_count', agent.skillCount) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
-                  <StatusBreakdown :counts="agent.statusCounts" />
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <span
-                    class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="healthClass(agent.health)"
-                  >
-                    <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(agent.health)" aria-hidden="true" />
-                    {{ $t(`agents_page.health_${agent.health}`) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">{{ formatRelative(agent.updatedAt) }}</td>
+              <tr v-if="loading">
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
               </tr>
+              <tr v-else-if="!agents.length">
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('agents_page.no_agents') }}</td>
+              </tr>
+              <template v-else>
+                <tr v-for="agent in rows" :key="agent.id" class="hover:bg-theme-hover">
+                  <td class="px-6 py-4">
+                    <router-link
+                      :to="{ name: 'Agent', params: { name: agent.name } }"
+                      class="text-sm font-medium text-theme-text font-mono hover:underline"
+                    >
+                      {{ agent.name }}
+                    </router-link>
+                    <p v-if="agent.description" class="mt-0.5 text-sm text-theme-textLight">{{ agent.description }}</p>
+                    <span
+                      v-if="agent.cardPending"
+                      class="mt-1 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800"
+                    >
+                      {{ $t('agents_page.card_pending') }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ agent.version }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
+                    {{ $t('agents_page.skills_count', agent.skillCount) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
+                    <StatusBreakdown :counts="agent.statusCounts" />
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="healthClass(agent.health)"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full" :class="healthDotClass(agent.health)" aria-hidden="true" />
+                      {{ $t(`agents_page.health_${agent.health}`) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">{{ formatRelative(agent.updatedAt) }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>

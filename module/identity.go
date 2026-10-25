@@ -27,6 +27,7 @@ var (
 	ErrIdentityAlreadyExists = errors.New("identity already exists")
 	ErrInvalidIdentityConfig = errors.New("invalid identity config")
 	ErrInvalidClient         = errors.New("invalid client")
+	ErrInvalidAgentIdentity  = errors.New("invalid agent identity")
 )
 
 // IdentityConfig is the JSON shape stored in ai_agent_identity.config.
@@ -68,6 +69,15 @@ type IssueTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
+}
+
+// AgentCredential is what a calling agent presents: its name with an API key or basic auth, or a bearer token.
+type AgentCredential struct {
+	SourceAgent string
+	APIKey      string
+	Username    string
+	Password    string
+	Token       string
 }
 
 // Identity is the module for the credentials an agent uses to call through the gateway.
@@ -446,4 +456,59 @@ func (i *Identity) IssueToken(clientId, clientSecret string) (*IssueTokenRespons
 		TokenType:   "Bearer",
 		ExpiresIn:   config.TokenTTL,
 	}, nil
+}
+
+// Authenticate verifies an agent credential and returns the calling agent of the workspace.
+func (i *Identity) Authenticate(workspaceId db.Id, credential *AgentCredential) (*db.Agent, error) {
+	// X-Source-Agent only names the agent; one of its identities must still accept the secret.
+	agent, err := i.AgentRepository.GetByWorkspaceAndName(workspaceId, credential.SourceAgent)
+	if err != nil {
+		return nil, err
+	}
+	if agent == nil {
+		return nil, ErrInvalidAgentIdentity
+	}
+
+	// Disabled identities never authenticate.
+	identities, err := i.IdentityRepository.ListActiveByAgentId(agent.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, identity := range identities {
+		var config IdentityConfig
+		_ = json.Unmarshal([]byte(identity.Config), &config)
+
+		switch identity.Type {
+		case db.AgentIdentityTypeAPIKey:
+			// The key is stored as a bcrypt hash.
+			if util.ComparePassword(config.SecretHash, credential.APIKey) {
+				return agent, nil
+			}
+		case db.AgentIdentityTypeBasicAuth:
+			// The username is stored in plain text and the password as a bcrypt hash.
+			if credential.Username == config.Username && util.ComparePassword(config.SecretHash, credential.Password) {
+				return agent, nil
+			}
+		case db.AgentIdentityTypeClientCredentials:
+			// Tokens are stored as SHA-256 hashes so they can be looked up directly.
+			sum := sha256.Sum256([]byte(credential.Token))
+
+			issued, err := i.TokenRepository.GetByTokenHash(hex.EncodeToString(sum[:]))
+			if err != nil {
+				return nil, err
+			}
+			// The token must be issued to this identity and not expired.
+			if issued != nil && issued.IdentityId == identity.Id && issued.ExpiresAt.After(time.Now().UTC()) {
+				return agent, nil
+			}
+		}
+	}
+
+	log.Info().
+		Str("workspaceId", workspaceId.String()).
+		Str("sourceAgent", credential.SourceAgent).
+		Msg("Agent failed authentication")
+
+	return nil, ErrInvalidAgentIdentity
 }
