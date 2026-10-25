@@ -77,6 +77,31 @@ func TestUnitIdentityActions(t *testing.T) {
 		assert.Contains(t, w.Body.String(), `"secret":"`)
 	})
 
+	t.Run("create returns 201 and never echoes a supplied secret", func(t *testing.T) {
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
+		w := httptest.NewRecorder()
+		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
+			http.MethodPost,
+			base,
+			strings.NewReader(`{"name":"default","type":"api_key","secret":"agent-s3cret"}`),
+		))
+
+		assert.Equal(t, http.StatusCreated, w.Code)
+		assert.NotContains(t, w.Body.String(), `"secret"`)
+	})
+
+	t.Run("create returns 400 for a short secret", func(t *testing.T) {
+		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
+		w := httptest.NewRecorder()
+		newIdentityRouter(api).ServeHTTP(w, httptest.NewRequest(
+			http.MethodPost,
+			base,
+			strings.NewReader(`{"name":"default","type":"api_key","secret":"short"}`),
+		))
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
 	t.Run("create returns 400 for an unknown type", func(t *testing.T) {
 		api := &API{Identity: module.NewIdentity(&fakeAgentCatalog{agent: agent}, &fakeAgentIdentities{}, &fakeIdentityTokens{})}
 		w := httptest.NewRecorder()

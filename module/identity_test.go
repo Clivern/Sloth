@@ -41,6 +41,25 @@ func TestUnitIdentity(t *testing.T) {
 		assert.Empty(t, config.Username)
 	})
 
+	t.Run("create stores a supplied secret as a hash and never echoes it", func(t *testing.T) {
+		f := defaultIdentityFixture()
+
+		got, err := f.identity.CreateIdentity(
+			"ws-1",
+			"support-assistant",
+			&CreateIdentityRequest{Name: "default", Type: db.AgentIdentityTypeAPIKey, Secret: "agent-s3cret"},
+		)
+		require.NoError(t, err)
+		assert.Empty(t, got.Secret)
+
+		stored := f.identities.created[0]
+		assert.NotContains(t, stored.Config, "agent-s3cret")
+
+		var config IdentityConfig
+		require.NoError(t, json.Unmarshal([]byte(stored.Config), &config))
+		assert.True(t, util.ComparePassword(config.SecretHash, "agent-s3cret"))
+	})
+
 	t.Run("create stores the username of a basic auth identity", func(t *testing.T) {
 		f := defaultIdentityFixture()
 

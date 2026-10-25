@@ -3196,6 +3196,11 @@ components:
           minimum: 60
           maximum: 86400
           description: "`client_credentials` only. Lifetime in seconds of issued tokens. Defaults to 300."
+        secret:
+          type: string
+          minLength: 8
+          maxLength: 512
+          description: Optional. Generated and returned once when omitted.
 
     UpdateAgentIdentityRequest:
       type: object
@@ -3234,7 +3239,7 @@ components:
           format: date-time
         secret:
           type: string
-          description: Only present in the create response.
+          description: Only present in the create response when Sloth generated the secret.
 
     SaveAgentProtectionRequest:
       type: object

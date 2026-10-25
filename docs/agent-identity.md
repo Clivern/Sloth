@@ -20,7 +20,7 @@ Each caller has **its own** key. `agent3` does not hand out a shared secret.
 
 ## Identity
 
-`agent_identity` is the caller’s identity (API key or basic auth). Sloth issues the secret once and stores a hash.
+`agent_identity` is the caller’s identity (API key or basic auth). Sloth stores only a hash of the secret, generated or supplied.
 
 Verify the secret → that row’s agent is the source. Fail → **401**.
 
@@ -33,7 +33,7 @@ PUT    /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
 DELETE /api/v1/workspaces/{workspace}/agents/{agent}/identities/{identityId}
 ```
 
-`POST` takes `name`, `type` (`api_key`, `basic_auth` or `client_credentials`), `username` for basic auth and an optional `tokenTtl` (60–86400 seconds, default 300) for client credentials. The response carries `secret` once. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
+`POST` takes `name`, `type` (`api_key`, `basic_auth` or `client_credentials`), `username` for basic auth and an optional `tokenTtl` (60–86400 seconds, default 300) for client credentials and an optional `secret`. Without `secret`, Sloth generates one and returns it once; a supplied secret is never echoed back. `PUT` renames an identity or sets `isActive`; a disabled identity stays listed but must not authenticate.
 
 A `client_credentials` identity never sends its secret to the gateway. It exchanges the identity id (`client_id`) and secret for a short-lived bearer token, then sends `X-Source-Agent: <agent>` and `Authorization: Bearer <token>`:
 

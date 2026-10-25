@@ -508,7 +508,7 @@
                 <p v-if="newIdentity.type === 'client_credentials'" class="text-sm text-amber-900">
                   {{ $t('agents_page.identity_client_id') }}: <code class="font-mono break-all">{{ newIdentity.id }}</code>
                 </p>
-                <div class="flex flex-wrap items-center gap-2">
+                <div v-if="newIdentity.secret" class="flex flex-wrap items-center gap-2">
                   <code class="flex-1 min-w-0 px-3 py-2 bg-white border border-amber-200 rounded text-sm text-theme-text break-all font-mono">{{ newIdentity.secret }}</code>
                   <button type="button" class="btn-secondary shrink-0" @click="copy(newIdentity.secret, 'identity')">
                     {{ copiedField === 'identity' ? $t('agents_page.copied') : $t('agents_page.copy') }}
@@ -911,7 +911,7 @@ async function loadIdentities() {
 
 async function onIdentitySaved(identity) {
   identityModalOpen.value = false
-  newIdentity.value = identity
+  newIdentity.value = identity.secret || identity.type === 'client_credentials' ? identity : null
   await loadIdentities()
 }
 

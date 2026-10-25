@@ -43,6 +43,7 @@ type CreateIdentityRequest struct {
 	Type     string `json:"type" validate:"required,oneof=api_key basic_auth client_credentials" label:"Type"`
 	Username string `json:"username" validate:"omitempty,max=100" label:"Username"`
 	TokenTTL int    `json:"tokenTtl" validate:"omitempty,min=60,max=86400" label:"Token TTL"`
+	Secret   string `json:"secret" validate:"omitempty,min=8,max=512" label:"Secret"`
 }
 
 // UpdateIdentityRequest is the body for updating an agent identity.
@@ -146,7 +147,7 @@ func (i *Identity) ListIdentities(workspaceId db.Id, agentName string) ([]*Ident
 	return list, nil
 }
 
-// CreateIdentity issues a new identity for an agent; the raw secret is returned once.
+// CreateIdentity issues a new identity for an agent; a generated secret is returned once.
 func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *CreateIdentityRequest) (*IdentityResponse, error) {
 	if (req.Type == db.AgentIdentityTypeBasicAuth) == (req.Username == "") {
 		return nil, ErrInvalidIdentityConfig
@@ -179,7 +180,7 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 		return nil, ErrIdentityAlreadyExists
 	}
 
-	secret := rand.Text()
+	secret := lo.Ternary(req.Secret == "", rand.Text(), req.Secret)
 
 	hash, err := util.HashPassword(secret)
 	if err != nil {
@@ -240,7 +241,7 @@ func (i *Identity) CreateIdentity(workspaceId db.Id, agentName string, req *Crea
 		IsActive:  identity.IsActive,
 		CreatedAt: identity.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt: identity.UpdatedAt.UTC().Format(time.RFC3339),
-		Secret:    secret,
+		Secret:    lo.Ternary(req.Secret == "", secret, ""),
 	}, nil
 }
 

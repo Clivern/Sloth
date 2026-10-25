@@ -76,6 +76,22 @@
               <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.identity_token_ttl_hint') }}</p>
             </div>
 
+            <div>
+              <label for="identity-secret" class="form-label">{{ $t('agents_page.identity_secret') }}</label>
+              <input
+                id="identity-secret"
+                v-model="form.secret"
+                type="password"
+                minlength="8"
+                maxlength="512"
+                class="input-field font-mono"
+                :placeholder="$t('agents_page.identity_secret_placeholder')"
+                autocomplete="new-password"
+                :disabled="saving"
+              />
+              <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.identity_secret_hint') }}</p>
+            </div>
+
             <div class="flex gap-3 justify-end">
               <button type="button" class="btn-secondary" :disabled="saving" @click="close">
                 {{ $t('common.cancel') }}
@@ -122,6 +138,7 @@ const form = reactive({
   type: 'api_key',
   username: '',
   tokenTtl: 300,
+  secret: '',
 })
 
 watch(() => props.open, (open) => {
@@ -131,6 +148,7 @@ watch(() => props.open, (open) => {
   form.type = 'api_key'
   form.username = props.agentName
   form.tokenTtl = 300
+  form.secret = ''
 })
 
 function close() {
@@ -145,6 +163,7 @@ async function submit() {
   const body = { name: form.name.trim(), type: form.type }
   if (form.type === 'basic_auth') body.username = form.username.trim()
   if (form.type === 'client_credentials') body.tokenTtl = form.tokenTtl
+  if (form.secret) body.secret = form.secret
 
   try {
     const res = await agent_identity_api.create(props.workspaceId, props.agentName, body)

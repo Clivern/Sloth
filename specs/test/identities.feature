@@ -2,7 +2,8 @@ Feature: Agent identities and client credentials
 
   An identity is a credential an agent uses to prove who it is: an api_key, a
   basic_auth username and secret, or a client_credentials pair that trades for
-  short-lived tokens. The secret is shown once. A turned-off or deleted
+  short-lived tokens. If Sloth generates the secret it is shown once; a secret
+  the user supplied is never echoed back. A turned-off or deleted
   identity must stop getting tokens at once.
 
   Routes (shapes in openapi.yaml):
@@ -28,6 +29,18 @@ Feature: Agent identities and client credentials
     When the user POSTs an identity named "spec-<runId>-key" with type "api_key"
     Then the response is 201
     And the body has id, name, type "api_key", isActive true and a non-empty secret
+
+  @mutates
+  Scenario: A supplied identity secret is stored but never echoed
+    When the user POSTs an identity named "spec-<runId>-own" with type "api_key" and secret "spec-<runId>-s3cret"
+    Then the response is 201
+    And the body has no secret field
+    And the agent authenticates with X-API-Key "spec-<runId>-s3cret"
+
+  @readonly
+  Scenario: A supplied identity secret must be at least 8 characters
+    When the user POSTs an identity named "spec-<runId>-own" with type "api_key" and secret "short"
+    Then the response is 400
 
   @mutates
   Scenario: A basic_auth identity needs a username
