@@ -195,8 +195,7 @@ func (c *Client) Stream(ctx context.Context, messages []Message, onDelta func(st
 	return reply.String(), usage, nil
 }
 
-// BuildRequest converts chat messages into a responses API request.
-// System messages are joined into the request instructions.
+// BuildRequest converts chat messages into a responses API request, joining system messages into its instructions.
 func (c *Client) BuildRequest(messages []Message) Request {
 	request := Request{Model: c.config.Model}
 	instructions := []string{}

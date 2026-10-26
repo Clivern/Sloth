@@ -3,6 +3,13 @@
 
 package conf
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/samber/lo"
+)
+
 const (
 	// AssistantPlanPrompt picks the dashboard tools to run for a message; the model must reply with {"calls": [...]} JSON.
 	AssistantPlanPrompt = `You decide which dashboard tools to run before the Sloth assistant answers the user's
@@ -37,3 +44,13 @@ What you know and can do:
   and point to the dashboard page where they can. When asked what you can do, sum it up in a sentence or two in your
   own words.`
 )
+
+// AssistantAnswer returns the answer prompt followed by what the user can do and the workspace data looked up.
+func AssistantAnswer(abilities, data []string) string {
+	return fmt.Sprintf(
+		"%s\n\nWhat you can do:\n%s\n\nWorkspace data:\n%s",
+		AssistantAnswerPrompt,
+		lo.Ternary(len(abilities) == 0, "- answer general questions about Sloth", "- "+strings.Join(abilities, "\n- ")),
+		lo.Ternary(len(data) == 0, "none needed", strings.Join(data, "\n")),
+	)
+}

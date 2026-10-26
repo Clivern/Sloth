@@ -41,7 +41,7 @@ type API struct {
 	Event       *module.Event
 	KeyValue    *module.KeyValue
 	Traffic     *module.Traffic
-	Assistant   *module.Assistant
+	Chat        *module.Chat
 
 	GitHubOAuth *github.OAuth
 	GoogleOAuth *google.OAuth
@@ -104,10 +104,10 @@ func New() *API {
 		Event:       module.NewEvent(events),
 		KeyValue:    module.NewKeyValue(kv, workspaces),
 		Traffic:     module.NewTraffic(traffic, workspaces),
-		Assistant: module.NewAssistant(
-			db.NewAssistantRepository(conn),
+		Chat: module.NewChat(
+			db.NewChatRepository(conn),
 			workspaces,
-			module.NewAssistantTools(
+			module.NewChatTools(
 				module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
 				module.NewAgent(agents, instances, healthChecks, workspaces),
 				module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),

@@ -1361,44 +1361,44 @@ func newAgentsFixture(address string, port int) *agentsFixture {
 	return f
 }
 
-type fakeAssistant struct {
-	db.AssistantRepository
-	chat     *db.AssistantChat
-	messages []*db.AssistantMessage
+type fakeChats struct {
+	db.ChatRepository
+	chat     *db.Chat
+	messages []*db.ChatMessage
 }
 
-func (f *fakeAssistant) GetChat(workspaceId, userId, id db.Id) (*db.AssistantChat, error) {
+func (f *fakeChats) GetChat(workspaceId, userId, id db.Id) (*db.Chat, error) {
 	return f.chat, nil
 }
 
-func (f *fakeAssistant) UpdateChat(chat *db.AssistantChat) error {
+func (f *fakeChats) UpdateChat(chat *db.Chat) error {
 	f.chat = chat
 	return nil
 }
 
-func (f *fakeAssistant) DeleteChat(workspaceId, userId, id db.Id) (bool, error) {
+func (f *fakeChats) DeleteChat(workspaceId, userId, id db.Id) (bool, error) {
 	deleted := f.chat != nil
 	f.chat = nil
 	return deleted, nil
 }
 
-func (f *fakeAssistant) CreateMessage(message *db.AssistantMessage) error {
+func (f *fakeChats) CreateMessage(message *db.ChatMessage) error {
 	message.Id = db.Id(fmt.Sprintf("message-%d", len(f.messages)+1))
 	f.messages = append(f.messages, message)
 	return nil
 }
 
-func (f *fakeAssistant) ListMessages(chatId db.Id) ([]*db.AssistantMessage, error) {
+func (f *fakeChats) ListMessages(chatId db.Id) ([]*db.ChatMessage, error) {
 	return f.messages, nil
 }
 
-// fakeChat replies with the next scripted reply and records what it was asked.
-type fakeChat struct {
+// fakeModel replies with the next scripted reply and records what it was asked.
+type fakeModel struct {
 	replies []string
 	asked   [][]ai.Message
 }
 
-func (f *fakeChat) Complete(ctx context.Context, messages []ai.Message) (string, ai.Usage, error) {
+func (f *fakeModel) Complete(ctx context.Context, messages []ai.Message) (string, ai.Usage, error) {
 	f.asked = append(f.asked, messages)
 	reply := f.replies[0]
 	f.replies = f.replies[1:]
@@ -1406,7 +1406,7 @@ func (f *fakeChat) Complete(ctx context.Context, messages []ai.Message) (string,
 }
 
 // Stream replies like Complete, one word at a time.
-func (f *fakeChat) Stream(ctx context.Context, messages []ai.Message, onDelta func(string)) (string, ai.Usage, error) {
+func (f *fakeModel) Stream(ctx context.Context, messages []ai.Message, onDelta func(string)) (string, ai.Usage, error) {
 	reply, usage, err := f.Complete(ctx, messages)
 	for _, word := range strings.SplitAfter(reply, " ") {
 		onDelta(word)

@@ -194,7 +194,7 @@
 <script setup>
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { assistant_api } from '@/api'
+import { chat_api } from '@/api'
 import AssistantAvatar from '@/comp/AssistantAvatar.vue'
 import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { useWorkspaceContext } from '@/lib/permission'
@@ -237,7 +237,7 @@ async function loadChats() {
   errorMessage.value = null
 
   try {
-    const res = await assistant_api.list(currentWorkspace.id)
+    const res = await chat_api.list(currentWorkspace.id)
     chats.value = res.data.chats || []
   } catch (err) {
     errorMessage.value = errorText(err, t('assistant_panel.failed_load'))
@@ -251,7 +251,7 @@ async function newChat() {
   errorMessage.value = null
 
   try {
-    const res = await assistant_api.create(currentWorkspace.id)
+    const res = await chat_api.create(currentWorkspace.id)
     showThread(res.data)
   } catch (err) {
     errorMessage.value = errorText(err, t('assistant_panel.failed_load'))
@@ -264,7 +264,7 @@ async function openChat(id) {
   errorMessage.value = null
 
   try {
-    const res = await assistant_api.get(currentWorkspace.id, id)
+    const res = await chat_api.get(currentWorkspace.id, id)
     showThread(res.data)
   } catch (err) {
     errorMessage.value = errorText(err, t('assistant_panel.failed_load'))
@@ -325,7 +325,7 @@ async function send() {
   streamed.value = ''
 
   try {
-    await assistant_api.send(currentWorkspace.id, active.value.id, { content: draft.value }, onEvent)
+    await chat_api.send(currentWorkspace.id, active.value.id, { content: draft.value }, onEvent)
   } catch (err) {
     errorMessage.value = errorText(err, t('assistant_panel.failed_send'))
   } finally {
@@ -359,7 +359,7 @@ async function deleteChat() {
 
   try {
     const id = deleteTarget.value.id
-    await assistant_api.delete(currentWorkspace.id, id)
+    await chat_api.delete(currentWorkspace.id, id)
     chats.value = chats.value.filter((item) => item.id !== id)
     closeDelete()
     if (active.value?.id === id) showList()
@@ -387,7 +387,7 @@ function followRunning() {
 
   pollTimer = setTimeout(async () => {
     const id = active.value?.id
-    const res = await assistant_api.get(currentWorkspace.id, id)
+    const res = await chat_api.get(currentWorkspace.id, id)
     if (active.value?.id !== id) return
 
     const grew = res.data.messages?.length !== active.value.messages?.length

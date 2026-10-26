@@ -10,24 +10,24 @@ import (
 )
 
 const (
-	AssistantToolLimit    = 50
-	AssistantSummaryLimit = 1000
+	ChatToolLimit    = 50
+	ChatSummaryLimit = 1000
 )
 
-// AssistantTool is a dashboard action the assistant may run for the user, gated by the user's permission.
-type AssistantTool struct {
+// ChatTool is a dashboard action the assistant may run for the user, gated by the user's permission.
+type ChatTool struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
 	Arguments   map[string]string `json:"arguments,omitempty"`
 	Permission  string            `json:"-"`
-	Run         AssistantToolRun  `json:"-"`
+	Run         ChatToolRun       `json:"-"`
 }
 
-// AssistantToolRun runs a tool in a workspace, for the chat's user, with the arguments the model chose.
-type AssistantToolRun func(workspaceId, userId db.Id, args map[string]string) (any, error)
+// ChatToolRun runs a tool in a workspace, for the chat's user, with the arguments the model chose.
+type ChatToolRun func(workspaceId, userId db.Id, args map[string]string) (any, error)
 
-// AssistantTools are the modules the dashboard tools read from.
-type AssistantTools struct {
+// ChatTools are the modules the dashboard tools read from.
+type ChatTools struct {
 	Workspace   *Workspace
 	Agent       *Agent
 	Instance    *Instance
@@ -38,8 +38,8 @@ type AssistantTools struct {
 	Integration *Integration
 }
 
-// AssistantWorkspaceSummary is the workspace with counters of what it holds, for questions about the workspace.
-type AssistantWorkspaceSummary struct {
+// ChatWorkspaceSummary is the workspace with counters of what it holds, for questions about the workspace.
+type ChatWorkspaceSummary struct {
 	Workspace          *WorkspaceResponse `json:"workspace"`
 	Agents             int64              `json:"agents"`
 	AgentsByHealth     map[string]int     `json:"agentsByHealth"`
@@ -50,8 +50,8 @@ type AssistantWorkspaceSummary struct {
 	GatewayCalls       int64              `json:"gatewayCallsRecorded"`
 }
 
-// AssistantIntegration is an integration without its URL, site or index
-type AssistantIntegration struct {
+// ChatIntegration is an integration without its URL, site or index
+type ChatIntegration struct {
 	Name      string   `json:"name"`
 	Type      string   `json:"type"`
 	Events    []string `json:"events"`
@@ -59,8 +59,8 @@ type AssistantIntegration struct {
 	HasSecret bool     `json:"hasSecret"`
 }
 
-// NewAssistantTools returns the dashboard tools backed by modules.
-func NewAssistantTools(
+// NewChatTools returns the dashboard tools backed by modules.
+func NewChatTools(
 	workspace *Workspace,
 	agent *Agent,
 	instance *Instance,
@@ -69,8 +69,8 @@ func NewAssistantTools(
 	keyValue *KeyValue,
 	event *Event,
 	integration *Integration,
-) *AssistantTools {
-	return &AssistantTools{
+) *ChatTools {
+	return &ChatTools{
 		Workspace:   workspace,
 		Agent:       agent,
 		Instance:    instance,
@@ -83,8 +83,8 @@ func NewAssistantTools(
 }
 
 // List returns every dashboard tool the assistant knows.
-func (t *AssistantTools) List() []*AssistantTool {
-	return []*AssistantTool{
+func (t *ChatTools) List() []*ChatTool {
+	return []*ChatTool{
 		{
 			Name: "get_workspace",
 			Description: "Get this workspace's name, id, handle, member count and the user's own role, with counts of " +
@@ -153,18 +153,18 @@ func (t *AssistantTools) List() []*AssistantTool {
 }
 
 // WorkspaceSummary returns the workspace with counters of its agents, instances, intentions, KV keys and traffic.
-func (t *AssistantTools) WorkspaceSummary(workspaceId, userId db.Id, _ map[string]string) (any, error) {
+func (t *ChatTools) WorkspaceSummary(workspaceId, userId db.Id, _ map[string]string) (any, error) {
 	workspace, err := t.Workspace.GetWorkspace(workspaceId, &db.User{Id: userId})
 	if err != nil {
 		return nil, err
 	}
 
-	agents, err := t.Agent.ListAgents(workspaceId, AssistantSummaryLimit, 0)
+	agents, err := t.Agent.ListAgents(workspaceId, ChatSummaryLimit, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	intentions, err := t.Intention.ListIntentions(workspaceId, AssistantSummaryLimit, 0)
+	intentions, err := t.Intention.ListIntentions(workspaceId, ChatSummaryLimit, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (t *AssistantTools) WorkspaceSummary(workspaceId, userId db.Id, _ map[strin
 		return nil, err
 	}
 
-	summary := &AssistantWorkspaceSummary{
+	summary := &ChatWorkspaceSummary{
 		Workspace:          workspace,
 		Agents:             agents.Total,
 		AgentsByHealth:     map[string]int{},
@@ -205,49 +205,49 @@ func (t *AssistantTools) WorkspaceSummary(workspaceId, userId db.Id, _ map[strin
 }
 
 // ListMembers returns the workspace members with their name, email and role.
-func (t *AssistantTools) ListMembers(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	return t.Workspace.ListWorkspaceMembers(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListMembers(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Workspace.ListWorkspaceMembers(workspaceId, ChatToolLimit, 0)
 }
 
 // ListAgents returns the workspace agents with their version and health.
-func (t *AssistantTools) ListAgents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	return t.Agent.ListAgents(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListAgents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Agent.ListAgents(workspaceId, ChatToolLimit, 0)
 }
 
 // GetAgent returns one agent, named by the name argument, with its card, skills and health.
-func (t *AssistantTools) GetAgent(workspaceId, _ db.Id, args map[string]string) (any, error) {
+func (t *ChatTools) GetAgent(workspaceId, _ db.Id, args map[string]string) (any, error) {
 	return t.Agent.GetAgent(workspaceId, args["name"])
 }
 
 // ListInstances returns the instances of the agent named by the agent argument with their health checks.
-func (t *AssistantTools) ListInstances(workspaceId, _ db.Id, args map[string]string) (any, error) {
-	return t.Instance.ListInstances(workspaceId, args["agent"], AssistantToolLimit, 0)
+func (t *ChatTools) ListInstances(workspaceId, _ db.Id, args map[string]string) (any, error) {
+	return t.Instance.ListInstances(workspaceId, args["agent"], ChatToolLimit, 0)
 }
 
 // ListIntentions returns the workspace intentions.
-func (t *AssistantTools) ListIntentions(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	return t.Intention.ListIntentions(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListIntentions(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Intention.ListIntentions(workspaceId, ChatToolLimit, 0)
 }
 
 // ListTraffic returns the latest gateway calls, newest first.
-func (t *AssistantTools) ListTraffic(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	return t.Traffic.ListTraffic(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListTraffic(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Traffic.ListTraffic(workspaceId, ChatToolLimit, 0)
 }
 
 // ListKeyValue returns the workspace keys, under the prefix argument when given.
-func (t *AssistantTools) ListKeyValue(workspaceId, _ db.Id, args map[string]string) (any, error) {
+func (t *ChatTools) ListKeyValue(workspaceId, _ db.Id, args map[string]string) (any, error) {
 	return t.KeyValue.ListKeyValue(workspaceId, args["prefix"])
 }
 
 // ListIntegrations returns the workspace integrations without their URL, site or index.
-func (t *AssistantTools) ListIntegrations(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	result, err := t.Integration.ListIntegrations(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListIntegrations(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	result, err := t.Integration.ListIntegrations(workspaceId, ChatToolLimit, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	return lo.Map(result.Integrations, func(item *IntegrationResponse, _ int) *AssistantIntegration {
-		return &AssistantIntegration{
+	return lo.Map(result.Integrations, func(item *IntegrationResponse, _ int) *ChatIntegration {
+		return &ChatIntegration{
 			Name:      item.Name,
 			Type:      item.Type,
 			Events:    item.Events,
@@ -258,6 +258,6 @@ func (t *AssistantTools) ListIntegrations(workspaceId, _ db.Id, _ map[string]str
 }
 
 // ListEvents returns the latest workspace events.
-func (t *AssistantTools) ListEvents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-	return t.Event.ListEvents(workspaceId, AssistantToolLimit, 0)
+func (t *ChatTools) ListEvents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Event.ListEvents(workspaceId, ChatToolLimit, 0)
 }

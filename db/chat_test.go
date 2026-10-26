@@ -10,17 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIntegrationAssistantRepository(t *testing.T) {
+func TestIntegrationChatRepository(t *testing.T) {
 	database := openTestDB(t)
 	workspace := createTestWorkspace(t, database)
 	user := createTestUser(t, database)
 	other := createTestUser(t, database)
-	repo := NewAssistantRepository(database)
+	repo := NewChatRepository(database)
 
-	chat := &AssistantChat{
+	chat := &Chat{
 		WorkspaceId: workspace.Id,
 		UserId:      user.Id,
-		Status:      AssistantStatusIdle,
+		Status:      ChatStatusIdle,
 	}
 
 	t.Run("create and get belongs to its user", func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestIntegrationAssistantRepository(t *testing.T) {
 		got, err := repo.GetChat(workspace.Id, user.Id, chat.Id)
 		require.NoError(t, err)
 		require.NotNil(t, got)
-		assert.Equal(t, AssistantStatusIdle, got.Status)
+		assert.Equal(t, ChatStatusIdle, got.Status)
 
 		got, err = repo.GetChat(workspace.Id, other.Id, chat.Id)
 		require.NoError(t, err)
@@ -37,13 +37,13 @@ func TestIntegrationAssistantRepository(t *testing.T) {
 	})
 
 	t.Run("messages keep their order", func(t *testing.T) {
-		require.NoError(t, repo.CreateMessage(&AssistantMessage{ChatId: chat.Id, Kind: AssistantMessageKindUser, Content: "Which agents do I have?"}))
-		require.NoError(t, repo.CreateMessage(&AssistantMessage{ChatId: chat.Id, Kind: AssistantMessageKindAssistant, Content: "You have one agent, users.", Meta: stringPtr(`{"model": "muse-wonder-1.0"}`)}))
+		require.NoError(t, repo.CreateMessage(&ChatMessage{ChatId: chat.Id, Kind: ChatMessageKindUser, Content: "Which agents do I have?"}))
+		require.NoError(t, repo.CreateMessage(&ChatMessage{ChatId: chat.Id, Kind: ChatMessageKindAssistant, Content: "You have one agent, users.", Meta: stringPtr(`{"model": "muse-wonder-1.0"}`)}))
 
 		messages, err := repo.ListMessages(chat.Id)
 		require.NoError(t, err)
 		require.Len(t, messages, 2)
-		assert.Equal(t, AssistantMessageKindUser, messages[0].Kind)
+		assert.Equal(t, ChatMessageKindUser, messages[0].Kind)
 		assert.Nil(t, messages[0].Meta)
 		assert.Equal(t, "You have one agent, users.", messages[1].Content)
 		assert.JSONEq(t, `{"model": "muse-wonder-1.0"}`, *messages[1].Meta)
@@ -51,14 +51,14 @@ func TestIntegrationAssistantRepository(t *testing.T) {
 
 	t.Run("list shows the latest message as preview", func(t *testing.T) {
 		chat.Title = "Which agents do I have?"
-		chat.Status = AssistantStatusRunning
+		chat.Status = ChatStatusRunning
 		require.NoError(t, repo.UpdateChat(chat))
 
 		list, err := repo.ListChats(workspace.Id, user.Id, 10, 0)
 		require.NoError(t, err)
 		require.Len(t, list, 1)
 		assert.Equal(t, "Which agents do I have?", list[0].Title)
-		assert.Equal(t, AssistantStatusRunning, list[0].Status)
+		assert.Equal(t, ChatStatusRunning, list[0].Status)
 		assert.Equal(t, "You have one agent, users.", *list[0].Preview)
 
 		list, err = repo.ListChats(workspace.Id, other.Id, 10, 0)

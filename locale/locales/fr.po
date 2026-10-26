@@ -558,17 +558,17 @@ msgstr "Échec de la requête A2A."
 msgid "failed_catalog_request"
 msgstr "Échec du chargement du catalogue d’agents."
 
-msgid "invalid_assistant_chat_id"
+msgid "invalid_chat_id"
 msgstr "Identifiant de discussion invalide."
 
-msgid "assistant_chat_not_found"
+msgid "chat_not_found"
 msgstr "Discussion introuvable."
 
-msgid "assistant_not_configured"
+msgid "chat_not_configured"
 msgstr "L'assistant a besoin d'un fournisseur d'IA. Configurez app.ai."
 
-msgid "assistant_busy"
+msgid "chat_busy"
 msgstr "L'assistant répond encore au dernier message."
 
-msgid "failed_assistant_request"
+msgid "failed_chat_request"
 msgstr "Échec de la requête de l'assistant."

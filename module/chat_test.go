@@ -19,18 +19,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitAssistant(t *testing.T) {
+func TestUnitChat(t *testing.T) {
 	// newAssistant wires an assistant with two tools to a scripted model; the user holds every permission in allowed.
-	newAssistant := func(allowed map[string]bool, replies ...string) (*Assistant, *fakeAssistant, *fakeChat, *[]map[string]string) {
+	newAssistant := func(allowed map[string]bool, replies ...string) (*Chat, *fakeChats, *fakeModel, *[]map[string]string) {
 		var ran []map[string]string
-		repository := &fakeAssistant{
-			chat: &db.AssistantChat{Id: "chat-1", WorkspaceId: "ws-1", UserId: "user-1", Status: db.AssistantStatusIdle},
+		repository := &fakeChats{
+			chat: &db.Chat{Id: "chat-1", WorkspaceId: "ws-1", UserId: "user-1", Status: db.ChatStatusIdle},
 		}
-		chat := &fakeChat{replies: replies}
+		chat := &fakeModel{replies: replies}
 
-		assistant := &Assistant{
-			AssistantRepository: repository,
-			Tools: []*AssistantTool{
+		assistant := &Chat{
+			ChatRepository: repository,
+			Tools: []*ChatTool{
 				{
 					Name:       "list_agents",
 					Permission: CanListAgents,
@@ -52,7 +52,7 @@ func TestUnitAssistant(t *testing.T) {
 			Can: func(workspaceId, userId db.Id, permission string) (bool, error) {
 				return allowed[permission], nil
 			},
-			NewChat: func() ai.ChatClient { return chat },
+			NewModel: func() ai.ChatClient { return chat },
 		}
 
 		return assistant, repository, chat, &ran
@@ -67,7 +67,7 @@ func TestUnitAssistant(t *testing.T) {
 			`{"calls": []}`,
 			"You have two agents, users and weather.",
 		)
-		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "Which agents do I have?"}}
+		repository.messages = []*db.ChatMessage{{Kind: db.ChatMessageKindUser, Content: "Which agents do I have?"}}
 
 		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
 
@@ -75,7 +75,7 @@ func TestUnitAssistant(t *testing.T) {
 		assert.Equal(t, "users", (*ran)[1]["name"])
 
 		require.Len(t, repository.messages, 2)
-		assert.Equal(t, db.AssistantMessageKindAssistant, repository.messages[1].Kind)
+		assert.Equal(t, db.ChatMessageKindAssistant, repository.messages[1].Kind)
 		assert.Equal(t, "You have two agents, users and weather.", repository.messages[1].Content)
 
 		// Looked-up data reaches the answer as instructions, never as chat turns.
@@ -86,7 +86,7 @@ func TestUnitAssistant(t *testing.T) {
 		assert.Contains(t, chat.asked[1][len(chat.asked[1])-1].Content, "weather")
 	})
 
-	t.Run("send message streams the chat and answer, then stores it", func(t *testing.T) {
+	t.Run("send message stores the question and reply streams the chat and answer, then stores it", func(t *testing.T) {
 		viper.Set("app.ai.api_key", "key")
 		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
 		assistant, repository, _, _ := newAssistant(everything,
@@ -95,24 +95,29 @@ func TestUnitAssistant(t *testing.T) {
 			"You have two agents.",
 		)
 
+		chat, err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendChatMessageRequest{Content: " Which agents do I have? "})
+
+		require.NoError(t, err)
+		assert.Equal(t, db.ChatStatusRunning, chat.Status)
+		require.Len(t, repository.messages, 1)
+
 		var events []string
 		var deltas strings.Builder
-		var finished *AssistantChatResponse
-		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: " Which agents do I have? "}, func(event string, data any) {
+		var finished *ChatResponse
+		assistant.Reply(chat, func(event string, data any) {
 			events = append(events, event)
 			switch event {
-			case AssistantEventDelta:
+			case ChatEventDelta:
 				deltas.WriteString(data.(map[string]string)["content"])
-			case AssistantEventDone:
-				finished = data.(*AssistantChatResponse)
+			case ChatEventDone:
+				finished = data.(*ChatResponse)
 			}
 		})
 
-		require.NoError(t, err)
 		assert.Equal(t, []string{"chat", "delta", "delta", "delta", "delta", "done"}, events)
 		assert.Equal(t, "You have two agents.", deltas.String())
 		assert.Equal(t, "Which agents do I have?", repository.chat.Title)
-		assert.Equal(t, db.AssistantStatusIdle, finished.Status)
+		assert.Equal(t, db.ChatStatusIdle, finished.Status)
 		require.Len(t, finished.Messages, 2)
 		assert.Equal(t, "You have two agents.", finished.Messages[1].Content)
 	})
@@ -122,7 +127,7 @@ func TestUnitAssistant(t *testing.T) {
 			`{"calls": []}`,
 			"I can list your agents.",
 		)
-		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "What can you do?"}}
+		repository.messages = []*db.ChatMessage{{Kind: db.ChatMessageKindUser, Content: "What can you do?"}}
 
 		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
 
@@ -143,7 +148,7 @@ func TestUnitAssistant(t *testing.T) {
 		require.NoError(t, err)
 		allowed[CanListAgents] = false
 
-		result, err := assistant.Call(repository.chat, tools, AssistantCall{Tool: "list_agents"})
+		result, err := assistant.Call(repository.chat, tools, ChatToolCall{Tool: "list_agents"})
 
 		require.NoError(t, err)
 		assert.Empty(t, *ran)
@@ -152,7 +157,7 @@ func TestUnitAssistant(t *testing.T) {
 
 	t.Run("answer skips planning when the user may run no tool", func(t *testing.T) {
 		assistant, repository, chat, _ := newAssistant(map[string]bool{}, "Sloth is a gateway for AI agents.")
-		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "What is Sloth?"}}
+		repository.messages = []*db.ChatMessage{{Kind: db.ChatMessageKindUser, Content: "What is Sloth?"}}
 
 		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
 
@@ -175,25 +180,25 @@ func TestUnitAssistant(t *testing.T) {
 		require.NoError(t, assistant.DeleteChat("ws-1", "user-1", "chat-1"))
 		assert.Nil(t, repository.chat)
 
-		assert.ErrorIs(t, assistant.DeleteChat("ws-1", "user-1", "chat-1"), ErrAssistantChatNotFound)
+		assert.ErrorIs(t, assistant.DeleteChat("ws-1", "user-1", "chat-1"), ErrChatNotFound)
 	})
 
 	t.Run("send message needs a configured provider", func(t *testing.T) {
 		viper.Set("app.ai.api_key", "")
 		assistant, _, _, _ := newAssistant(everything)
 
-		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
-		assert.ErrorIs(t, err, ErrAssistantNotConfigured)
+		_, err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendChatMessageRequest{Content: "hi"})
+		assert.ErrorIs(t, err, ErrChatNotConfigured)
 	})
 
 	t.Run("send message refuses while the assistant is answering", func(t *testing.T) {
 		viper.Set("app.ai.api_key", "key")
 		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
 		assistant, repository, _, _ := newAssistant(everything)
-		repository.chat.Status = db.AssistantStatusRunning
+		repository.chat.Status = db.ChatStatusRunning
 
-		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
-		assert.ErrorIs(t, err, ErrAssistantBusy)
+		_, err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendChatMessageRequest{Content: "hi"})
+		assert.ErrorIs(t, err, ErrChatBusy)
 	})
 
 	t.Run("send message to a missing chat is not found", func(t *testing.T) {
@@ -202,12 +207,12 @@ func TestUnitAssistant(t *testing.T) {
 		assistant, repository, _, _ := newAssistant(everything)
 		repository.chat = nil
 
-		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
-		assert.ErrorIs(t, err, ErrAssistantChatNotFound)
+		_, err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendChatMessageRequest{Content: "hi"})
+		assert.ErrorIs(t, err, ErrChatNotFound)
 	})
 }
 
-func TestUnitAssistantTools(t *testing.T) {
+func TestUnitChatTools(t *testing.T) {
 	workspaces := &fakeWorkspaces{
 		workspace:  &db.Workspace{Id: "ws-1", Name: "Acme", Handle: "acme"},
 		membership: &db.WorkspaceUser{Role: db.UserRoleOwner},
@@ -218,7 +223,7 @@ func TestUnitAssistantTools(t *testing.T) {
 		total: 3,
 	}
 
-	tools := NewAssistantTools(
+	tools := NewChatTools(
 		NewWorkspace(workspaces, &fakeWorkspaceUsers{total: 3}, nil, nil),
 		NewAgent(agents, &fakeInstances{}, &fakeHealthChecks{}, workspaces),
 		nil,
@@ -234,14 +239,14 @@ func TestUnitAssistantTools(t *testing.T) {
 		}}, total: 1}),
 	)
 
-	tool, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "get_workspace" })
+	tool, ok := lo.Find(tools.List(), func(tool *ChatTool) bool { return tool.Name == "get_workspace" })
 	require.True(t, ok)
 	assert.Equal(t, CanGetWorkspace, tool.Permission)
 
 	result, err := tool.Run("ws-1", "user-1", nil)
 
 	require.NoError(t, err)
-	summary := result.(*AssistantWorkspaceSummary)
+	summary := result.(*ChatWorkspaceSummary)
 	assert.Equal(t, "Acme", summary.Workspace.Name)
 	assert.Equal(t, db.Id("ws-1"), summary.Workspace.Id)
 	assert.Equal(t, db.UserRoleOwner, summary.Workspace.Role)
@@ -254,7 +259,7 @@ func TestUnitAssistantTools(t *testing.T) {
 	assert.Equal(t, int64(42), summary.GatewayCalls)
 
 	// Integration URLs can carry credentials, so they never reach the model.
-	integrations, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "list_integrations" })
+	integrations, ok := lo.Find(tools.List(), func(tool *ChatTool) bool { return tool.Name == "list_integrations" })
 	require.True(t, ok)
 	assert.Equal(t, CanListIntegrations, integrations.Permission)
 
@@ -265,7 +270,7 @@ func TestUnitAssistantTools(t *testing.T) {
 	assert.Contains(t, string(body), "agent.health.changed")
 	assert.NotContains(t, string(body), "hooks.slack.com")
 
-	members, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "list_members" })
+	members, ok := lo.Find(tools.List(), func(tool *ChatTool) bool { return tool.Name == "list_members" })
 	require.True(t, ok)
 	assert.Equal(t, CanListWorkspaceMembers, members.Permission)
 }

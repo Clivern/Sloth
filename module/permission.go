@@ -71,8 +71,8 @@ const (
 	CanListTraffic = "CAN_LIST_TRAFFIC"
 	CanGetTraffic  = "CAN_GET_TRAFFIC"
 
-	// CanUseAssistant is for members only: chats belong to a user, so access keys never get it
-	CanUseAssistant = "CAN_USE_ASSISTANT"
+	// CanUseChat is for members only: chats belong to a user, so access keys never get it
+	CanUseChat = "CAN_USE_CHAT"
 )
 
 var (
@@ -247,7 +247,7 @@ func (p *Perm) CanAsUser(permission string) (bool, error) {
 		CanGetKeyValue,
 		CanListTraffic,
 		CanGetTraffic,
-		CanUseAssistant:
+		CanUseChat:
 		return true, nil
 	case CanUpdateWorkspace,
 		CanDeleteWorkspace,

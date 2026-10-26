@@ -173,13 +173,13 @@ export const traffic_api = {
   get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/traffic/${id}`),
 }
 
-// API endpoints for the current user's dashboard assistant chats
-export const assistant_api = {
-  list: (workspaceId) => api.get(`/workspaces/${workspaceId}/assistant/chats`),
-  create: (workspaceId) => api.post(`/workspaces/${workspaceId}/assistant/chats`),
-  get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/assistant/chats/${id}`),
-  delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/assistant/chats/${id}`),
-  send: (workspaceId, id, data, onEvent) => streamEvents(`/workspaces/${workspaceId}/assistant/chats/${id}/messages`, data, onEvent),
+// API endpoints for the current user's dashboard chats
+export const chat_api = {
+  list: (workspaceId) => api.get(`/workspaces/${workspaceId}/chats`),
+  create: (workspaceId) => api.post(`/workspaces/${workspaceId}/chats`),
+  get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/chats/${id}`),
+  delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/chats/${id}`),
+  send: (workspaceId, id, data, onEvent) => streamEvents(`/workspaces/${workspaceId}/chats/${id}/messages`, data, onEvent),
 }
 
 // POSTs data and calls onEvent(name, data) for each server-sent event until the stream ends.

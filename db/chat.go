@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	AssistantStatusIdle    = "idle"
-	AssistantStatusRunning = "running"
-	AssistantStatusFailed  = "failed"
+	ChatStatusIdle    = "idle"
+	ChatStatusRunning = "running"
+	ChatStatusFailed  = "failed"
 
-	AssistantMessageKindUser      = "user"
-	AssistantMessageKindAssistant = "assistant"
+	ChatMessageKindUser      = "user"
+	ChatMessageKindAssistant = "assistant"
 )
 
-// AssistantChat is a single row in the ai_assistant_chats table.
-type AssistantChat struct {
+// Chat is a single row in the ai_assistant_chats table.
+type Chat struct {
 	Id          Id
 	WorkspaceId Id
 	UserId      Id
@@ -30,8 +30,8 @@ type AssistantChat struct {
 	UpdatedAt   time.Time
 }
 
-// AssistantMessage is a single row in the ai_assistant_messages table.
-type AssistantMessage struct {
+// ChatMessage is a single row in the ai_assistant_messages table.
+type ChatMessage struct {
 	Id        Id
 	ChatId    Id
 	Kind      string
@@ -40,28 +40,28 @@ type AssistantMessage struct {
 	CreatedAt time.Time
 }
 
-// AssistantRepository is the interface for assistant chat persistence.
-type AssistantRepository interface {
-	CreateChat(chat *AssistantChat) error
-	GetChat(workspaceId, userId, id Id) (*AssistantChat, error)
-	ListChats(workspaceId, userId Id, limit, offset int) ([]*AssistantChat, error)
-	UpdateChat(chat *AssistantChat) error
+// ChatRepository is the interface for assistant chat persistence.
+type ChatRepository interface {
+	CreateChat(chat *Chat) error
+	GetChat(workspaceId, userId, id Id) (*Chat, error)
+	ListChats(workspaceId, userId Id, limit, offset int) ([]*Chat, error)
+	UpdateChat(chat *Chat) error
 	DeleteChat(workspaceId, userId, id Id) (bool, error)
-	CreateMessage(message *AssistantMessage) error
-	ListMessages(chatId Id) ([]*AssistantMessage, error)
+	CreateMessage(message *ChatMessage) error
+	ListMessages(chatId Id) ([]*ChatMessage, error)
 }
 
-type AssistantRepositoryPostgres struct {
+type ChatRepositoryPostgres struct {
 	db *sql.DB
 }
 
-// NewAssistantRepository returns an assistant repository.
-func NewAssistantRepository(db *sql.DB) AssistantRepository {
-	return &AssistantRepositoryPostgres{db: db}
+// NewChatRepository returns an assistant repository.
+func NewChatRepository(db *sql.DB) ChatRepository {
+	return &ChatRepositoryPostgres{db: db}
 }
 
 // CreateChat inserts a chat row.
-func (r *AssistantRepositoryPostgres) CreateChat(chat *AssistantChat) error {
+func (r *ChatRepositoryPostgres) CreateChat(chat *Chat) error {
 	id, err := NewId()
 	if err != nil {
 		return err
@@ -82,8 +82,8 @@ func (r *AssistantRepositoryPostgres) CreateChat(chat *AssistantChat) error {
 }
 
 // GetChat returns a user's chat in a workspace.
-func (r *AssistantRepositoryPostgres) GetChat(workspaceId, userId, id Id) (*AssistantChat, error) {
-	chat := &AssistantChat{}
+func (r *ChatRepositoryPostgres) GetChat(workspaceId, userId, id Id) (*Chat, error) {
+	chat := &Chat{}
 	err := r.db.QueryRow(
 		`SELECT id, workspace_id, user_id, title, status, created_at, updated_at
 		FROM ai_assistant_chats
@@ -108,7 +108,7 @@ func (r *AssistantRepositoryPostgres) GetChat(workspaceId, userId, id Id) (*Assi
 }
 
 // ListChats returns a user's chats in a workspace with their last message, most recently active first.
-func (r *AssistantRepositoryPostgres) ListChats(workspaceId, userId Id, limit, offset int) ([]*AssistantChat, error) {
+func (r *ChatRepositoryPostgres) ListChats(workspaceId, userId Id, limit, offset int) ([]*Chat, error) {
 	rows, err := r.db.Query(
 		`SELECT
 			c.id, c.workspace_id, c.user_id, c.title, c.status,
@@ -135,9 +135,9 @@ func (r *AssistantRepositoryPostgres) ListChats(workspaceId, userId Id, limit, o
 
 	defer rows.Close()
 
-	var list []*AssistantChat
+	var list []*Chat
 	for rows.Next() {
-		chat := &AssistantChat{}
+		chat := &Chat{}
 		err := rows.Scan(
 			&chat.Id,
 			&chat.WorkspaceId,
@@ -159,7 +159,7 @@ func (r *AssistantRepositoryPostgres) ListChats(workspaceId, userId Id, limit, o
 }
 
 // UpdateChat updates a chat's title and status and marks it active now.
-func (r *AssistantRepositoryPostgres) UpdateChat(chat *AssistantChat) error {
+func (r *ChatRepositoryPostgres) UpdateChat(chat *Chat) error {
 	chat.UpdatedAt = time.Now().UTC()
 
 	_, err := r.db.Exec(
@@ -176,7 +176,7 @@ func (r *AssistantRepositoryPostgres) UpdateChat(chat *AssistantChat) error {
 }
 
 // DeleteChat removes a user's chat and its messages and reports whether it existed.
-func (r *AssistantRepositoryPostgres) DeleteChat(workspaceId, userId, id Id) (bool, error) {
+func (r *ChatRepositoryPostgres) DeleteChat(workspaceId, userId, id Id) (bool, error) {
 	result, err := r.db.Exec(
 		`DELETE FROM ai_assistant_chats
 		WHERE workspace_id = $1 AND user_id = $2 AND id = $3`,
@@ -194,7 +194,7 @@ func (r *AssistantRepositoryPostgres) DeleteChat(workspaceId, userId, id Id) (bo
 }
 
 // CreateMessage inserts a message row.
-func (r *AssistantRepositoryPostgres) CreateMessage(message *AssistantMessage) error {
+func (r *ChatRepositoryPostgres) CreateMessage(message *ChatMessage) error {
 	id, err := NewId()
 	if err != nil {
 		return err
@@ -215,7 +215,7 @@ func (r *AssistantRepositoryPostgres) CreateMessage(message *AssistantMessage) e
 }
 
 // ListMessages returns a chat's messages, oldest first.
-func (r *AssistantRepositoryPostgres) ListMessages(chatId Id) ([]*AssistantMessage, error) {
+func (r *ChatRepositoryPostgres) ListMessages(chatId Id) ([]*ChatMessage, error) {
 	rows, err := r.db.Query(
 		`SELECT id, chat_id, kind, content, meta, created_at
 		FROM ai_assistant_messages
@@ -229,9 +229,9 @@ func (r *AssistantRepositoryPostgres) ListMessages(chatId Id) ([]*AssistantMessa
 
 	defer rows.Close()
 
-	var list []*AssistantMessage
+	var list []*ChatMessage
 	for rows.Next() {
-		message := &AssistantMessage{}
+		message := &ChatMessage{}
 		err := rows.Scan(
 			&message.Id,
 			&message.ChatId,
