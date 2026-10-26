@@ -12,7 +12,7 @@ import (
 // USDToNano converts USD amounts into fixed-point nano-USD integers.
 const USDToNano = 1_000_000_000
 
-// Usage is token and cost usage reported by OpenRouter APIs.
+// Usage is token and cost usage reported by AI providers.
 type Usage struct {
 	PromptTokens int64
 	TotalTokens  int64

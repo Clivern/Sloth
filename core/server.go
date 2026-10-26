@@ -198,6 +198,14 @@ func SetupServer(Static embed.FS, a *api.API) http.Handler {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanDeleteKeyValue})).Delete("/*", a.DeleteKeyValueAction) // delete a workspace key
 		})
 
+		r.Route("/assistant/chats", func(r chi.Router) {
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUseAssistant})).Get("/", a.ListAssistantChatsAction)                     // list the user's assistant chats
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUseAssistant})).Post("/", a.CreateAssistantChatAction)                   // start an assistant chat
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUseAssistant})).Get("/{chatId}", a.GetAssistantChatAction)               // get an assistant chat with its messages
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUseAssistant})).Delete("/{chatId}", a.DeleteAssistantChatAction)         // delete an assistant chat with its messages
+			r.With(middleware.Protect(middleware.Config{Perm: module.CanUseAssistant})).Post("/{chatId}/messages", a.SendAssistantMessageAction) // ask the assistant in a chat
+		})
+
 		r.Route("/traffic", func(r chi.Router) {
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanListTraffic})).Get("/", a.ListTrafficAction)          // list gateway calls
 			r.With(middleware.Protect(middleware.Config{Perm: module.CanGetTraffic})).Get("/{trafficId}", a.GetTrafficAction) // get a gateway call

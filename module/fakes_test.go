@@ -7,10 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/ai"
 	"github.com/clivern/sloth/pkg/stripe"
 
 	"github.com/samber/lo"
@@ -1357,4 +1359,57 @@ func newAgentsFixture(address string, port int) *agentsFixture {
 	f.module = NewAgents(f.agents, f.instances, f.intentions, f.protections, f.traffic, f.tasks, f.skills)
 
 	return f
+}
+
+type fakeAssistant struct {
+	db.AssistantRepository
+	chat     *db.AssistantChat
+	messages []*db.AssistantMessage
+}
+
+func (f *fakeAssistant) GetChat(workspaceId, userId, id db.Id) (*db.AssistantChat, error) {
+	return f.chat, nil
+}
+
+func (f *fakeAssistant) UpdateChat(chat *db.AssistantChat) error {
+	f.chat = chat
+	return nil
+}
+
+func (f *fakeAssistant) DeleteChat(workspaceId, userId, id db.Id) (bool, error) {
+	deleted := f.chat != nil
+	f.chat = nil
+	return deleted, nil
+}
+
+func (f *fakeAssistant) CreateMessage(message *db.AssistantMessage) error {
+	message.Id = db.Id(fmt.Sprintf("message-%d", len(f.messages)+1))
+	f.messages = append(f.messages, message)
+	return nil
+}
+
+func (f *fakeAssistant) ListMessages(chatId db.Id) ([]*db.AssistantMessage, error) {
+	return f.messages, nil
+}
+
+// fakeChat replies with the next scripted reply and records what it was asked.
+type fakeChat struct {
+	replies []string
+	asked   [][]ai.Message
+}
+
+func (f *fakeChat) Complete(ctx context.Context, messages []ai.Message) (string, ai.Usage, error) {
+	f.asked = append(f.asked, messages)
+	reply := f.replies[0]
+	f.replies = f.replies[1:]
+	return reply, ai.Usage{}, nil
+}
+
+// Stream replies like Complete, one word at a time.
+func (f *fakeChat) Stream(ctx context.Context, messages []ai.Message, onDelta func(string)) (string, ai.Usage, error) {
+	reply, usage, err := f.Complete(ctx, messages)
+	for _, word := range strings.SplitAfter(reply, " ") {
+		onDelta(word)
+	}
+	return reply, usage, err
 }

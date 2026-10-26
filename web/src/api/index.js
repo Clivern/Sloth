@@ -6,14 +6,20 @@ const api = axios.create({
   timeout: 10000,
 })
 
-// Request interceptor
-api.interceptors.request.use((config) => {
+// The user's chosen language, sent so API messages come back translated
+function localeHeaders() {
   try {
     const locale = typeof localStorage !== 'undefined' && localStorage.getItem('_flocale')
     if (locale === 'en' || locale === 'fr') {
-      config.headers['Accept-Language'] = locale
+      return { 'Accept-Language': locale }
     }
   } catch (_) {}
+  return {}
+}
+
+// Request interceptor
+api.interceptors.request.use((config) => {
+  Object.assign(config.headers, localeHeaders())
   return config
 })
 
@@ -165,6 +171,50 @@ export const event_api = {
 export const traffic_api = {
   list: (workspaceId, params) => api.get(`/workspaces/${workspaceId}/traffic`, { params }),
   get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/traffic/${id}`),
+}
+
+// API endpoints for the current user's dashboard assistant chats
+export const assistant_api = {
+  list: (workspaceId) => api.get(`/workspaces/${workspaceId}/assistant/chats`),
+  create: (workspaceId) => api.post(`/workspaces/${workspaceId}/assistant/chats`),
+  get: (workspaceId, id) => api.get(`/workspaces/${workspaceId}/assistant/chats/${id}`),
+  delete: (workspaceId, id) => api.delete(`/workspaces/${workspaceId}/assistant/chats/${id}`),
+  send: (workspaceId, id, data, onEvent) => streamEvents(`/workspaces/${workspaceId}/assistant/chats/${id}/messages`, data, onEvent),
+}
+
+// POSTs data and calls onEvent(name, data) for each server-sent event until the stream ends.
+// Axios cannot read a streamed body in the browser and EventSource only does GET, so this uses fetch.
+// A refused request throws an axios-shaped error, so errorText reads its message.
+async function streamEvents(url, data, onEvent) {
+  const res = await fetch(`${api.defaults.baseURL}${url}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...localeHeaders() },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw { response: { status: res.status, data: body } }
+  }
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffer = ''
+
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) return
+
+    buffer += value
+    const events = buffer.split('\n\n')
+    buffer = events.pop()
+
+    for (const raw of events) {
+      const name = raw.match(/^event: (.*)$/m)?.[1]
+      const payload = raw.match(/^data: (.*)$/m)?.[1]
+      if (name && payload) onEvent(name, JSON.parse(payload))
+    }
+  }
 }
 
 // API endpoints for the current user's workspace notifications

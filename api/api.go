@@ -41,6 +41,7 @@ type API struct {
 	Event       *module.Event
 	KeyValue    *module.KeyValue
 	Traffic     *module.Traffic
+	Assistant   *module.Assistant
 
 	GitHubOAuth *github.OAuth
 	GoogleOAuth *google.OAuth
@@ -103,6 +104,18 @@ func New() *API {
 		Event:       module.NewEvent(events),
 		KeyValue:    module.NewKeyValue(kv, workspaces),
 		Traffic:     module.NewTraffic(traffic, workspaces),
+		Assistant: module.NewAssistant(
+			db.NewAssistantRepository(conn),
+			workspaces,
+			module.NewAssistantTools(
+				module.NewAgent(agents, instances, healthChecks, workspaces),
+				module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
+				module.NewIntention(intentions, workspaces),
+				module.NewTraffic(traffic, workspaces),
+				module.NewKeyValue(kv, workspaces),
+				module.NewEvent(events),
+			),
+		),
 		GitHubOAuth: github.NewOAuth(github.OAuthConfig{
 			ClientID:     viper.GetString("app.oauth.github.client_id"),
 			ClientSecret: viper.GetString("app.oauth.github.client_secret"),

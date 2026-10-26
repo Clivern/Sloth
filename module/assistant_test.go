@@ -1,0 +1,206 @@
+// Copyright 2026 Sloth. All rights reserved.
+// License can be found in the LICENSE file.
+
+package module
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/ai"
+
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestUnitAssistant(t *testing.T) {
+	// newAssistant wires an assistant with two tools to a scripted model; the user holds every permission in allowed.
+	newAssistant := func(allowed map[string]bool, replies ...string) (*Assistant, *fakeAssistant, *fakeChat, *[]map[string]string) {
+		var ran []map[string]string
+		repository := &fakeAssistant{
+			chat: &db.AssistantChat{Id: "chat-1", WorkspaceId: "ws-1", UserId: "user-1", Status: db.AssistantStatusIdle},
+		}
+		chat := &fakeChat{replies: replies}
+
+		assistant := &Assistant{
+			AssistantRepository: repository,
+			Tools: []*AssistantTool{
+				{
+					Name:       "list_agents",
+					Permission: CanListAgents,
+					Run: func(workspaceId db.Id, args map[string]string) (any, error) {
+						ran = append(ran, args)
+						return map[string]any{"agents": []string{"users", "weather"}}, nil
+					},
+				},
+				{
+					Name:       "get_agent",
+					Arguments:  map[string]string{"name": "agent name"},
+					Permission: CanGetAgent,
+					Run: func(workspaceId db.Id, args map[string]string) (any, error) {
+						ran = append(ran, args)
+						return nil, errors.New("agent not found")
+					},
+				},
+			},
+			Can: func(workspaceId, userId db.Id, permission string) (bool, error) {
+				return allowed[permission], nil
+			},
+			NewChat: func() ai.ChatClient { return chat },
+		}
+
+		return assistant, repository, chat, &ran
+	}
+
+	everything := map[string]bool{CanListAgents: true, CanGetAgent: true}
+
+	t.Run("answer runs tools across rounds and stores only the answer", func(t *testing.T) {
+		assistant, repository, chat, ran := newAssistant(everything,
+			"```json\n{\"calls\": [{\"tool\": \"list_agents\"}, {\"tool\": \"drop_database\"}]}\n```",
+			`{"calls": [{"tool": "get_agent", "arguments": {"name": "users"}}]}`,
+			`{"calls": []}`,
+			"You have two agents, users and weather.",
+		)
+		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "Which agents do I have?"}}
+
+		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
+
+		require.Len(t, *ran, 2)
+		assert.Equal(t, "users", (*ran)[1]["name"])
+
+		require.Len(t, repository.messages, 2)
+		assert.Equal(t, db.AssistantMessageKindAssistant, repository.messages[1].Kind)
+		assert.Equal(t, "You have two agents, users and weather.", repository.messages[1].Content)
+
+		// Looked-up data reaches the answer as instructions, never as chat turns.
+		answerPrompt := chat.asked[3]
+		require.Len(t, answerPrompt, 2)
+		assert.Contains(t, answerPrompt[0].Content, "weather")
+		assert.Contains(t, answerPrompt[0].Content, "could not be read (agent not found)")
+		assert.Contains(t, chat.asked[1][len(chat.asked[1])-1].Content, "weather")
+	})
+
+	t.Run("send message streams the chat, tool progress and answer, then stores it", func(t *testing.T) {
+		viper.Set("app.ai.api_key", "key")
+		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
+		assistant, repository, _, _ := newAssistant(everything,
+			`{"calls": [{"tool": "list_agents"}]}`,
+			`{"calls": []}`,
+			"You have two agents.",
+		)
+
+		var events []string
+		var deltas strings.Builder
+		var finished *AssistantChatResponse
+		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: " Which agents do I have? "}, func(event string, data any) {
+			events = append(events, event)
+			switch event {
+			case AssistantEventDelta:
+				deltas.WriteString(data.(map[string]string)["content"])
+			case AssistantEventDone:
+				finished = data.(*AssistantChatResponse)
+			}
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"chat", "tool", "tool", "delta", "delta", "delta", "delta", "done"}, events)
+		assert.Equal(t, "You have two agents.", deltas.String())
+		assert.Equal(t, "Which agents do I have?", repository.chat.Title)
+		assert.Equal(t, db.AssistantStatusIdle, finished.Status)
+		require.Len(t, finished.Messages, 2)
+		assert.Equal(t, "You have two agents.", finished.Messages[1].Content)
+	})
+
+	t.Run("answer only offers tools the user may run", func(t *testing.T) {
+		assistant, repository, chat, _ := newAssistant(map[string]bool{CanListAgents: true},
+			`{"calls": []}`,
+			"I can list your agents.",
+		)
+		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "What can you do?"}}
+
+		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
+
+		offered := chat.asked[0][len(chat.asked[0])-1].Content
+		assert.Contains(t, offered, "list_agents")
+		assert.NotContains(t, offered, "get_agent")
+
+		// The persona only claims what this user may do.
+		answerPrompt := chat.asked[1][0].Content
+		assert.Contains(t, answerPrompt, "What you can do:\n- ")
+		assert.Equal(t, 1, strings.Count(answerPrompt[strings.Index(answerPrompt, "What you can do:"):strings.Index(answerPrompt, "Workspace data:")], "\n- "))
+	})
+
+	t.Run("call is denied when the user lost the permission", func(t *testing.T) {
+		allowed := map[string]bool{CanListAgents: true}
+		assistant, repository, _, ran := newAssistant(allowed)
+		tools, err := assistant.AllowedTools(repository.chat)
+		require.NoError(t, err)
+		allowed[CanListAgents] = false
+
+		result, err := assistant.Call(repository.chat, tools, AssistantCall{Tool: "list_agents"})
+
+		require.NoError(t, err)
+		assert.Empty(t, *ran)
+		assert.Contains(t, result, "not allowed to see")
+	})
+
+	t.Run("answer skips planning when the user may run no tool", func(t *testing.T) {
+		assistant, repository, chat, _ := newAssistant(map[string]bool{}, "Sloth is a gateway for AI agents.")
+		repository.messages = []*db.AssistantMessage{{Kind: db.AssistantMessageKindUser, Content: "What is Sloth?"}}
+
+		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
+
+		assert.Len(t, chat.asked, 1)
+		assert.Len(t, repository.messages, 2)
+	})
+
+	t.Run("plan that is not json means no calls", func(t *testing.T) {
+		assistant, _, chat, _ := newAssistant(everything, "No tool helps here.")
+
+		plan, err := assistant.Plan(context.Background(), chat, nil, assistant.Tools, nil)
+
+		require.NoError(t, err)
+		assert.Empty(t, plan.Calls)
+	})
+
+	t.Run("delete chat removes it and a missing chat is not found", func(t *testing.T) {
+		assistant, repository, _, _ := newAssistant(everything)
+
+		require.NoError(t, assistant.DeleteChat("ws-1", "user-1", "chat-1"))
+		assert.Nil(t, repository.chat)
+
+		assert.ErrorIs(t, assistant.DeleteChat("ws-1", "user-1", "chat-1"), ErrAssistantChatNotFound)
+	})
+
+	t.Run("send message needs a configured provider", func(t *testing.T) {
+		viper.Set("app.ai.api_key", "")
+		assistant, _, _, _ := newAssistant(everything)
+
+		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
+		assert.ErrorIs(t, err, ErrAssistantNotConfigured)
+	})
+
+	t.Run("send message refuses while the assistant is answering", func(t *testing.T) {
+		viper.Set("app.ai.api_key", "key")
+		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
+		assistant, repository, _, _ := newAssistant(everything)
+		repository.chat.Status = db.AssistantStatusRunning
+
+		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
+		assert.ErrorIs(t, err, ErrAssistantBusy)
+	})
+
+	t.Run("send message to a missing chat is not found", func(t *testing.T) {
+		viper.Set("app.ai.api_key", "key")
+		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
+		assistant, repository, _, _ := newAssistant(everything)
+		repository.chat = nil
+
+		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
+		assert.ErrorIs(t, err, ErrAssistantChatNotFound)
+	})
+}

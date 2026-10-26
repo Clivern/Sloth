@@ -8,8 +8,5 @@ import (
 )
 
 var (
-	ErrEmbedNotConfigured = errors.New("ai embeddings are not configured")
-	ErrLLMNotConfigured   = errors.New("ai llm is not configured")
-	ErrNoEmbeddings       = errors.New("ai returned no embeddings")
-	ErrNoCompletion       = errors.New("ai returned no completion")
+	ErrLLMNotConfigured = errors.New("ai llm is not configured")
 )

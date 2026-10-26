@@ -557,3 +557,18 @@ msgstr "Failed to complete the A2A request."
 
 msgid "failed_catalog_request"
 msgstr "Failed to load the agent catalog."
+
+msgid "invalid_assistant_chat_id"
+msgstr "Invalid chat id."
+
+msgid "assistant_chat_not_found"
+msgstr "Chat not found."
+
+msgid "assistant_not_configured"
+msgstr "The assistant needs an AI provider. Set app.ai in the config."
+
+msgid "assistant_busy"
+msgstr "The assistant is still answering the last message."
+
+msgid "failed_assistant_request"
+msgstr "Failed to complete the assistant request."
