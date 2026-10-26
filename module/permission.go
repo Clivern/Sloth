@@ -71,7 +71,6 @@ const (
 	CanListTraffic = "CAN_LIST_TRAFFIC"
 	CanGetTraffic  = "CAN_GET_TRAFFIC"
 
-	// CanUseChat is for members only: chats belong to a user, so access keys never get it
 	CanUseChat = "CAN_USE_CHAT"
 )
 
