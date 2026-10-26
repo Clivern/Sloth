@@ -96,89 +96,58 @@ func (t *AssistantTools) List() []*AssistantTool {
 			Name:        "list_members",
 			Description: "List the workspace members with their name, email and role.",
 			Permission:  CanListWorkspaceMembers,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				return t.Workspace.ListWorkspaceMembers(workspaceId, AssistantToolLimit, 0)
-			},
+			Run:         t.ListMembers,
 		},
 		{
 			Name:        "list_agents",
 			Description: "List the agents registered in the workspace with their version and health.",
 			Permission:  CanListAgents,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				return t.Agent.ListAgents(workspaceId, AssistantToolLimit, 0)
-			},
+			Run:         t.ListAgents,
 		},
 		{
 			Name:        "get_agent",
 			Description: "Get one agent with its card, skills and health.",
 			Arguments:   map[string]string{"name": "agent name"},
 			Permission:  CanGetAgent,
-			Run: func(workspaceId, _ db.Id, args map[string]string) (any, error) {
-				return t.Agent.GetAgent(workspaceId, args["name"])
-			},
+			Run:         t.GetAgent,
 		},
 		{
 			Name:        "list_instances",
 			Description: "List the running instances of an agent with their health checks.",
 			Arguments:   map[string]string{"agent": "agent name"},
 			Permission:  CanListInstances,
-			Run: func(workspaceId, _ db.Id, args map[string]string) (any, error) {
-				return t.Instance.ListInstances(workspaceId, args["agent"], AssistantToolLimit, 0)
-			},
+			Run:         t.ListInstances,
 		},
 		{
 			Name:        "list_intentions",
 			Description: "List the intentions: which source agent may or may not call which destination agent and skill.",
 			Permission:  CanListIntentions,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				return t.Intention.ListIntentions(workspaceId, AssistantToolLimit, 0)
-			},
+			Run:         t.ListIntentions,
 		},
 		{
 			Name:        "list_traffic",
 			Description: "List the latest calls through the gateway, newest first, with their decision and result.",
 			Permission:  CanListTraffic,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				return t.Traffic.ListTraffic(workspaceId, AssistantToolLimit, 0)
-			},
+			Run:         t.ListTraffic,
 		},
 		{
 			Name:        "list_kv",
 			Description: "List the workspace key-value config, optionally under a key prefix.",
 			Arguments:   map[string]string{"prefix": "optional key prefix"},
 			Permission:  CanListKeyValue,
-			Run: func(workspaceId, _ db.Id, args map[string]string) (any, error) {
-				return t.KeyValue.ListKeyValue(workspaceId, args["prefix"])
-			},
+			Run:         t.ListKeyValue,
 		},
 		{
 			Name:        "list_integrations",
 			Description: "List the integrations that deliver workspace events, such as Slack or webhooks, with the events each sends and whether it is active.",
 			Permission:  CanListIntegrations,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				result, err := t.Integration.ListIntegrations(workspaceId, AssistantToolLimit, 0)
-				if err != nil {
-					return nil, err
-				}
-
-				return lo.Map(result.Integrations, func(item *IntegrationResponse, _ int) *AssistantIntegration {
-					return &AssistantIntegration{
-						Name:      item.Name,
-						Type:      item.Type,
-						Events:    item.Events,
-						IsActive:  item.IsActive,
-						HasSecret: item.HasSecret,
-					}
-				}), nil
-			},
+			Run:         t.ListIntegrations,
 		},
 		{
 			Name:        "list_events",
 			Description: "List the latest workspace events such as health changes, catalog changes and denied calls.",
 			Permission:  CanListEvents,
-			Run: func(workspaceId, _ db.Id, _ map[string]string) (any, error) {
-				return t.Event.ListEvents(workspaceId, AssistantToolLimit, 0)
-			},
+			Run:         t.ListEvents,
 		},
 	}
 }
@@ -233,4 +202,62 @@ func (t *AssistantTools) WorkspaceSummary(workspaceId, userId db.Id, _ map[strin
 	}
 
 	return summary, nil
+}
+
+// ListMembers returns the workspace members with their name, email and role.
+func (t *AssistantTools) ListMembers(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Workspace.ListWorkspaceMembers(workspaceId, AssistantToolLimit, 0)
+}
+
+// ListAgents returns the workspace agents with their version and health.
+func (t *AssistantTools) ListAgents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Agent.ListAgents(workspaceId, AssistantToolLimit, 0)
+}
+
+// GetAgent returns one agent, named by the name argument, with its card, skills and health.
+func (t *AssistantTools) GetAgent(workspaceId, _ db.Id, args map[string]string) (any, error) {
+	return t.Agent.GetAgent(workspaceId, args["name"])
+}
+
+// ListInstances returns the instances of the agent named by the agent argument with their health checks.
+func (t *AssistantTools) ListInstances(workspaceId, _ db.Id, args map[string]string) (any, error) {
+	return t.Instance.ListInstances(workspaceId, args["agent"], AssistantToolLimit, 0)
+}
+
+// ListIntentions returns the workspace intentions.
+func (t *AssistantTools) ListIntentions(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Intention.ListIntentions(workspaceId, AssistantToolLimit, 0)
+}
+
+// ListTraffic returns the latest gateway calls, newest first.
+func (t *AssistantTools) ListTraffic(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Traffic.ListTraffic(workspaceId, AssistantToolLimit, 0)
+}
+
+// ListKeyValue returns the workspace keys, under the prefix argument when given.
+func (t *AssistantTools) ListKeyValue(workspaceId, _ db.Id, args map[string]string) (any, error) {
+	return t.KeyValue.ListKeyValue(workspaceId, args["prefix"])
+}
+
+// ListIntegrations returns the workspace integrations without their URL, site or index.
+func (t *AssistantTools) ListIntegrations(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	result, err := t.Integration.ListIntegrations(workspaceId, AssistantToolLimit, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return lo.Map(result.Integrations, func(item *IntegrationResponse, _ int) *AssistantIntegration {
+		return &AssistantIntegration{
+			Name:      item.Name,
+			Type:      item.Type,
+			Events:    item.Events,
+			IsActive:  item.IsActive,
+			HasSecret: item.HasSecret,
+		}
+	}), nil
+}
+
+// ListEvents returns the latest workspace events.
+func (t *AssistantTools) ListEvents(workspaceId, _ db.Id, _ map[string]string) (any, error) {
+	return t.Event.ListEvents(workspaceId, AssistantToolLimit, 0)
 }
