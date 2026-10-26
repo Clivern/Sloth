@@ -68,12 +68,34 @@ type ListAgentsResponse struct {
 }
 
 // NewAgent creates an agent module with the given repositories.
-func NewAgent(agents db.AgentRepository, instances db.AgentInstanceRepository, checks db.HealthCheckRepository, workspaces db.WorkspaceRepository) *Agent {
+func NewAgent(
+	agents db.AgentRepository,
+	instances db.AgentInstanceRepository,
+	checks db.HealthCheckRepository,
+	workspaces db.WorkspaceRepository,
+) *Agent {
 	return &Agent{
 		AgentRepository:       agents,
 		InstanceRepository:    instances,
 		HealthCheckRepository: checks,
 		WorkspaceRepository:   workspaces,
+	}
+}
+
+// toAgentResponse shapes an agent row for API responses.
+func toAgentResponse(item *db.Agent, health string, counts map[string]int) *AgentResponse {
+	return &AgentResponse{
+		Id:           item.Id,
+		WorkspaceId:  item.WorkspaceId,
+		Name:         item.Name,
+		Version:      item.Version,
+		Card:         util.JSONRawFromString(item.Card),
+		CardChecksum: lo.FromPtr(item.CardChecksum),
+		CardPath:     item.CardPath,
+		Health:       health,
+		StatusCounts: counts,
+		CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:    item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 
@@ -109,19 +131,7 @@ func (a *Agent) ListAgents(workspaceId db.Id, limit, offset int) (*ListAgentsRes
 			return nil, fmt.Errorf("%w: %v", ErrFailedListAgents, err)
 		}
 
-		list = append(list, &AgentResponse{
-			Id:           item.Id,
-			WorkspaceId:  item.WorkspaceId,
-			Name:         item.Name,
-			Version:      item.Version,
-			Card:         util.JSONRawFromString(item.Card),
-			CardChecksum: lo.FromPtr(item.CardChecksum),
-			CardPath:     item.CardPath,
-			Health:       health,
-			StatusCounts: counts,
-			CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
-			UpdatedAt:    item.UpdatedAt.UTC().Format(time.RFC3339),
-		})
+		list = append(list, toAgentResponse(item, health, counts))
 	}
 
 	return &ListAgentsResponse{Agents: list, Total: total}, nil
@@ -152,19 +162,7 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 		return nil, fmt.Errorf("%w: %v", ErrFailedGetAgent, err)
 	}
 
-	return &AgentResponse{
-		Id:           agent.Id,
-		WorkspaceId:  agent.WorkspaceId,
-		Name:         agent.Name,
-		Version:      agent.Version,
-		Card:         util.JSONRawFromString(agent.Card),
-		CardChecksum: lo.FromPtr(agent.CardChecksum),
-		CardPath:     agent.CardPath,
-		Health:       health,
-		StatusCounts: counts,
-		CreatedAt:    agent.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:    agent.UpdatedAt.UTC().Format(time.RFC3339),
-	}, nil
+	return toAgentResponse(agent, health, counts), nil
 }
 
 // UpsertAgent creates or updates an agent's version and card path.
@@ -242,19 +240,7 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 		Bool("created", created).
 		Msg("Agent upserted")
 
-	return &AgentResponse{
-		Id:           existing.Id,
-		WorkspaceId:  existing.WorkspaceId,
-		Name:         existing.Name,
-		Version:      existing.Version,
-		Card:         util.JSONRawFromString(existing.Card),
-		CardChecksum: lo.FromPtr(existing.CardChecksum),
-		CardPath:     existing.CardPath,
-		Health:       health,
-		StatusCounts: counts,
-		CreatedAt:    existing.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:    existing.UpdatedAt.UTC().Format(time.RFC3339),
-	}, created, nil
+	return toAgentResponse(existing, health, counts), created, nil
 }
 
 // DeleteAgent removes an agent by name.
