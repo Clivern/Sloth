@@ -2,6 +2,8 @@
 
 Set SLOTH_URL, SLOTH_WORKSPACE and SLOTH_ACCESS_KEY to register. Without
 SLOTH_URL the agent only serves its card and message:send locally.
+Set INSTANCE to override the default {name}-{port} instance id, e.g.
+weather01.ams01.xai.com.
 """
 
 import asyncio
@@ -14,6 +16,7 @@ URL = os.environ.get("SLOTH_URL", "")
 WORKSPACE = os.environ.get("SLOTH_WORKSPACE", "")
 ACCESS_KEY = os.environ.get("SLOTH_ACCESS_KEY", "")
 ADDRESS = os.environ.get("AGENT_ADDRESS", "127.0.0.1")
+INSTANCE = os.environ.get("INSTANCE", "")
 TTL = 30
 
 
@@ -59,7 +62,7 @@ def lifespan(name, version, port, protection=None, calls=None):
             return
 
         base = f"{URL}/api/v1/workspaces/{WORKSPACE}/agents/{name}"
-        instance = f"{name}-{port}"
+        instance = INSTANCE or f"{name}-{port}"
 
         async with httpx.AsyncClient(headers={"X-Access-Key": ACCESS_KEY}) as client:
             await client.put(base, json={"version": version, "cardPath": "/.well-known/agent-card.json"})

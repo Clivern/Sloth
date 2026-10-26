@@ -1,63 +1,79 @@
-"""Stock agent with fake data. uv run uvicorn stock:app --port 9202"""
+"""Stock agent with live data from Nasdaq. uv run uvicorn stock:app --port 9202"""
 
-import hashlib
+import os
+from datetime import date, timedelta
 
+import httpx
 from fastapi import FastAPI
 
 from util import lifespan
 
 NAME = "stock"
-VERSION = "1.1.0"
-PORT = 9202
-COMPANIES = {
-    "AAPL": "Apple Inc.",
-    "MSFT": "Microsoft Corporation",
-    "GOOGL": "Alphabet Inc.",
-    "AMZN": "Amazon.com, Inc.",
-    "NVDA": "NVIDIA Corporation",
-}
+VERSION = "1.0.0"
+PORT = int(os.environ.get("PORT", "9202"))
+
+HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
 app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT))
 
 
-def seed(text):
-    return int(hashlib.sha256(text.upper().encode()).hexdigest(), 16)
+def money(text):
+    return float(text.replace("$", "").replace(",", "").replace("+", "").rstrip("%"))
 
 
-def price(symbol, offset=0):
-    base = 50 + seed(symbol) % 45000 / 100
-    return round(base * (1 + (seed(f"{symbol}{offset}") % 600 - 300) / 10000), 2)
+def info(symbol):
+    response = httpx.get(
+        f"https://api.nasdaq.com/api/quote/{symbol}/info?assetclass=stocks",
+        headers=HEADERS,
+        timeout=10,
+    )
+    response.raise_for_status()
+
+    return response.json()["data"]
 
 
 def quote(args):
     symbol = (args.get("symbol") or "AAPL").upper()
-    last = price(symbol)
-    close = price(symbol, 1)
+    data = info(symbol)
+    last = money(data["primaryData"]["lastSalePrice"])
+    change = money(data["primaryData"]["netChange"])
+
     return {
         "symbol": symbol,
         "price": last,
-        "previous_close": close,
-        "change_percent": round((last - close) / close * 100, 2),
-        "currency": "USD",
+        "previous_close": round(last - change, 2),
+        "change_percent": money(data["primaryData"]["percentageChange"]),
+        "currency": data["primaryData"].get("currency") or "USD",
     }
 
 
 def history(args):
     symbol = (args.get("symbol") or "AAPL").upper()
     days = int(args.get("days") or 5)
+    start = (date.today() - timedelta(days=days * 2 + 10)).isoformat()
+    response = httpx.get(
+        f"https://api.nasdaq.com/api/quote/{symbol}/historical",
+        params={"assetclass": "stocks", "fromdate": start, "limit": days},
+        headers=HEADERS,
+        timeout=10,
+    )
+    response.raise_for_status()
+    rows = response.json()["data"]["tradesTable"]["rows"]
+
     return {
         "symbol": symbol,
-        "closes": [{"day": -i, "close": price(symbol, i)} for i in range(1, days + 1)],
+        "closes": [{"day": -n, "close": money(row["close"])} for n, row in enumerate(rows[:days], start=1)],
     }
 
 
 def profile(args):
     symbol = (args.get("symbol") or "AAPL").upper()
+    data = info(symbol)
+
     return {
         "symbol": symbol,
-        "name": COMPANIES.get(symbol, f"{symbol} Holdings"),
-        "exchange": "NASDAQ",
-        "market_cap_billion": seed(symbol) % 3000 + 10,
+        "name": data["companyName"],
+        "exchange": data["exchange"],
     }
 
 
@@ -108,7 +124,7 @@ def agent_card():
             {
                 "id": "stock.profile.get",
                 "name": "Company profile",
-                "description": "Return company name, exchange and market cap for a ticker. Data: {\"symbol\": \"MSFT\"}",
+                "description": "Return company name and exchange for a ticker. Data: {\"symbol\": \"MSFT\"}",
                 "tags": ["stock", "company", "finance"],
                 "inputModes": ["application/json"],
                 "examples": ['{"symbol": "MSFT"}'],

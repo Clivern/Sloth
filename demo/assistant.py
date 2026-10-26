@@ -24,7 +24,7 @@ from util import URL, WORKSPACE, lifespan
 
 NAME = "assistant"
 VERSION = "1.0.0"
-PORT = 9200
+PORT = int(os.environ.get("PORT", "9200"))
 SECRET = os.environ.get("SLOTH_AGENT_SECRET", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = os.environ.get("ASSISTANT_MODEL", "deepseek/deepseek-v4-flash")

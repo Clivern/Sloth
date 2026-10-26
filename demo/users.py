@@ -6,21 +6,25 @@ message:send without it. Other agents can only reach it through Sloth.
 """
 
 import hashlib
+import os
 import secrets
 
 from fastapi import FastAPI, Header, HTTPException
 
 from util import lifespan
 
+NAME = "users"
+VERSION = "1.0.0"
+PORT = int(os.environ.get("PORT", "9203"))
 API_KEY = "users-demo-key-2026"
 PLANS = ["free", "pro", "team", "enterprise"]
 LANGUAGES = ["en", "fr", "de", "ar", "es"]
 
 app = FastAPI(
     lifespan=lifespan(
-        "users",
-        "1.0.0",
-        9203,
+        NAME,
+        VERSION,
+        PORT,
         protection={"type": "api_key", "header": "X-Users-Key", "secret": API_KEY},
     )
 )
@@ -73,10 +77,10 @@ def agent_card():
     return {
         "name": "Users",
         "description": "User profiles and preferences by user id",
-        "version": "1.0.0",
+        "version": VERSION,
         "supportedInterfaces": [
             {
-                "url": "http://127.0.0.1:9203/a2a/v1",
+                "url": f"http://127.0.0.1:{PORT}/a2a/v1",
                 "protocolBinding": "HTTP+JSON",
                 "protocolVersion": "1.0",
             }
