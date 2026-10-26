@@ -28,13 +28,9 @@ const (
 	AssistantReplyTimeout = 3 * time.Minute
 
 	AssistantEventChat  = "chat"
-	AssistantEventTool  = "tool"
 	AssistantEventDelta = "delta"
 	AssistantEventDone  = "done"
 	AssistantEventError = "error"
-
-	AssistantToolRunning = "running"
-	AssistantToolDone    = "done"
 )
 
 var (
@@ -179,7 +175,7 @@ func (a *Assistant) DeleteChat(workspaceId, userId, id db.Id) error {
 	return nil
 }
 
-// SendMessage stores the user's question and answers it, emitting the chat, tool progress and answer deltas as they
+// SendMessage stores the user's question and answers it, emitting the chat and the answer deltas as they
 // happen. Errors before the question is stored are returned; later ones are emitted, as the stream has started.
 func (a *Assistant) SendMessage(workspaceId, userId, id db.Id, req *SendAssistantMessageRequest, emit AssistantEmit) error {
 	if !ai.IsConfigured() {
@@ -292,14 +288,10 @@ func (a *Assistant) Answer(ctx context.Context, chat *db.AssistantChat, emit Ass
 		}
 
 		for _, call := range plan.Calls {
-			emit(AssistantEventTool, map[string]string{"tool": call.Tool, "status": AssistantToolRunning})
-
 			result, err := a.Call(chat, tools, call)
 			if err != nil {
 				return err
 			}
-
-			emit(AssistantEventTool, map[string]string{"tool": call.Tool, "status": AssistantToolDone})
 
 			results = append(results, result)
 		}
@@ -395,7 +387,7 @@ func (a *Assistant) Call(chat *db.AssistantChat, tools []*AssistantTool, call As
 		return fmt.Sprintf("%s %s: the user is not allowed to see this", call.Tool, input), nil
 	}
 
-	result, err := tool.Run(chat.WorkspaceId, arguments)
+	result, err := tool.Run(chat.WorkspaceId, chat.UserId, arguments)
 	if err != nil {
 		return fmt.Sprintf("%s %s: could not be read (%s)", call.Tool, input, err), nil
 	}

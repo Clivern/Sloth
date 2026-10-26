@@ -108,12 +108,14 @@ func New() *API {
 			db.NewAssistantRepository(conn),
 			workspaces,
 			module.NewAssistantTools(
+				module.NewWorkspace(workspaces, workspaceUsers, subscriptions, users),
 				module.NewAgent(agents, instances, healthChecks, workspaces),
 				module.NewInstance(agents, instances, healthChecks, agentChecks, workspaces),
 				module.NewIntention(intentions, workspaces),
 				module.NewTraffic(traffic, workspaces),
 				module.NewKeyValue(kv, workspaces),
 				module.NewEvent(events),
+				module.NewIntegration(integrations),
 			),
 		),
 		GitHubOAuth: github.NewOAuth(github.OAuthConfig{

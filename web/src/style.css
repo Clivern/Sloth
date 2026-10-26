@@ -444,6 +444,55 @@
     margin: 1.5em 0;
   }
 
+  .markdown-content a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .markdown-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0.75em 0;
+    font-size: 0.95em;
+  }
+
+  .markdown-content th,
+  .markdown-content td {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.35em 0.6em;
+    text-align: left;
+  }
+
+  .markdown-content th {
+    font-weight: 600;
+  }
+
+  /* Assistant chat bubbles: tighter rhythm, and no stray space at the bubble's edges */
+  .assistant-markdown {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .assistant-markdown p {
+    margin-bottom: 0.5em;
+  }
+
+  .assistant-markdown ul,
+  .assistant-markdown ol {
+    margin: 0.4em 0;
+    padding-left: 1.25em;
+  }
+
+  .assistant-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .assistant-markdown > :last-child {
+    margin-bottom: 0;
+  }
+
   /* Modal Transition Styles */
   .modal-enter-active,
   .modal-leave-active {

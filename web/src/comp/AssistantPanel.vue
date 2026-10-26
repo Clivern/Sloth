@@ -39,7 +39,7 @@
                   <span v-if="item.status !== 'idle'" :class="statusPillClass(item.status)">{{ $t(`assistant_panel.status_${item.status}`) }}</span>
                   <time class="whitespace-nowrap text-xs text-theme-textLight" :datetime="item.updatedAt" :title="formatTimestamp(item.updatedAt)">{{ formatRelative(item.updatedAt) }}</time>
                 </span>
-                <span class="w-full truncate text-sm text-theme-textLight">{{ item.preview || $t('assistant_panel.no_messages') }}</span>
+                <span class="w-full truncate text-sm text-theme-textLight">{{ item.preview ? plainText(item.preview) : $t('assistant_panel.no_messages') }}</span>
               </button>
               <button
                 type="button"
@@ -82,36 +82,49 @@
           </header>
 
           <div ref="threadRef" class="flex grow flex-col gap-3 overflow-y-auto px-5 py-4" aria-live="polite">
-            <div v-if="active && !active.messages?.length" class="my-auto flex flex-col gap-2">
-              <p class="mb-1 text-center text-sm font-semibold text-theme-text">{{ $t('assistant_panel.empty_title') }}</p>
-              <p class="mb-2 text-center text-sm text-theme-textLight">{{ $t('assistant_panel.empty_desc') }}</p>
-              <button
-                v-for="key in SUGGESTIONS"
-                :key="key"
-                type="button"
-                class="rounded-2xl border border-theme-border bg-white px-4 py-2.5 text-left text-sm text-theme-text transition-colors hover:border-primary-300 hover:bg-theme-hover"
-                @click="useSuggestion(key)"
-              >
-                {{ $t(`assistant_panel.${key}`) }}
-              </button>
+            <div class="flex max-w-[88%] items-end gap-2 self-start">
+              <AssistantAvatar small />
+              <div v-if="greeting" class="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm leading-relaxed text-theme-text">
+                <span class="sr-only">{{ greetingText }}</span>
+                <span aria-hidden="true">{{ greeting }}</span>
+              </div>
+              <div v-else class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5" aria-hidden="true">
+                <span v-for="dot in 3" :key="dot" class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none" :style="{ animationDelay: `${(dot - 1) * 150}ms` }"></span>
+              </div>
             </div>
+
+            <Transition
+              enter-active-class="transition duration-200 ease-out motion-reduce:transition-none"
+              enter-from-class="translate-y-2 opacity-0"
+            >
+              <div v-if="active && !active.messages?.length && greeting === greetingText" class="flex flex-wrap justify-center gap-2">
+                <button
+                  v-for="key in SUGGESTIONS"
+                  :key="key"
+                  type="button"
+                  class="rounded-full border border-theme-border bg-white px-3.5 py-1.5 text-sm text-theme-text transition-colors hover:border-primary-300 hover:bg-theme-hover"
+                  @click="useSuggestion(key)"
+                >
+                  {{ $t(`assistant_panel.${key}`) }}
+                </button>
+              </div>
+            </Transition>
 
             <template v-for="message in active?.messages || []" :key="message.id">
               <div v-if="message.kind === 'user'" class="max-w-[80%] self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm leading-relaxed text-white">{{ message.content }}</div>
 
               <div v-else class="flex max-w-[88%] items-end gap-2 self-start">
                 <AssistantAvatar small />
-                <div class="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm leading-relaxed text-theme-text">{{ message.content }}</div>
+                <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes HTML and drops unsafe links -->
+                <div class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text" v-html="renderMarkdown(message.content)"></div>
               </div>
             </template>
 
             <template v-if="active?.status === 'running'">
               <div class="flex max-w-[88%] items-end gap-2 self-start">
                 <AssistantAvatar small />
-                <div v-if="streamed" class="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm leading-relaxed text-theme-text">{{ streamed }}</div>
-                <div v-else-if="runningTool" class="rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-[13px] text-theme-textLight">
-                  {{ $t('assistant_panel.running_tool', { tool: toolLabel(runningTool) }) }}
-                </div>
+                <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes HTML and drops unsafe links -->
+                <div v-if="streamed" class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text" v-html="renderMarkdown(streamed)"></div>
                 <div v-else class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5" role="status">
                   <span class="sr-only">{{ $t('assistant_panel.thinking') }}</span>
                   <span v-for="dot in 3" :key="dot" class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none" :style="{ animationDelay: `${(dot - 1) * 150}ms` }"></span>
@@ -186,14 +199,17 @@ import AssistantAvatar from '@/comp/AssistantAvatar.vue'
 import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
+import { playReply, playSend } from '@/lib/sound'
+import { plainText, renderMarkdown } from '@/lib/markdown'
 import { formatTimestamp, formatRelative } from '@/utils/date'
 
-const SUGGESTIONS = ['suggestion_agents', 'suggestion_health', 'suggestion_traffic']
-const TOOLS = ['list_agents', 'get_agent', 'list_instances', 'list_intentions', 'list_traffic', 'list_kv', 'list_events']
+const SUGGESTIONS = ['suggestion_agents', 'suggestion_health', 'suggestion_workspace']
+const GREETING_DOTS_MS = 400
+const GREETING_LETTER_MS = 10
 const POLL_MS = 1500
 
 const { t } = useI18n()
-const { currentWorkspace } = useWorkspaceContext()
+const { currentUser, currentWorkspace } = useWorkspaceContext()
 
 const open = ref(false)
 const view = ref('list')
@@ -201,7 +217,8 @@ const chats = ref([])
 const active = ref(null)
 const draft = ref('')
 const streamed = ref('')
-const runningTool = ref(null)
+const greeting = ref('')
+const greetingText = ref('')
 const loading = ref(false)
 const creating = ref(false)
 const sending = ref(false)
@@ -213,6 +230,7 @@ const threadRef = ref(null)
 const inputRef = ref(null)
 
 let pollTimer = null
+let greetingTimer = null
 
 async function loadChats() {
   loading.value = true
@@ -256,6 +274,7 @@ async function openChat(id) {
 function showThread(chat) {
   active.value = chat
   view.value = 'thread'
+  greet(!chat.messages?.length)
   followRunning()
   scrollToEnd()
   nextTick(() => inputRef.value?.focus())
@@ -263,18 +282,47 @@ function showThread(chat) {
 
 function showList() {
   stopPolling()
+  stopGreeting()
   active.value = null
   errorMessage.value = null
   view.value = 'list'
   loadChats()
 }
 
+function greet(animate) {
+  stopGreeting()
+  greetingText.value = currentUser?.name
+    ? t('assistant_panel.greeting', { name: currentUser.name.split(' ')[0] })
+    : t('assistant_panel.greeting_anonymous')
+
+  if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    greeting.value = greetingText.value
+    return
+  }
+
+  greeting.value = ''
+  const letters = Array.from(greetingText.value)
+  let typed = 0
+
+  greetingTimer = setTimeout(function typeNext() {
+    typed++
+    greeting.value = letters.slice(0, typed).join('')
+    if (typed < letters.length) greetingTimer = setTimeout(typeNext, GREETING_LETTER_MS)
+  }, GREETING_DOTS_MS)
+}
+
+function stopGreeting() {
+  clearTimeout(greetingTimer)
+  greetingTimer = null
+}
+
 // Streams the answer into the thread as it is written; the server stores it once it is complete.
 async function send() {
+  // Called inside the click, so the browser lets the reply chime play later too.
+  playSend()
   sending.value = true
   errorMessage.value = null
   streamed.value = ''
-  runningTool.value = null
 
   try {
     await assistant_api.send(currentWorkspace.id, active.value.id, { content: draft.value }, onEvent)
@@ -283,7 +331,6 @@ async function send() {
   } finally {
     sending.value = false
     streamed.value = ''
-    runningTool.value = null
     // A stream cut short leaves the answer running on the server, so follow it until it is stored.
     followRunning()
   }
@@ -296,20 +343,14 @@ function onEvent(name, data) {
   if (name === 'chat') {
     active.value = data
     draft.value = ''
-  } else if (name === 'tool') {
-    runningTool.value = data.status === 'running' ? data.tool : null
   } else if (name === 'delta') {
-    runningTool.value = null
+    if (!streamed.value) playReply()
     streamed.value += data.content
   } else {
     active.value = data.id ? data : { ...active.value, status: 'failed' }
   }
 
   scrollToEnd()
-}
-
-function toolLabel(tool) {
-  return TOOLS.includes(tool) ? t(`assistant_panel.tool_${tool}`) : tool
 }
 
 async function deleteChat() {
@@ -382,5 +423,8 @@ watch(open, (isOpen) => {
   else followRunning()
 })
 
-onBeforeUnmount(stopPolling)
+onBeforeUnmount(() => {
+  stopPolling()
+  stopGreeting()
+})
 </script>

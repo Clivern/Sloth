@@ -5,6 +5,7 @@ package module
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/clivern/sloth/db"
 	"github.com/clivern/sloth/pkg/ai"
 
+	"github.com/samber/lo"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +34,7 @@ func TestUnitAssistant(t *testing.T) {
 				{
 					Name:       "list_agents",
 					Permission: CanListAgents,
-					Run: func(workspaceId db.Id, args map[string]string) (any, error) {
+					Run: func(workspaceId, userId db.Id, args map[string]string) (any, error) {
 						ran = append(ran, args)
 						return map[string]any{"agents": []string{"users", "weather"}}, nil
 					},
@@ -41,7 +43,7 @@ func TestUnitAssistant(t *testing.T) {
 					Name:       "get_agent",
 					Arguments:  map[string]string{"name": "agent name"},
 					Permission: CanGetAgent,
-					Run: func(workspaceId db.Id, args map[string]string) (any, error) {
+					Run: func(workspaceId, userId db.Id, args map[string]string) (any, error) {
 						ran = append(ran, args)
 						return nil, errors.New("agent not found")
 					},
@@ -84,7 +86,7 @@ func TestUnitAssistant(t *testing.T) {
 		assert.Contains(t, chat.asked[1][len(chat.asked[1])-1].Content, "weather")
 	})
 
-	t.Run("send message streams the chat, tool progress and answer, then stores it", func(t *testing.T) {
+	t.Run("send message streams the chat and answer, then stores it", func(t *testing.T) {
 		viper.Set("app.ai.api_key", "key")
 		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
 		assistant, repository, _, _ := newAssistant(everything,
@@ -107,7 +109,7 @@ func TestUnitAssistant(t *testing.T) {
 		})
 
 		require.NoError(t, err)
-		assert.Equal(t, []string{"chat", "tool", "tool", "delta", "delta", "delta", "delta", "done"}, events)
+		assert.Equal(t, []string{"chat", "delta", "delta", "delta", "delta", "done"}, events)
 		assert.Equal(t, "You have two agents.", deltas.String())
 		assert.Equal(t, "Which agents do I have?", repository.chat.Title)
 		assert.Equal(t, db.AssistantStatusIdle, finished.Status)
@@ -203,4 +205,67 @@ func TestUnitAssistant(t *testing.T) {
 		err := assistant.SendMessage("ws-1", "user-1", "chat-1", &SendAssistantMessageRequest{Content: "hi"}, func(string, any) {})
 		assert.ErrorIs(t, err, ErrAssistantChatNotFound)
 	})
+}
+
+func TestUnitAssistantTools(t *testing.T) {
+	workspaces := &fakeWorkspaces{
+		workspace:  &db.Workspace{Id: "ws-1", Name: "Acme", Handle: "acme"},
+		membership: &db.WorkspaceUser{Role: db.UserRoleOwner},
+	}
+	agents := &fakeAgents{list: []*db.Agent{{Id: "agent-1", Name: "users"}}, total: 1}
+	intentions := &fakeIntentions{
+		list:  []*db.Intention{{Action: db.IntentionActionAllow}, {Action: db.IntentionActionAllow}, {Action: db.IntentionActionDeny}},
+		total: 3,
+	}
+
+	tools := NewAssistantTools(
+		NewWorkspace(workspaces, &fakeWorkspaceUsers{total: 3}, nil, nil),
+		NewAgent(agents, &fakeInstances{}, &fakeHealthChecks{}, workspaces),
+		nil,
+		NewIntention(intentions, workspaces),
+		NewTraffic(&fakeTrafficCalls{total: 42}, workspaces),
+		NewKeyValue(&fakeWorkspaceKeyValues{items: []*db.WorkspaceKeyValue{{Key: "feature/assistant"}}}, workspaces),
+		nil,
+		NewIntegration(&fakeIntegrations{list: []*db.Integration{{
+			Type:     "slack",
+			Name:     "Alerts",
+			IsActive: true,
+			Config:   lo.ToPtr(`{"url":"https://hooks.slack.com/services/T0/B0/secret-token","events":["agent.health.changed"]}`),
+		}}, total: 1}),
+	)
+
+	tool, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "get_workspace" })
+	require.True(t, ok)
+	assert.Equal(t, CanGetWorkspace, tool.Permission)
+
+	result, err := tool.Run("ws-1", "user-1", nil)
+
+	require.NoError(t, err)
+	summary := result.(*AssistantWorkspaceSummary)
+	assert.Equal(t, "Acme", summary.Workspace.Name)
+	assert.Equal(t, db.Id("ws-1"), summary.Workspace.Id)
+	assert.Equal(t, db.UserRoleOwner, summary.Workspace.Role)
+	assert.Equal(t, int64(3), summary.Workspace.MembersCount)
+	assert.Equal(t, int64(1), summary.Agents)
+	assert.Len(t, summary.AgentsByHealth, 1)
+	assert.Equal(t, int64(3), summary.Intentions)
+	assert.Equal(t, map[string]int{db.IntentionActionAllow: 2, db.IntentionActionDeny: 1}, summary.IntentionsByAction)
+	assert.Equal(t, int64(1), summary.KeyValues)
+	assert.Equal(t, int64(42), summary.GatewayCalls)
+
+	// Integration URLs can carry credentials, so they never reach the model.
+	integrations, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "list_integrations" })
+	require.True(t, ok)
+	assert.Equal(t, CanListIntegrations, integrations.Permission)
+
+	listed, err := integrations.Run("ws-1", "user-1", nil)
+	require.NoError(t, err)
+	body, _ := json.Marshal(listed)
+	assert.Contains(t, string(body), `"name":"Alerts"`)
+	assert.Contains(t, string(body), "agent.health.changed")
+	assert.NotContains(t, string(body), "hooks.slack.com")
+
+	members, ok := lo.Find(tools.List(), func(tool *AssistantTool) bool { return tool.Name == "list_members" })
+	require.True(t, ok)
+	assert.Equal(t, CanListWorkspaceMembers, members.Permission)
 }
