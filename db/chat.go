@@ -5,7 +5,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 )
 
@@ -60,6 +59,45 @@ func NewChatRepository(db *sql.DB) ChatRepository {
 	return &ChatRepositoryPostgres{db: db}
 }
 
+// scanChat maps a row into a chat. Column order must match the select list.
+func scanChat(chat *Chat) []any {
+	return []any{
+		&chat.Id,
+		&chat.WorkspaceId,
+		&chat.UserId,
+		&chat.Title,
+		&chat.Status,
+		&chat.CreatedAt,
+		&chat.UpdatedAt,
+	}
+}
+
+// scanChatPreview maps a row into a chat with its last message. Column order must match the select list.
+func scanChatPreview(chat *Chat) []any {
+	return []any{
+		&chat.Id,
+		&chat.WorkspaceId,
+		&chat.UserId,
+		&chat.Title,
+		&chat.Status,
+		&chat.Preview,
+		&chat.CreatedAt,
+		&chat.UpdatedAt,
+	}
+}
+
+// scanChatMessage maps a row into a chat message. Column order must match the select list.
+func scanChatMessage(message *ChatMessage) []any {
+	return []any{
+		&message.Id,
+		&message.ChatId,
+		&message.Kind,
+		&message.Content,
+		&message.Meta,
+		&message.CreatedAt,
+	}
+}
+
 // CreateChat inserts a chat row.
 func (r *ChatRepositoryPostgres) CreateChat(chat *Chat) error {
 	id, err := NewId()
@@ -83,33 +121,22 @@ func (r *ChatRepositoryPostgres) CreateChat(chat *Chat) error {
 
 // GetChat returns a user's chat in a workspace.
 func (r *ChatRepositoryPostgres) GetChat(workspaceId, userId, id Id) (*Chat, error) {
-	chat := &Chat{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT id, workspace_id, user_id, title, status, created_at, updated_at
 		FROM ai_assistant_chats
 		WHERE workspace_id = $1 AND user_id = $2 AND id = $3`,
+		scanChat,
 		workspaceId.String(),
 		userId.String(),
 		id.String(),
-	).Scan(
-		&chat.Id,
-		&chat.WorkspaceId,
-		&chat.UserId,
-		&chat.Title,
-		&chat.Status,
-		&chat.CreatedAt,
-		&chat.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return chat, err
 }
 
 // ListChats returns a user's chats in a workspace with their last message, most recently active first.
 func (r *ChatRepositoryPostgres) ListChats(workspaceId, userId Id, limit, offset int) ([]*Chat, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT
 			c.id, c.workspace_id, c.user_id, c.title, c.status,
 			(
@@ -124,38 +151,12 @@ func (r *ChatRepositoryPostgres) ListChats(workspaceId, userId Id, limit, offset
 		WHERE c.workspace_id = $1 AND c.user_id = $2
 		ORDER BY c.updated_at DESC
 		LIMIT $3 OFFSET $4`,
+		scanChatPreview,
 		workspaceId.String(),
 		userId.String(),
 		limit,
 		offset,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var list []*Chat
-	for rows.Next() {
-		chat := &Chat{}
-		err := rows.Scan(
-			&chat.Id,
-			&chat.WorkspaceId,
-			&chat.UserId,
-			&chat.Title,
-			&chat.Status,
-			&chat.Preview,
-			&chat.CreatedAt,
-			&chat.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, chat)
-	}
-
-	return list, rows.Err()
 }
 
 // UpdateChat updates a chat's title and status and marks it active now.
@@ -216,36 +217,13 @@ func (r *ChatRepositoryPostgres) CreateMessage(message *ChatMessage) error {
 
 // ListMessages returns a chat's messages, oldest first.
 func (r *ChatRepositoryPostgres) ListMessages(chatId Id) ([]*ChatMessage, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT id, chat_id, kind, content, meta, created_at
 		FROM ai_assistant_messages
 		WHERE chat_id = $1
 		ORDER BY created_at, id`,
+		scanChatMessage,
 		chatId.String(),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var list []*ChatMessage
-	for rows.Next() {
-		message := &ChatMessage{}
-		err := rows.Scan(
-			&message.Id,
-			&message.ChatId,
-			&message.Kind,
-			&message.Content,
-			&message.Meta,
-			&message.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, message)
-	}
-
-	return list, rows.Err()
 }

@@ -5,7 +5,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 )
 
@@ -56,6 +55,26 @@ func NewTrafficRepository(db *sql.DB) TrafficRepository {
 	return &TrafficRepositoryPostgres{db: db}
 }
 
+// scanTrafficCall maps a row into a traffic call. Column order must match the select list.
+func scanTrafficCall(call *TrafficCall) []any {
+	return []any{
+		&call.Id,
+		&call.WorkspaceId,
+		&call.SourceInstance,
+		&call.DestinationAgent,
+		&call.DestinationInstance,
+		&call.Skill,
+		&call.Verb,
+		&call.Decision,
+		&call.Result,
+		&call.LatencyMs,
+		&call.TaskId,
+		&call.Meta,
+		&call.CreatedAt,
+		&call.UpdatedAt,
+	}
+}
+
 // Create inserts a traffic call row.
 func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 	id, err := NewId()
@@ -89,42 +108,23 @@ func (r *TrafficRepositoryPostgres) Create(call *TrafficCall) error {
 
 // GetById returns a traffic call by id.
 func (r *TrafficRepositoryPostgres) GetById(id Id) (*TrafficCall, error) {
-	call := &TrafficCall{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT
 			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
 			created_at, updated_at
 		FROM ai_traffic
 		WHERE id = $1`,
+		scanTrafficCall,
 		id.String(),
-	).Scan(
-		&call.Id,
-		&call.WorkspaceId,
-		&call.SourceInstance,
-		&call.DestinationAgent,
-		&call.DestinationInstance,
-		&call.Skill,
-		&call.Verb,
-		&call.Decision,
-		&call.Result,
-		&call.LatencyMs,
-		&call.TaskId,
-		&call.Meta,
-		&call.CreatedAt,
-		&call.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return call, err
 }
 
 // GetAllowedByTaskId returns the latest allowed call that carried a task id in a workspace.
 func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId string) (*TrafficCall, error) {
-	call := &TrafficCall{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT
 			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
@@ -133,35 +133,17 @@ func (r *TrafficRepositoryPostgres) GetAllowedByTaskId(workspaceId Id, taskId st
 		WHERE workspace_id = $1 AND task_id = $2 AND decision = $3
 		ORDER BY created_at DESC
 		LIMIT 1`,
+		scanTrafficCall,
 		workspaceId.String(),
 		taskId,
 		TrafficDecisionAllow,
-	).Scan(
-		&call.Id,
-		&call.WorkspaceId,
-		&call.SourceInstance,
-		&call.DestinationAgent,
-		&call.DestinationInstance,
-		&call.Skill,
-		&call.Verb,
-		&call.Decision,
-		&call.Result,
-		&call.LatencyMs,
-		&call.TaskId,
-		&call.Meta,
-		&call.CreatedAt,
-		&call.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return call, err
 }
 
 // ListByWorkspaceId lists traffic calls for a workspace, newest first.
 func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*TrafficCall, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT
 			id, workspace_id, source_instance, destination_agent, destination_instance, skill, verb,
 			decision, result, latency_ms, task_id, meta,
@@ -170,43 +152,11 @@ func (r *TrafficRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, off
 		WHERE workspace_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3`,
+		scanTrafficCall,
 		workspaceId.String(),
 		limit,
 		offset,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var list []*TrafficCall
-	for rows.Next() {
-		call := &TrafficCall{}
-		err := rows.Scan(
-			&call.Id,
-			&call.WorkspaceId,
-			&call.SourceInstance,
-			&call.DestinationAgent,
-			&call.DestinationInstance,
-			&call.Skill,
-			&call.Verb,
-			&call.Decision,
-			&call.Result,
-			&call.LatencyMs,
-			&call.TaskId,
-			&call.Meta,
-			&call.CreatedAt,
-			&call.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, call)
-	}
-
-	return list, rows.Err()
 }
 
 // CountByWorkspaceId returns the number of traffic calls in a workspace.
