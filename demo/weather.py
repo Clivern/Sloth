@@ -11,7 +11,7 @@ from util import lifespan
 NAME = "weather"
 VERSION = "1.0.0"
 PORT = int(os.environ.get("PORT", "9201"))
-CONDITIONS = ["sunny", "cloudy", "rain", "snow", "windy", "fog"]
+CONDITIONS = ["sunny", "clear", "cloudy", "rain", "snow", "windy", "fog"]
 
 RAIN = {176, 200, 263, 266, 293, 296, 299, 302, 305, 308, 311, 353, 356, 359, 362, 365, 386, 389, 392, 395}
 SNOW = {179, 182, 227, 230, 317, 320, 323, 326, 329, 332, 335, 338, 350, 371, 374, 377}
@@ -21,7 +21,7 @@ CLOUDY = {116, 119, 122}
 app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT))
 
 
-def condition(code, wind_kph=0):
+def condition(code, wind_kph=0, is_day=True):
     code = int(code)
 
     if code in SNOW:
@@ -39,7 +39,7 @@ def condition(code, wind_kph=0):
     if wind_kph >= 40:
         return "windy"
 
-    return "sunny"
+    return "sunny" if is_day else "clear"
 
 
 def report(city):
@@ -54,13 +54,14 @@ def current(args):
     data = report(city)
     now = data["current_condition"][0]
     wind = int(now["windspeedKmph"])
+    is_day = "night" not in now["weatherIconUrl"][0]["value"].lower()
 
     return {
         "city": data["nearest_area"][0]["areaName"][0]["value"],
         "temperature_c": int(now["temp_C"]),
         "humidity": int(now["humidity"]),
         "wind_kph": wind,
-        "condition": condition(now["weatherCode"], wind),
+        "condition": condition(now["weatherCode"], wind, is_day),
     }
 
 
