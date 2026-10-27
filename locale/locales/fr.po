@@ -399,6 +399,9 @@ msgstr "La carte de l'agent n'a pas encore été récupérée depuis une instanc
 msgid "invalid_agent_version"
 msgstr "Version d'agent invalide."
 
+msgid "invalid_agent_lb_strategy"
+msgstr "Stratégie d'équilibrage de charge invalide."
+
 msgid "failed_agent_request"
 msgstr "Impossible de traiter la requête agent."
 

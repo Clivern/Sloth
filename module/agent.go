@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/clivern/sloth/db"
+	"github.com/clivern/sloth/pkg/lb"
 	"github.com/clivern/sloth/pkg/util"
 
 	"github.com/rs/zerolog/log"
@@ -22,6 +23,7 @@ var (
 	ErrAgentNotFound        = errors.New("agent not found")
 	ErrInvalidAgentName     = errors.New("invalid agent name")
 	ErrInvalidCardPath      = errors.New("invalid agent card path")
+	ErrInvalidLbStrategy    = errors.New("invalid load balancing strategy")
 	ErrAgentVersionRequired = errors.New("agent version required")
 	ErrFailedListAgents     = errors.New("failed list agents")
 	ErrFailedGetAgent       = errors.New("failed get agent")
@@ -42,8 +44,9 @@ type Agent struct {
 
 // UpsertAgentRequest is the body for registering or updating an agent.
 type UpsertAgentRequest struct {
-	Version  string `json:"version" validate:"required,max=40" label:"Version"`
-	CardPath string `json:"cardPath" validate:"omitempty,max=255,startswith=/" label:"Card Path"`
+	Version    string `json:"version" validate:"required,max=40" label:"Version"`
+	CardPath   string `json:"cardPath" validate:"omitempty,max=255,startswith=/" label:"Card Path"`
+	LbStrategy string `json:"lbStrategy" validate:"omitempty,oneof=random round_robin least_outstanding_tasks sticky" label:"Load Balancing Strategy"`
 }
 
 // AgentResponse is an agent shaped for API responses.
@@ -55,6 +58,7 @@ type AgentResponse struct {
 	Card         json.RawMessage `json:"card"`
 	CardChecksum string          `json:"cardChecksum"`
 	CardPath     string          `json:"cardPath"`
+	LbStrategy   string          `json:"lbStrategy"`
 	Health       string          `json:"health"`
 	StatusCounts map[string]int  `json:"statusCounts"`
 	CreatedAt    string          `json:"createdAt"`
@@ -92,11 +96,22 @@ func toAgentResponse(item *db.Agent, health string, counts map[string]int) *Agen
 		Card:         util.JSONRawFromString(item.Card),
 		CardChecksum: lo.FromPtr(item.CardChecksum),
 		CardPath:     item.CardPath,
+		LbStrategy:   lo.CoalesceOrEmpty(item.LbStrategy, string(lb.RoundRobin)),
 		Health:       health,
 		StatusCounts: counts,
 		CreatedAt:    item.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:    item.UpdatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+// isValidLbStrategy reports whether s names a strategy the picker knows.
+func isValidLbStrategy(s string) bool {
+	switch lb.Strategy(s) {
+	case lb.Random, lb.RoundRobin, lb.LeastOutstandingTasks, lb.Sticky:
+		return true
+	}
+
+	return false
 }
 
 // ListAgents returns paginated agents in a workspace.
@@ -165,7 +180,7 @@ func (a *Agent) GetAgent(workspaceId db.Id, name string) (*AgentResponse, error)
 	return toAgentResponse(agent, health, counts), nil
 }
 
-// UpsertAgent creates or updates an agent's version and card path.
+// UpsertAgent creates or updates an agent's version, card path and load balancing strategy.
 func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequest) (*AgentResponse, bool, error) {
 	if !AgentNamePattern.MatchString(name) {
 		return nil, false, ErrInvalidAgentName
@@ -178,6 +193,10 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 	cardPath := lo.CoalesceOrEmpty(req.CardPath, DefaultCardPath)
 	if !strings.HasPrefix(cardPath, "/") || len(cardPath) > 255 {
 		return nil, false, ErrInvalidCardPath
+	}
+
+	if req.LbStrategy != "" && !isValidLbStrategy(req.LbStrategy) {
+		return nil, false, ErrInvalidLbStrategy
 	}
 
 	existing, err := a.AgentRepository.GetByWorkspaceAndName(workspaceId, name)
@@ -204,6 +223,11 @@ func (a *Agent) UpsertAgent(workspaceId db.Id, name string, req *UpsertAgentRequ
 	existing.Name = name
 	existing.CardPath = cardPath
 	existing.Version = req.Version
+	existing.LbStrategy = lo.CoalesceOrEmpty(
+		req.LbStrategy,
+		existing.LbStrategy,
+		string(lb.RoundRobin),
+	)
 
 	if created {
 		err = a.AgentRepository.Create(existing)

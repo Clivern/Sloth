@@ -399,6 +399,9 @@ msgstr "The agent card has not been fetched from an instance yet."
 msgid "invalid_agent_version"
 msgstr "Invalid agent version."
 
+msgid "invalid_agent_lb_strategy"
+msgstr "Invalid load balancing strategy."
+
 msgid "failed_agent_request"
 msgstr "Failed to complete the agent request."
 

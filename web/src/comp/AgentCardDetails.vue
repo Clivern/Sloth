@@ -29,16 +29,26 @@
           <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.card_pending_desc') }}</p>
         </div>
       </div>
-      <dl class="mt-4 text-sm">
-        <dt class="text-xs font-medium uppercase tracking-wider text-theme-textLight">
-          {{ $t('agents_page.card_path') }}
-        </dt>
-        <dd class="mt-1.5">
-          <code
-            class="block break-all rounded-md border border-theme-border bg-theme-hover px-3 py-2 text-xs font-mono text-theme-text"
-            >{{ agent.cardPath }}</code
-          >
-        </dd>
+      <dl class="mt-4 space-y-4 text-sm">
+        <div>
+          <dt class="text-xs font-medium uppercase tracking-wider text-theme-textLight">
+            {{ $t('agents_page.card_path') }}
+          </dt>
+          <dd class="mt-1.5">
+            <code
+              class="block break-all rounded-md border border-theme-border bg-theme-hover px-3 py-2 text-xs font-mono text-theme-text"
+              >{{ agent.cardPath }}</code
+            >
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs font-medium uppercase tracking-wider text-theme-textLight">
+            {{ $t('agents_page.lb_strategy') }}
+          </dt>
+          <dd class="mt-1.5 text-theme-text">
+            {{ $t('agents_page.lb_strategy_' + (agent.lbStrategy || 'round_robin')) }}
+          </dd>
+        </div>
       </dl>
     </div>
     <dl v-if="agent.card" class="space-y-4 px-5 py-4 text-sm">
@@ -106,6 +116,12 @@
             class="break-all rounded bg-theme-hover px-2 py-1 text-xs font-mono text-theme-text"
             >{{ agent.cardPath }}</code
           >
+        </dd>
+      </div>
+      <div>
+        <dt class="text-theme-textLight">{{ $t('agents_page.lb_strategy') }}</dt>
+        <dd class="mt-1 text-theme-text">
+          {{ $t('agents_page.lb_strategy_' + (agent.lbStrategy || 'round_robin')) }}
         </dd>
       </div>
       <div class="grid grid-cols-2 gap-4">

@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const AgentLbStrategyDefault = "round_robin"
+
 // Agent is a single row in the agents table.
 type Agent struct {
 	Id           Id
@@ -17,6 +19,7 @@ type Agent struct {
 	CardChecksum *string
 	CardPath     string
 	Version      string
+	LbStrategy   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -76,6 +79,7 @@ func scanAgent(agent *Agent) []any {
 		&agent.CardChecksum,
 		&agent.CardPath,
 		&agent.Version,
+		&agent.LbStrategy,
 		&agent.CreatedAt,
 		&agent.UpdatedAt,
 	}
@@ -89,10 +93,13 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 	}
 
 	agent.Id = id
+	if agent.LbStrategy == "" {
+		agent.LbStrategy = AgentLbStrategyDefault
+	}
 
 	return r.db.QueryRow(
-		`INSERT INTO ai_agents (id, workspace_id, name, card, card_checksum, card_path, version)
-		VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
+		`INSERT INTO ai_agents (id, workspace_id, name, card, card_checksum, card_path, version, lb_strategy)
+		VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
 		RETURNING created_at, updated_at`,
 		agent.Id.String(),
 		agent.WorkspaceId.String(),
@@ -101,6 +108,7 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 		agent.CardChecksum,
 		agent.CardPath,
 		agent.Version,
+		agent.LbStrategy,
 	).Scan(&agent.CreatedAt, &agent.UpdatedAt)
 }
 
@@ -108,7 +116,7 @@ func (r *AgentRepositoryPostgres) Create(agent *Agent) error {
 func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 	return QueryOne(
 		r.db,
-		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, lb_strategy, created_at, updated_at
 		FROM ai_agents
 		WHERE id = $1`,
 		scanAgent,
@@ -120,7 +128,7 @@ func (r *AgentRepositoryPostgres) GetById(id Id) (*Agent, error) {
 func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name string) (*Agent, error) {
 	return QueryOne(
 		r.db,
-		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, lb_strategy, created_at, updated_at
 		FROM ai_agents
 		WHERE workspace_id = $1 AND name = $2`,
 		scanAgent,
@@ -129,7 +137,7 @@ func (r *AgentRepositoryPostgres) GetByWorkspaceAndName(workspaceId Id, name str
 	)
 }
 
-// Update updates an agent card, card path and version.
+// Update updates an agent card, card path, version and load balancing strategy.
 func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -140,13 +148,14 @@ func (r *AgentRepositoryPostgres) Update(agent *Agent) error {
 
 	_, err = tx.Exec(
 		`UPDATE ai_agents
-		SET name = $1, card = $2::jsonb, card_checksum = $3, card_path = $4, version = $5, updated_at = $6
-		WHERE id = $7`,
+		SET name = $1, card = $2::jsonb, card_checksum = $3, card_path = $4, version = $5, lb_strategy = $6, updated_at = $7
+		WHERE id = $8`,
 		agent.Name,
 		agent.Card,
 		agent.CardChecksum,
 		agent.CardPath,
 		agent.Version,
+		agent.LbStrategy,
 		time.Now().UTC(),
 		agent.Id.String(),
 	)
@@ -237,7 +246,7 @@ func (r *AgentRepositoryPostgres) Delete(id Id) error {
 func (r *AgentRepositoryPostgres) ListByWorkspaceId(workspaceId Id, limit, offset int) ([]*Agent, error) {
 	return QueryMany(
 		r.db,
-		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, created_at, updated_at
+		`SELECT id, workspace_id, name, card, card_checksum, card_path, version, lb_strategy, created_at, updated_at
 		FROM ai_agents
 		WHERE workspace_id = $1
 		ORDER BY name

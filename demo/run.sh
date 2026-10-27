@@ -6,9 +6,9 @@ cd "$(dirname "$0")"
 export SLOTH_URL=http://localhost:8000
 export SLOTH_WORKSPACE="<workspace-id>"
 export SLOTH_ACCESS_KEY="<access-key>"
-export SLOTH_AGENT_SECRET="<assistant-identity-secret>"
-export OPENROUTER_API_KEY="<openrouter-key>"
-export ASSISTANT_MODEL=deepseek/deepseek-v4-flash
+export SLOTH_AGENT_SECRET="<assistant-secret>"  # any random value, min 8 characters; the assistant issues it as its identity on boot
+export MODEL_API_KEY="<model-key>"
+export ASSISTANT_MODEL=muse-wonder-1.0
 export PYTHONUNBUFFERED=1
 
 # Keep real values in run.local.sh, which git ignores.

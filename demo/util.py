@@ -51,9 +51,9 @@ async def allow(client, name, calls):
         )
 
 
-def lifespan(name, version, port, protection=None, calls=None):
+def lifespan(name, version, port, protection=None, calls=None, secret=""):
     """Register the agent on boot; protection, when set, is the credential Sloth must send the agent,
-    and calls lists the agents it is allowed to call."""
+    calls lists the agents it is allowed to call, and secret, when set, is issued as its gateway identity."""
 
     @asynccontextmanager
     async def run(app):
@@ -66,6 +66,10 @@ def lifespan(name, version, port, protection=None, calls=None):
 
         async with httpx.AsyncClient(headers={"X-Access-Key": ACCESS_KEY}) as client:
             await client.put(base, json={"version": version, "cardPath": "/.well-known/agent-card.json"})
+
+            # The agent issues its own gateway identity with its secret; 409 means one already exists.
+            if secret:
+                await client.post(f"{base}/identities", json={"name": "default", "type": "api_key", "secret": secret})
 
             if protection:
                 await client.put(f"{base}/protection", json=protection)

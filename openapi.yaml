@@ -3162,6 +3162,11 @@ components:
           pattern: "^/"
           default: /.well-known/agent-card.json
           description: Path instances serve their A2A card on
+        lbStrategy:
+          type: string
+          enum: [random, round_robin, least_outstanding_tasks, sticky]
+          default: round_robin
+          description: How the gateway picks one of the agent's live instances
 
     Agent:
       type: object
@@ -3186,6 +3191,10 @@ components:
           description: Empty until the card is fetched.
         cardPath:
           type: string
+        lbStrategy:
+          type: string
+          enum: [random, round_robin, least_outstanding_tasks, sticky]
+          description: How the gateway picks one of the agent's live instances.
         health:
           type: string
           enum: [passing, warning, unknown, critical]

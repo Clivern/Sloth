@@ -54,6 +54,26 @@
           />
           <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.card_path_hint') }}</p>
         </div>
+        <div>
+          <label for="agent-lb-strategy" class="form-label">{{
+            $t('agents_page.lb_strategy')
+          }}</label>
+          <select
+            id="agent-lb-strategy"
+            v-model="form.lbStrategy"
+            required
+            class="input-field"
+            :disabled="saving"
+          >
+            <option value="round_robin">{{ $t('agents_page.lb_strategy_round_robin') }}</option>
+            <option value="random">{{ $t('agents_page.lb_strategy_random') }}</option>
+            <option value="least_outstanding_tasks">
+              {{ $t('agents_page.lb_strategy_least_outstanding_tasks') }}
+            </option>
+            <option value="sticky">{{ $t('agents_page.lb_strategy_sticky') }}</option>
+          </select>
+          <p class="mt-1 text-xs text-theme-textLight">{{ $t('agents_page.lb_strategy_hint') }}</p>
+        </div>
       </div>
 
       <div class="flex gap-3 justify-end">
@@ -108,6 +128,7 @@ const form = reactive({
   name: '',
   version: '',
   cardPath: '',
+  lbStrategy: 'round_robin',
 })
 
 watch(
@@ -118,6 +139,7 @@ watch(
     form.name = props.agent?.name || ''
     form.version = props.agent?.version || ''
     form.cardPath = props.agent?.cardPath || ''
+    form.lbStrategy = props.agent?.lbStrategy || 'round_robin'
   }
 )
 
@@ -165,7 +187,8 @@ async function submit() {
       return
     }
 
-    const payload = cardPath ? { version, cardPath } : { version }
+    const payload = { version, lbStrategy: form.lbStrategy }
+    if (cardPath) payload.cardPath = cardPath
     const res = await agent_api.upsert(props.workspaceId, name, payload)
     emit('saved', res.data)
   } catch (err) {
