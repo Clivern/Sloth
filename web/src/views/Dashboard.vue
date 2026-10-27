@@ -16,11 +16,20 @@
         </p>
       </header>
 
-      <section v-if="showGettingStarted" class="mb-8 overflow-hidden rounded-xl border border-theme-border bg-white shadow-sm">
-        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-theme-border px-6 py-4">
+      <section
+        v-if="showGettingStarted"
+        class="mb-8 overflow-hidden rounded-xl border border-theme-border bg-white shadow-sm"
+      >
+        <div
+          class="flex flex-wrap items-start justify-between gap-3 border-b border-theme-border px-6 py-4"
+        >
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.getting_started') }}</h2>
-            <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.getting_started_desc') }}</p>
+            <h2 class="text-lg font-semibold text-theme-text">
+              {{ $t('dashboard.getting_started') }}
+            </h2>
+            <p class="mt-0.5 text-sm text-theme-textLight">
+              {{ $t('dashboard.getting_started_desc') }}
+            </p>
           </div>
           <button
             type="button"
@@ -32,7 +41,11 @@
         </div>
 
         <ol class="grid grid-cols-1 gap-px bg-theme-border sm:grid-cols-2 lg:grid-cols-3">
-          <li v-for="(step, index) in gettingStartedSteps" :key="step.id" class="flex gap-4 bg-white px-6 py-5">
+          <li
+            v-for="(step, index) in gettingStartedSteps"
+            :key="step.id"
+            class="flex gap-4 bg-white px-6 py-5"
+          >
             <span
               class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-theme-hover text-sm font-semibold text-theme-text"
               aria-hidden="true"
@@ -42,7 +55,9 @@
             <span class="sr-only">{{ $t('dashboard.step_label', { number: index + 1 }) }}</span>
             <div class="min-w-0 flex-1">
               <p class="text-sm font-medium text-theme-text">{{ step.title }}</p>
-              <p class="mt-0.5 text-sm leading-relaxed text-theme-textLight">{{ step.description }}</p>
+              <p class="mt-0.5 text-sm leading-relaxed text-theme-textLight">
+                {{ step.description }}
+              </p>
               <router-link
                 :to="step.to"
                 class="mt-2 inline-flex text-sm font-medium text-primary-800 hover:underline"
@@ -59,21 +74,23 @@
           <div class="border-b border-theme-border px-6 py-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.attention_title') }}</h2>
-                <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.attention_subtitle') }}</p>
+                <h2 class="text-lg font-semibold text-theme-text">
+                  {{ $t('dashboard.attention_title') }}
+                </h2>
+                <p class="mt-0.5 text-sm text-theme-textLight">
+                  {{ $t('dashboard.attention_subtitle') }}
+                </p>
               </div>
-              <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+              <span
+                class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+              >
                 {{ $t('dashboard.mock_badge') }}
               </span>
             </div>
           </div>
 
           <ul class="divide-y divide-theme-border max-h-[28rem] overflow-y-auto">
-            <li
-              v-for="item in attentionItems"
-              :key="item.id"
-              class="flex gap-4 px-6 py-4"
-            >
+            <li v-for="item in attentionItems" :key="item.id" class="flex gap-4 px-6 py-4">
               <span
                 class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
                 :class="attentionDotClass(item.level)"
@@ -81,7 +98,9 @@
               />
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-theme-text">{{ item.title }}</p>
-                <p class="mt-0.5 text-sm text-theme-textLight leading-relaxed">{{ item.description }}</p>
+                <p class="mt-0.5 text-sm text-theme-textLight leading-relaxed">
+                  {{ item.description }}
+                </p>
                 <router-link
                   v-if="item.to"
                   :to="item.to"
@@ -98,27 +117,34 @@
           <div class="border-b border-theme-border px-6 py-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.activity_title') }}</h2>
-                <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.activity_subtitle') }}</p>
+                <h2 class="text-lg font-semibold text-theme-text">
+                  {{ $t('dashboard.activity_title') }}
+                </h2>
+                <p class="mt-0.5 text-sm text-theme-textLight">
+                  {{ $t('dashboard.activity_subtitle') }}
+                </p>
               </div>
-              <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+              <span
+                class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+              >
                 {{ $t('dashboard.mock_badge') }}
               </span>
             </div>
           </div>
 
           <ul class="divide-y divide-theme-border">
-            <li
-              v-for="event in recentActivity"
-              :key="event.id"
-              class="flex gap-3 px-6 py-3.5"
-            >
+            <li v-for="event in recentActivity" :key="event.id" class="flex gap-3 px-6 py-3.5">
               <span
                 class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-theme-hover text-theme-textLight"
                 aria-hidden="true"
               >
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="activityIcons[event.icon]" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    :d="activityIcons[event.icon]"
+                  />
                 </svg>
               </span>
               <div class="min-w-0 flex-1">
@@ -139,12 +165,18 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg font-semibold text-theme-text">{{ $t('dashboard.whats_new_title') }}</h2>
-                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                <h2 class="text-lg font-semibold text-theme-text">
+                  {{ $t('dashboard.whats_new_title') }}
+                </h2>
+                <span
+                  class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                >
                   {{ $t('dashboard.mock_badge') }}
                 </span>
               </div>
-              <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('dashboard.whats_new_subtitle') }}</p>
+              <p class="mt-0.5 text-sm text-theme-textLight">
+                {{ $t('dashboard.whats_new_subtitle') }}
+              </p>
             </div>
             <button
               type="button"
@@ -159,7 +191,9 @@
           <p class="text-xs font-medium uppercase tracking-wide text-theme-textLight">
             {{ $t('dashboard.whats_new_tip_label') }}
           </p>
-          <p class="mt-2 text-base font-medium text-theme-text">{{ $t('dashboard.whats_new_tip_title') }}</p>
+          <p class="mt-2 text-base font-medium text-theme-text">
+            {{ $t('dashboard.whats_new_tip_title') }}
+          </p>
           <p class="mt-1 text-sm leading-relaxed text-theme-textLight">
             {{ $t('dashboard.whats_new_tip_body') }}
           </p>
@@ -196,110 +230,116 @@ function dismissGettingStarted() {
   localStorage.setItem(GETTING_STARTED_KEY, '1')
 }
 
-const gettingStartedSteps = computed(() => [
-  {
-    id: 'access_key',
-    title: t('dashboard.step_access_key'),
-    description: t('dashboard.step_access_key_desc'),
-    action: t('dashboard.step_access_key_link'),
-    to: '/settings',
-    requiresManage: true,
-  },
-  {
-    id: 'register_agent',
-    title: t('dashboard.step_register_agent'),
-    description: t('dashboard.step_register_agent_desc'),
-    action: t('dashboard.step_register_agent_link'),
-    to: '/agents',
-  },
-  {
-    id: 'register_instance',
-    title: t('dashboard.step_register_instance'),
-    description: t('dashboard.step_register_instance_desc'),
-    action: t('dashboard.step_register_instance_link'),
-    to: '/agents',
-  },
-  {
-    id: 'health_check',
-    title: t('dashboard.step_health_check'),
-    description: t('dashboard.step_health_check_desc'),
-    action: t('dashboard.step_health_check_link'),
-    to: '/agents',
-  },
-  {
-    id: 'intention',
-    title: t('dashboard.step_intention'),
-    description: t('dashboard.step_intention_desc'),
-    action: t('dashboard.step_intention_link'),
-    to: '/intentions',
-  },
-  {
-    id: 'traffic',
-    title: t('dashboard.step_traffic'),
-    description: t('dashboard.step_traffic_desc'),
-    action: t('dashboard.step_traffic_link'),
-    to: '/traffic',
-  },
-].filter((step) => !step.requiresManage || canManage.value))
+const gettingStartedSteps = computed(() =>
+  [
+    {
+      id: 'access_key',
+      title: t('dashboard.step_access_key'),
+      description: t('dashboard.step_access_key_desc'),
+      action: t('dashboard.step_access_key_link'),
+      to: '/settings',
+      requiresManage: true,
+    },
+    {
+      id: 'register_agent',
+      title: t('dashboard.step_register_agent'),
+      description: t('dashboard.step_register_agent_desc'),
+      action: t('dashboard.step_register_agent_link'),
+      to: '/agents',
+    },
+    {
+      id: 'register_instance',
+      title: t('dashboard.step_register_instance'),
+      description: t('dashboard.step_register_instance_desc'),
+      action: t('dashboard.step_register_instance_link'),
+      to: '/agents',
+    },
+    {
+      id: 'health_check',
+      title: t('dashboard.step_health_check'),
+      description: t('dashboard.step_health_check_desc'),
+      action: t('dashboard.step_health_check_link'),
+      to: '/agents',
+    },
+    {
+      id: 'intention',
+      title: t('dashboard.step_intention'),
+      description: t('dashboard.step_intention_desc'),
+      action: t('dashboard.step_intention_link'),
+      to: '/intentions',
+    },
+    {
+      id: 'traffic',
+      title: t('dashboard.step_traffic'),
+      description: t('dashboard.step_traffic_desc'),
+      action: t('dashboard.step_traffic_link'),
+      to: '/traffic',
+    },
+  ].filter((step) => !step.requiresManage || canManage.value)
+)
 
-const attentionItems = computed(() => [
-  {
-    id: 'key',
-    level: 'error',
-    title: t('dashboard.attention_key_title'),
-    description: t('dashboard.attention_key_desc'),
-    action: t('dashboard.attention_key_action'),
-    to: '/settings',
-  },
-  {
-    id: 'invite',
-    level: 'info',
-    title: t('dashboard.attention_invite_title'),
-    description: t('dashboard.attention_invite_desc'),
-    action: t('dashboard.attention_invite_action'),
-    to: '/members',
-  },
-  {
-    id: 'integration',
-    level: 'info',
-    title: t('dashboard.attention_integration_title'),
-    description: t('dashboard.attention_integration_desc'),
-    action: t('dashboard.attention_integration_action'),
-    to: '/integrations',
-  },
-  {
-    id: 'trial',
-    level: 'warn',
-    title: t('dashboard.attention_trial_title'),
-    description: t('dashboard.attention_trial_desc'),
-    action: t('dashboard.attention_trial_action'),
-    to: '/billing',
-    requiresSaaS: true,
-  },
-  {
-    id: 'stale_key',
-    level: 'info',
-    title: t('dashboard.attention_stale_key_title'),
-    description: t('dashboard.attention_stale_key_desc'),
-    action: t('dashboard.attention_stale_key_action'),
-    to: '/settings',
-  },
-  {
-    id: 'latency',
-    level: 'warn',
-    title: t('dashboard.attention_latency_title'),
-    description: t('dashboard.attention_latency_desc'),
-    action: t('dashboard.attention_latency_action'),
-    to: '/traffic',
-  },
-].filter((item) => !item.requiresSaaS || isSaaS()))
+const attentionItems = computed(() =>
+  [
+    {
+      id: 'key',
+      level: 'error',
+      title: t('dashboard.attention_key_title'),
+      description: t('dashboard.attention_key_desc'),
+      action: t('dashboard.attention_key_action'),
+      to: '/settings',
+    },
+    {
+      id: 'invite',
+      level: 'info',
+      title: t('dashboard.attention_invite_title'),
+      description: t('dashboard.attention_invite_desc'),
+      action: t('dashboard.attention_invite_action'),
+      to: '/members',
+    },
+    {
+      id: 'integration',
+      level: 'info',
+      title: t('dashboard.attention_integration_title'),
+      description: t('dashboard.attention_integration_desc'),
+      action: t('dashboard.attention_integration_action'),
+      to: '/integrations',
+    },
+    {
+      id: 'trial',
+      level: 'warn',
+      title: t('dashboard.attention_trial_title'),
+      description: t('dashboard.attention_trial_desc'),
+      action: t('dashboard.attention_trial_action'),
+      to: '/billing',
+      requiresSaaS: true,
+    },
+    {
+      id: 'stale_key',
+      level: 'info',
+      title: t('dashboard.attention_stale_key_title'),
+      description: t('dashboard.attention_stale_key_desc'),
+      action: t('dashboard.attention_stale_key_action'),
+      to: '/settings',
+    },
+    {
+      id: 'latency',
+      level: 'warn',
+      title: t('dashboard.attention_latency_title'),
+      description: t('dashboard.attention_latency_desc'),
+      action: t('dashboard.attention_latency_action'),
+      to: '/traffic',
+    },
+  ].filter((item) => !item.requiresSaaS || isSaaS())
+)
 
 function attentionDotClass(level) {
-  return {
-    error: 'bg-red-500',
-    warn: 'bg-amber-500',
-    info: 'bg-sky-500',
-  }[level] || 'bg-theme-textLight'
+  return (
+    {
+      error: 'bg-red-500',
+      warn: 'bg-amber-500',
+      info: 'bg-sky-500',
+    }[level] || 'bg-theme-textLight'
+  )
 }
 
 const activityIcons = {
@@ -325,5 +365,4 @@ const recentActivity = computed(() => [
     time: t('dashboard.activity_time_1d'),
   },
 ])
-
 </script>

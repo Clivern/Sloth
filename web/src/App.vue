@@ -20,4 +20,3 @@ const route = useRoute()
 <style scoped>
 /* Additional app-level styles can go here */
 </style>
-

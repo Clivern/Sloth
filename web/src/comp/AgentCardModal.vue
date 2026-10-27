@@ -60,12 +60,14 @@
         <button type="button" class="btn-secondary" :disabled="saving" @click="close">
           {{ $t('common.cancel') }}
         </button>
-        <button
-          type="submit"
-          class="btn-primary"
-          :disabled="saving"
-        >
-          {{ saving ? $t('agents_page.saving') : (isEdit ? $t('common.save') : $t('agents_page.register')) }}
+        <button type="submit" class="btn-primary" :disabled="saving">
+          {{
+            saving
+              ? $t('agents_page.saving')
+              : isEdit
+                ? $t('common.save')
+                : $t('agents_page.register')
+          }}
         </button>
       </div>
     </form>
@@ -108,13 +110,16 @@ const form = reactive({
   cardPath: '',
 })
 
-watch(() => props.open, (open) => {
-  if (!open) return
-  error.value = null
-  form.name = props.agent?.name || ''
-  form.version = props.agent?.version || ''
-  form.cardPath = props.agent?.cardPath || ''
-})
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) return
+    error.value = null
+    form.name = props.agent?.name || ''
+    form.version = props.agent?.version || ''
+    form.cardPath = props.agent?.cardPath || ''
+  }
+)
 
 function close() {
   if (saving.value) return
@@ -155,7 +160,7 @@ async function submit() {
 
   try {
     // PUT is an upsert, so guard against replacing an existing agent from the register form
-    if (!isEdit.value && await agentExists(name)) {
+    if (!isEdit.value && (await agentExists(name))) {
       error.value = t('agents_page.already_exists', { name })
       return
     }

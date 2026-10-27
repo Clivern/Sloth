@@ -16,80 +16,242 @@
           <header class="flex items-center gap-3 border-b border-theme-border py-4 pl-5 pr-4">
             <AssistantAvatar />
             <div class="min-w-0 grow">
-              <h2 class="text-base font-semibold text-theme-text">{{ $t('assistant_panel.title') }}</h2>
-              <p class="mt-0.5 text-sm text-theme-textLight">{{ $t('assistant_panel.subtitle') }}</p>
+              <h2 class="text-base font-semibold text-theme-text">
+                {{ $t('assistant_panel.title') }}
+              </h2>
+              <p class="mt-0.5 text-sm text-theme-textLight">
+                {{ $t('assistant_panel.subtitle') }}
+              </p>
             </div>
-            <button type="button" class="btn-primary inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5" :disabled="creating" @click="newChat">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            <button
+              type="button"
+              class="btn-primary inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5"
+              :disabled="creating"
+              @click="newChat"
+            >
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
               {{ $t('assistant_panel.new') }}
             </button>
-            <button type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-theme-hover" :aria-label="$t('assistant_panel.close')" @click="open = false">
-              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            <button
+              type="button"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-theme-hover"
+              :aria-label="$t('assistant_panel.close')"
+              @click="open = false"
+            >
+              <svg
+                class="h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           </header>
 
           <div class="grow overflow-y-auto">
-            <p v-if="errorMessage" class="m-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ errorMessage }}</p>
-            <p v-if="loading && !chats.length" class="p-6 text-center text-sm text-theme-textLight">{{ $t('assistant_panel.loading') }}</p>
-            <p v-else-if="!chats.length" class="p-6 text-center text-sm text-theme-textLight">{{ $t('assistant_panel.no_chats') }}</p>
-            <div v-for="item in chats" :key="item.id" class="group flex items-center border-b border-theme-border hover:bg-theme-hover">
-              <button type="button" class="flex min-w-0 grow flex-col gap-1 py-3.5 pl-5 pr-2 text-left" @click="openChat(item.id)">
+            <p
+              v-if="errorMessage"
+              class="m-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
+              {{ errorMessage }}
+            </p>
+            <p v-if="loading && !chats.length" class="p-6 text-center text-sm text-theme-textLight">
+              {{ $t('assistant_panel.loading') }}
+            </p>
+            <p v-else-if="!chats.length" class="p-6 text-center text-sm text-theme-textLight">
+              {{ $t('assistant_panel.no_chats') }}
+            </p>
+            <div
+              v-for="item in chats"
+              :key="item.id"
+              class="group flex items-center border-b border-theme-border hover:bg-theme-hover"
+            >
+              <button
+                type="button"
+                class="flex min-w-0 grow flex-col gap-1 py-3.5 pl-5 pr-2 text-left"
+                @click="openChat(item.id)"
+              >
                 <span class="flex w-full items-center gap-2">
-                  <span class="min-w-0 grow truncate text-sm font-semibold text-theme-text">{{ item.title || $t('assistant_panel.untitled') }}</span>
-                  <span v-if="item.status !== 'idle'" :class="statusPillClass(item.status)">{{ $t(`assistant_panel.status_${item.status}`) }}</span>
-                  <time class="whitespace-nowrap text-xs text-theme-textLight" :datetime="item.updatedAt" :title="formatTimestamp(item.updatedAt)">{{ formatRelative(item.updatedAt) }}</time>
+                  <span class="min-w-0 grow truncate text-sm font-semibold text-theme-text">{{
+                    item.title || $t('assistant_panel.untitled')
+                  }}</span>
+                  <span v-if="item.status !== 'idle'" :class="statusPillClass(item.status)">{{
+                    $t(`assistant_panel.status_${item.status}`)
+                  }}</span>
+                  <time
+                    class="whitespace-nowrap text-xs text-theme-textLight"
+                    :datetime="item.updatedAt"
+                    :title="formatTimestamp(item.updatedAt)"
+                    >{{ formatRelative(item.updatedAt) }}</time
+                  >
                 </span>
-                <span class="w-full truncate text-sm text-theme-textLight">{{ item.preview ? plainText(item.preview) : $t('assistant_panel.no_messages') }}</span>
+                <span class="w-full truncate text-sm text-theme-textLight">{{
+                  item.preview ? plainText(item.preview) : $t('assistant_panel.no_messages')
+                }}</span>
               </button>
               <button
                 type="button"
                 class="mr-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-red-50 hover:text-red-700 focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                :aria-label="$t('assistant_panel.delete_chat', { title: item.title || $t('assistant_panel.untitled') })"
+                :aria-label="
+                  $t('assistant_panel.delete_chat', {
+                    title: item.title || $t('assistant_panel.untitled'),
+                  })
+                "
                 @click="deleteTarget = item"
               >
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+                  />
+                </svg>
               </button>
             </div>
           </div>
 
-          <footer class="flex items-center gap-2 border-t border-theme-border px-5 py-3 text-xs text-theme-textLight">
-            <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" /></svg>
+          <footer
+            class="flex items-center gap-2 border-t border-theme-border px-5 py-3 text-xs text-theme-textLight"
+          >
+            <svg
+              class="h-3.5 w-3.5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z" />
+            </svg>
             <span>{{ $t('assistant_panel.footer') }}</span>
           </footer>
         </template>
 
         <template v-else>
           <header class="flex items-center gap-2 border-b border-theme-border py-3 pl-2 pr-4">
-            <button type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-text hover:bg-theme-hover" :aria-label="$t('assistant_panel.back')" @click="showList">
-              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+            <button
+              type="button"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-text hover:bg-theme-hover"
+              :aria-label="$t('assistant_panel.back')"
+              @click="showList"
+            >
+              <svg
+                class="h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
             </button>
             <AssistantAvatar small />
             <div class="flex min-w-0 grow items-center gap-2">
-              <h2 class="truncate text-[15px] font-semibold text-theme-text">{{ active?.title || $t('assistant_panel.untitled') }}</h2>
-              <span v-if="active && active.status !== 'idle'" :class="statusPillClass(active.status)">{{ $t(`assistant_panel.status_${active.status}`) }}</span>
+              <h2 class="truncate text-[15px] font-semibold text-theme-text">
+                {{ active?.title || $t('assistant_panel.untitled') }}
+              </h2>
+              <span
+                v-if="active && active.status !== 'idle'"
+                :class="statusPillClass(active.status)"
+                >{{ $t(`assistant_panel.status_${active.status}`) }}</span
+              >
             </div>
             <button
               type="button"
               class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-red-50 hover:text-red-700"
-              :aria-label="$t('assistant_panel.delete_chat', { title: active?.title || $t('assistant_panel.untitled') })"
+              :aria-label="
+                $t('assistant_panel.delete_chat', {
+                  title: active?.title || $t('assistant_panel.untitled'),
+                })
+              "
               @click="deleteTarget = active"
             >
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+                />
+              </svg>
             </button>
-            <button type="button" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-theme-hover" :aria-label="$t('assistant_panel.close')" @click="open = false">
-              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            <button
+              type="button"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-textLight hover:bg-theme-hover"
+              :aria-label="$t('assistant_panel.close')"
+              @click="open = false"
+            >
+              <svg
+                class="h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           </header>
 
-          <div ref="threadRef" class="flex grow flex-col gap-3 overflow-y-auto px-5 py-4" aria-live="polite">
+          <div
+            ref="threadRef"
+            class="flex grow flex-col gap-3 overflow-y-auto px-5 py-4"
+            aria-live="polite"
+          >
             <div class="flex max-w-[88%] items-end gap-2 self-start">
               <AssistantAvatar small />
-              <div v-if="greeting" class="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm leading-relaxed text-theme-text">
+              <div
+                v-if="greeting"
+                class="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm leading-relaxed text-theme-text"
+              >
                 <span class="sr-only">{{ greetingText }}</span>
                 <span aria-hidden="true">{{ greeting }}</span>
               </div>
-              <div v-else class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5" aria-hidden="true">
-                <span v-for="dot in 3" :key="dot" class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none" :style="{ animationDelay: `${(dot - 1) * 150}ms` }"></span>
+              <div
+                v-else
+                class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5"
+                aria-hidden="true"
+              >
+                <span
+                  v-for="dot in 3"
+                  :key="dot"
+                  class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none"
+                  :style="{ animationDelay: `${(dot - 1) * 150}ms` }"
+                ></span>
               </div>
             </div>
 
@@ -97,7 +259,10 @@
               enter-active-class="transition duration-200 ease-out motion-reduce:transition-none"
               enter-from-class="translate-y-2 opacity-0"
             >
-              <div v-if="active && !active.messages?.length && greeting === greetingText" class="flex flex-wrap justify-center gap-2">
+              <div
+                v-if="active && !active.messages?.length && greeting === greetingText"
+                class="flex flex-wrap justify-center gap-2"
+              >
                 <button
                   v-for="key in SUGGESTIONS"
                   :key="key"
@@ -111,12 +276,20 @@
             </Transition>
 
             <template v-for="message in active?.messages || []" :key="message.id">
-              <div v-if="message.kind === 'user'" class="max-w-[80%] self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm leading-relaxed text-white">{{ message.content }}</div>
+              <div
+                v-if="message.kind === 'user'"
+                class="max-w-[80%] self-end whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--btn-primary-bg)] px-4 py-2.5 text-sm leading-relaxed text-white"
+              >
+                {{ message.content }}
+              </div>
 
               <div v-else class="flex max-w-[88%] items-end gap-2 self-start">
                 <AssistantAvatar small />
                 <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes HTML and drops unsafe links -->
-                <div class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text" v-html="renderMarkdown(message.content)"></div>
+                <div
+                  class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text"
+                  v-html="renderMarkdown(message.content)"
+                ></div>
               </div>
             </template>
 
@@ -124,21 +297,47 @@
               <div class="flex max-w-[88%] items-end gap-2 self-start">
                 <AssistantAvatar small />
                 <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes HTML and drops unsafe links -->
-                <div v-if="streamed" class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text" v-html="renderMarkdown(streamed)"></div>
-                <div v-else class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5" role="status">
+                <div
+                  v-if="streamed"
+                  class="markdown-content assistant-markdown min-w-0 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-2.5 text-sm text-theme-text"
+                  v-html="renderMarkdown(streamed)"
+                ></div>
+                <div
+                  v-else
+                  class="flex items-center gap-1 rounded-2xl rounded-bl-md bg-theme-hover px-4 py-3.5"
+                  role="status"
+                >
                   <span class="sr-only">{{ $t('assistant_panel.thinking') }}</span>
-                  <span v-for="dot in 3" :key="dot" class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none" :style="{ animationDelay: `${(dot - 1) * 150}ms` }"></span>
+                  <span
+                    v-for="dot in 3"
+                    :key="dot"
+                    class="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-500 motion-reduce:animate-none"
+                    :style="{ animationDelay: `${(dot - 1) * 150}ms` }"
+                  ></span>
                 </div>
               </div>
             </template>
-            <p v-if="active?.status === 'failed'" class="self-start rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800">
+            <p
+              v-if="active?.status === 'failed'"
+              class="self-start rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800"
+            >
               {{ $t('assistant_panel.failed_answer') }}
             </p>
-            <p v-if="errorMessage" class="self-stretch rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800">{{ errorMessage }}</p>
+            <p
+              v-if="errorMessage"
+              class="self-stretch rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-800"
+            >
+              {{ errorMessage }}
+            </p>
           </div>
 
-          <form class="m-3 mt-0 flex items-end gap-2 rounded-2xl border border-theme-border bg-white p-1.5 pl-3 focus-within:border-primary-500" @submit.prevent="send">
-            <label for="assistant-input" class="sr-only">{{ $t('assistant_panel.message_label') }}</label>
+          <form
+            class="m-3 mt-0 flex items-end gap-2 rounded-2xl border border-theme-border bg-white p-1.5 pl-3 focus-within:border-primary-500"
+            @submit.prevent="send"
+          >
+            <label for="assistant-input" class="sr-only">{{
+              $t('assistant_panel.message_label')
+            }}</label>
             <textarea
               id="assistant-input"
               ref="inputRef"
@@ -150,8 +349,24 @@
               :placeholder="$t('assistant_panel.placeholder')"
               @keydown.enter.exact.prevent="$event.target.form.requestSubmit()"
             ></textarea>
-            <button type="submit" class="btn-primary inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-0" :disabled="sending" :aria-label="$t('assistant_panel.send')">
-              <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            <button
+              type="submit"
+              class="btn-primary inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl p-0"
+              :disabled="sending"
+              :aria-label="$t('assistant_panel.send')"
+            >
+              <svg
+                class="h-[18px] w-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
             </button>
           </form>
         </template>
@@ -161,7 +376,11 @@
     <ConfirmModal
       :open="!!deleteTarget"
       :title="$t('assistant_panel.delete_title')"
-      :message="$t('assistant_panel.delete_confirm', { title: deleteTarget?.title || $t('assistant_panel.untitled') })"
+      :message="
+        $t('assistant_panel.delete_confirm', {
+          title: deleteTarget?.title || $t('assistant_panel.untitled'),
+        })
+      "
       :error="deleteError"
       :busy="deleting"
       :confirm-label="$t('assistant_panel.delete')"
@@ -184,8 +403,33 @@
         leave-active-class="transition duration-100 ease-in motion-reduce:transition-none"
         leave-to-class="rotate-90 scale-50 opacity-0"
       >
-        <svg v-if="open" key="close" class="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        <svg v-else key="open" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /></svg>
+        <svg
+          v-if="open"
+          key="close"
+          class="h-[22px] w-[22px]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+        <svg
+          v-else
+          key="open"
+          class="h-6 w-6"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+        </svg>
       </Transition>
     </button>
   </div>
@@ -410,7 +654,9 @@ function scrollToEnd() {
 
 function statusPillClass(status) {
   const base = 'inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium'
-  return status === 'failed' ? `${base} bg-red-50 text-red-800` : `${base} bg-theme-hover text-primary-700`
+  return status === 'failed'
+    ? `${base} bg-red-50 text-red-800`
+    : `${base} bg-theme-hover text-primary-700`
 }
 
 watch(open, (isOpen) => {

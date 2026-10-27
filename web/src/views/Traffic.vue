@@ -14,7 +14,10 @@
           <p class="mt-1 text-sm text-theme-textLight">{{ $t('traffic_page.list_desc') }}</p>
         </div>
 
-        <div v-if="errorMessage" class="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div
+          v-if="errorMessage"
+          class="m-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
           {{ errorMessage }}
         </div>
 
@@ -22,28 +25,70 @@
           <table class="min-w-full divide-y divide-theme-border">
             <thead class="bg-theme-hover">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.when') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.source') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.destination') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.skill') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.verb') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.decision') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.result') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.latency') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider">{{ $t('traffic_page.task') }}</th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.when') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.source') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.destination') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.skill') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.verb') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.decision') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.result') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.latency') }}
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                >
+                  {{ $t('traffic_page.task') }}
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
               <tr v-if="loading && !calls.length">
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('common.loading') }}</td>
+                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">
+                  {{ $t('common.loading') }}
+                </td>
               </tr>
               <tr v-else-if="!calls.length">
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">{{ $t('traffic_page.empty') }}</td>
+                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">
+                  {{ $t('traffic_page.empty') }}
+                </td>
               </tr>
               <template v-else>
                 <tr v-for="call in calls" :key="call.id" class="hover:bg-theme-hover">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">
-                    <time :datetime="call.createdAt" :title="formatTimestamp(call.createdAt)">{{ formatRelative(call.createdAt) }}</time>
+                    <time :datetime="call.createdAt" :title="formatTimestamp(call.createdAt)">{{
+                      formatRelative(call.createdAt)
+                    }}</time>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">
                     <router-link
@@ -62,14 +107,27 @@
                       {{ call.destinationAgent }}
                     </router-link>
                     <span v-else class="text-theme-textLight">—</span>
-                    <div v-if="call.destinationInstance" class="text-xs font-normal text-theme-textLight">{{ call.destinationInstance }}</div>
+                    <div
+                      v-if="call.destinationInstance"
+                      class="text-xs font-normal text-theme-textLight"
+                    >
+                      {{ call.destinationInstance }}
+                    </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ call.skill || '—' }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ call.verb }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
+                    {{ call.skill || '—' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
+                    {{ call.verb }}
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span
                       class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="call.decision === 'allow' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'"
+                      :class="
+                        call.decision === 'allow'
+                          ? 'bg-emerald-50 text-emerald-800'
+                          : 'bg-red-50 text-red-800'
+                      "
                     >
                       {{ $t(`traffic_page.decision_${call.decision}`) }}
                     </span>
@@ -82,8 +140,12 @@
                       {{ $t(`traffic_page.result_${call.result}`) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">{{ call.latencyMs ? `${call.latencyMs} ms` : '—' }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">{{ call.taskId || '—' }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
+                    {{ call.latencyMs ? `${call.latencyMs} ms` : '—' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
+                    {{ call.taskId || '—' }}
+                  </td>
                 </tr>
               </template>
             </tbody>
@@ -95,7 +157,13 @@
           class="bg-white px-6 py-4 border-t border-theme-border flex items-center justify-between"
         >
           <div class="text-sm text-theme-textLight">
-            {{ $t('traffic_page.showing', { from: offset + 1, to: Math.min(offset + limit, total), total }) }}
+            {{
+              $t('traffic_page.showing', {
+                from: offset + 1,
+                to: Math.min(offset + limit, total),
+                total,
+              })
+            }}
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -144,13 +212,15 @@ const loading = ref(false)
 const errorMessage = ref(null)
 
 function resultClass(result) {
-  return {
-    completed: 'bg-emerald-50 text-emerald-800',
-    failed: 'bg-red-50 text-red-800',
-    denied: 'bg-red-50 text-red-800',
-    timeout: 'bg-amber-50 text-amber-800',
-    no_instance: 'bg-amber-50 text-amber-800',
-  }[result] || 'bg-theme-hover text-theme-textLight'
+  return (
+    {
+      completed: 'bg-emerald-50 text-emerald-800',
+      failed: 'bg-red-50 text-red-800',
+      denied: 'bg-red-50 text-red-800',
+      timeout: 'bg-amber-50 text-amber-800',
+      no_instance: 'bg-amber-50 text-amber-800',
+    }[result] || 'bg-theme-hover text-theme-textLight'
+  )
 }
 
 async function loadTraffic() {
