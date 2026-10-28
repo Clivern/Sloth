@@ -7,11 +7,8 @@ message:send without it. Other agents can only reach it through Sloth.
 
 import hashlib
 import os
-import secrets
 
-from fastapi import FastAPI, Header, HTTPException
-
-from util import lifespan
+from util import agent_app
 
 NAME = "users"
 VERSION = "1.0.0"
@@ -19,15 +16,6 @@ PORT = int(os.environ.get("PORT", "9203"))
 API_KEY = "users-demo-key-2026"
 PLANS = ["free", "pro", "team", "enterprise"]
 LANGUAGES = ["en", "fr", "de", "es"]
-
-app = FastAPI(
-    lifespan=lifespan(
-        NAME,
-        VERSION,
-        PORT,
-        protection={"type": "api_key", "header": "X-Users-Key", "secret": API_KEY},
-    )
-)
 
 
 def seed(text):
@@ -63,60 +51,32 @@ def preferences(args):
     }
 
 
-SKILLS = {
-    "user.profile.get": profile,
-    "user.preferences.get": preferences,
-}
-
-
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
-
-
-@app.get("/.well-known/agent-card.json")
-def agent_card():
-    return {
-        "name": "Users",
-        "description": "User profiles and preferences by email",
-        "version": VERSION,
-        "supportedInterfaces": [
-            {
-                "url": f"http://127.0.0.1:{PORT}/a2a/v1",
-                "protocolBinding": "HTTP+JSON",
-                "protocolVersion": "1.0",
-            }
-        ],
-        "defaultInputModes": ["application/json"],
-        "defaultOutputModes": ["application/json"],
-        "skills": [
-            {
-                "id": "user.profile.get",
-                "name": "User profile",
-                "description": 'Return a user\'s name, company, role, country, plan and member date by email. Data: {"email": "ada@example.com"}',
-                "tags": ["users", "profile"],
-                "inputModes": ["application/json"],
-                "examples": ['{"email": "ada@example.com"}'],
-            },
-            {
-                "id": "user.preferences.get",
-                "name": "User preferences",
-                "description": 'Return a user\'s language, timezone and newsletter choice by email. Data: {"email": "ada@example.com"}',
-                "tags": ["users", "preferences"],
-                "inputModes": ["application/json"],
-                "examples": ['{"email": "ada@example.com"}'],
-            },
-        ],
-    }
-
-
-@app.post("/a2a/v1/message:send")
-def message_send(body: dict, x_users_key: str = Header(default="")):
+app = agent_app(
+    NAME,
+    "Users",
+    "User profiles and preferences by email",
+    VERSION,
+    PORT,
+    [
+        {
+            "id": "user.profile.get",
+            "name": "User profile",
+            "description": 'Return a user\'s name, company, role, country, plan and member date by email. Data: {"email": "ada@example.com"}',
+            "tags": ["users", "profile"],
+            "inputModes": ["application/json"],
+            "examples": ['{"email": "ada@example.com"}'],
+            "func": profile,
+        },
+        {
+            "id": "user.preferences.get",
+            "name": "User preferences",
+            "description": 'Return a user\'s language, timezone and newsletter choice by email. Data: {"email": "ada@example.com"}',
+            "tags": ["users", "preferences"],
+            "inputModes": ["application/json"],
+            "examples": ['{"email": "ada@example.com"}'],
+            "func": preferences,
+        },
+    ],
     # Only Sloth holds the key, so a call without it did not come through the gateway.
-    if not secrets.compare_digest(x_users_key, API_KEY):
-        raise HTTPException(status_code=401, detail="missing or wrong X-Users-Key")
-
-    skill = body.get("skill") or "user.profile.get"
-    data = body["message"]["parts"][0].get("data") or {}
-
-    return {"message": {"role": "ROLE_AGENT", "parts": [{"data": SKILLS[skill](data)}]}}
+    protection={"type": "api_key", "header": "X-Users-Key", "secret": API_KEY},
+)

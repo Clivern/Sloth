@@ -4,17 +4,14 @@ import os
 from datetime import date, timedelta
 
 import httpx
-from fastapi import FastAPI
 
-from util import lifespan
+from util import agent_app
 
 NAME = "stock"
 VERSION = "1.0.0"
 PORT = int(os.environ.get("PORT", "9202"))
 
 HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
-
-app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT))
 
 
 def money(text):
@@ -77,64 +74,39 @@ def profile(args):
     }
 
 
-SKILLS = {
-    "stock.quote.get": quote,
-    "stock.history.get": history,
-    "stock.profile.get": profile,
-}
-
-
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
-
-
-@app.get("/.well-known/agent-card.json")
-def agent_card():
-    return {
-        "name": "Stock",
-        "description": "Stock quotes, price history and company profiles by ticker",
-        "version": VERSION,
-        "supportedInterfaces": [
-            {
-                "url": f"http://127.0.0.1:{PORT}/a2a/v1",
-                "protocolBinding": "HTTP+JSON",
-                "protocolVersion": "1.0",
-            }
-        ],
-        "defaultInputModes": ["application/json"],
-        "defaultOutputModes": ["application/json"],
-        "skills": [
-            {
-                "id": "stock.quote.get",
-                "name": "Stock quote",
-                "description": "Return the latest price, previous close and daily change for a ticker. Data: {\"symbol\": \"AAPL\"}",
-                "tags": ["stock", "quote", "finance"],
-                "inputModes": ["application/json"],
-                "examples": ['{"symbol": "AAPL"}'],
-            },
-            {
-                "id": "stock.history.get",
-                "name": "Price history",
-                "description": "Return daily closing prices for a ticker over the last N days. Data: {\"symbol\": \"NVDA\", \"days\": 10}",
-                "tags": ["stock", "history", "finance"],
-                "inputModes": ["application/json"],
-                "examples": ['{"symbol": "NVDA", "days": 10}'],
-            },
-            {
-                "id": "stock.profile.get",
-                "name": "Company profile",
-                "description": "Return company name and exchange for a ticker. Data: {\"symbol\": \"MSFT\"}",
-                "tags": ["stock", "company", "finance"],
-                "inputModes": ["application/json"],
-                "examples": ['{"symbol": "MSFT"}'],
-            },
-        ],
-    }
-
-
-@app.post("/a2a/v1/message:send")
-def message_send(body: dict):
-    skill = body.get("skill") or "stock.quote.get"
-    data = body["message"]["parts"][0].get("data") or {}
-    return {"message": {"role": "ROLE_AGENT", "parts": [{"data": SKILLS[skill](data)}]}}
+app = agent_app(
+    NAME,
+    "Stock",
+    "Stock quotes, price history and company profiles by ticker",
+    VERSION,
+    PORT,
+    [
+        {
+            "id": "stock.quote.get",
+            "name": "Stock quote",
+            "description": "Return the latest price, previous close and daily change for a ticker. Data: {\"symbol\": \"AAPL\"}",
+            "tags": ["stock", "quote", "finance"],
+            "inputModes": ["application/json"],
+            "examples": ['{"symbol": "AAPL"}'],
+            "func": quote,
+        },
+        {
+            "id": "stock.history.get",
+            "name": "Price history",
+            "description": "Return daily closing prices for a ticker over the last N days. Data: {\"symbol\": \"NVDA\", \"days\": 10}",
+            "tags": ["stock", "history", "finance"],
+            "inputModes": ["application/json"],
+            "examples": ['{"symbol": "NVDA", "days": 10}'],
+            "func": history,
+        },
+        {
+            "id": "stock.profile.get",
+            "name": "Company profile",
+            "description": "Return company name and exchange for a ticker. Data: {\"symbol\": \"MSFT\"}",
+            "tags": ["stock", "company", "finance"],
+            "inputModes": ["application/json"],
+            "examples": ['{"symbol": "MSFT"}'],
+            "func": profile,
+        },
+    ],
+)

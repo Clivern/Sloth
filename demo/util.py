@@ -8,9 +8,11 @@ weather01.ams01.xai.com.
 
 import asyncio
 import os
+import secrets
 from contextlib import asynccontextmanager
 
 import httpx
+from fastapi import FastAPI, HTTPException, Request
 
 URL = os.environ.get("SLOTH_URL", "")
 WORKSPACE = os.environ.get("SLOTH_WORKSPACE", "")
@@ -88,3 +90,52 @@ def lifespan(name, version, port, protection=None, calls=None, secret=""):
             await client.delete(f"{base}/instances/{instance}")
 
     return run
+
+
+def agent_app(name, display, description, version, port, skills, protection=None):
+    """Serve /healthz, the agent card and A2A dispatch for JSON skills.
+
+    Each skill carries id, name, description, tags, examples, func and an
+    optional inputModes; the first skill is the default. protection, when
+    set, registers with Sloth and is the header every call must send.
+    """
+    app = FastAPI(lifespan=lifespan(name, version, port, protection=protection))
+    funcs = {skill["id"]: skill["func"] for skill in skills}
+
+    @app.get("/healthz")
+    def healthz():
+        return {"status": "ok"}
+
+    @app.get("/.well-known/agent-card.json")
+    def agent_card():
+        fields = ("id", "name", "description", "tags", "inputModes", "examples")
+
+        return {
+            "name": display,
+            "description": description,
+            "version": version,
+            "supportedInterfaces": [
+                {
+                    "url": f"http://127.0.0.1:{port}/a2a/v1",
+                    "protocolBinding": "HTTP+JSON",
+                    "protocolVersion": "1.0",
+                }
+            ],
+            "defaultInputModes": ["application/json"],
+            "defaultOutputModes": ["application/json"],
+            "skills": [{key: skill[key] for key in fields if key in skill} for skill in skills],
+        }
+
+    @app.post("/a2a/v1/message:send")
+    def message_send(body: dict, request: Request):
+        if protection and not secrets.compare_digest(
+            request.headers.get(protection["header"], ""), protection["secret"]
+        ):
+            raise HTTPException(status_code=401, detail=f"missing or wrong {protection['header']}")
+
+        skill = body.get("skill") or skills[0]["id"]
+        data = body["message"]["parts"][0].get("data") or {}
+
+        return {"message": {"role": "ROLE_AGENT", "parts": [{"data": funcs[skill](data)}]}}
+
+    return app

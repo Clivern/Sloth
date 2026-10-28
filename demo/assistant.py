@@ -29,6 +29,7 @@ NAME = "assistant"
 VERSION = "1.0.0"
 PORT = int(os.environ.get("PORT", "9200"))
 SECRET = os.environ.get("SLOTH_AGENT_SECRET", "")
+HEADERS = {"X-Source-Agent": NAME, "X-API-Key": SECRET}
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
 MODEL = os.environ.get("ASSISTANT_MODEL", "muse-wonder-1.0")
 GATEWAY = f"{URL}/api/v1/workspaces/{WORKSPACE}/agents"
@@ -53,7 +54,7 @@ questions yourself and say which kinds of questions your agents can help with.""
 app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT, calls=["weather", "stock", "users"], secret=SECRET))
 
 
-def prompt(system, content, stream):
+def prompt(system, content):
     return {
         "model": MODEL,
         "instructions": system,
@@ -64,25 +65,8 @@ def prompt(system, content, stream):
             }
         ],
         "reasoning": {"effort": "low"},
-        "stream": stream,
+        "stream": True,
     }
-
-
-async def chat(client, system, content):
-    response = await client.post(
-        "https://api.meta.ai/v1/responses",
-        headers={"Authorization": f"Bearer {MODEL_API_KEY}"},
-        json=prompt(system, content, False),
-    )
-    response.raise_for_status()
-
-    return "".join(
-        part.get("text", "")
-        for item in response.json().get("output", [])
-        if item.get("type") == "message"
-        for part in item.get("content", [])
-        if part.get("type") == "output_text"
-    )
 
 
 async def chat_stream(client, system, content):
@@ -91,7 +75,7 @@ async def chat_stream(client, system, content):
         "POST",
         "https://api.meta.ai/v1/responses",
         headers={"Authorization": f"Bearer {MODEL_API_KEY}"},
-        json=prompt(system, content, True),
+        json=prompt(system, content),
     ) as response:
         response.raise_for_status()
 
@@ -103,6 +87,19 @@ async def chat_stream(client, system, content):
 
             if event.get("type") == "response.output_text.delta":
                 yield event.get("delta", "")
+
+
+async def chat(client, system, content):
+    """Full response text from the Meta API, collected from its stream."""
+    return "".join([part async for part in chat_stream(client, system, content)])
+
+
+async def fetch_skills(client):
+    """Skills Sloth lets the assistant call, with the listing status."""
+    response = await client.get(f"{GATEWAY}/catalog/skills", headers=HEADERS)
+    skills = response.json().get("skills", []) if response.is_success else []
+
+    return response.status_code, skills
 
 
 def answer_fact(item):
@@ -117,15 +114,12 @@ def answer_fact(item):
 
 async def run(question):
     """Yield ("step", step) and ("delta", text) events while answering a question through Sloth."""
-    sloth = {"X-Source-Agent": NAME, "X-API-Key": SECRET}
-
     async with httpx.AsyncClient(timeout=60) as client:
         # 1. Sloth only lists skills an intention lets the assistant call.
-        response = await client.get(f"{GATEWAY}/catalog/skills", headers=sloth)
-        skills = response.json().get("skills", []) if response.is_success else []
-        yield ("step", {"step": "catalog", "status": response.status_code, "skills": [skill["id"] for skill in skills]})
+        status, skills = await fetch_skills(client)
+        yield ("step", {"step": "catalog", "status": status, "skills": [skill["id"] for skill in skills]})
 
-        if response.status_code == 401:
+        if status == 401:
             yield ("delta", "Sloth doesn't recognize my secret (401). Set SLOTH_AGENT_SECRET to any random value (min 8 characters) and restart me; if it still fails, revoke the assistant's identities under Agents in Sloth and restart again.")
             return
 
@@ -140,23 +134,21 @@ async def run(question):
         yield ("step", {"step": "plan", "calls": calls})
 
         # 3. Each call goes through Sloth, which checks intentions and picks a live instance.
-        results = []
+        facts = []
         for call in calls:
             response = await client.post(
                 f"{GATEWAY}/skills/{call['skill']}/message:send",
-                headers=sloth,
+                headers=HEADERS,
                 json={
                     "skill": call["skill"],
                     "message": {"role": "ROLE_USER", "parts": [{"data": call.get("data", {})}]},
                 },
             )
             result = response.json()
-            results.append({"skill": call["skill"], "status": response.status_code, "result": result})
+            facts.append(answer_fact({"status": response.status_code, "result": result}))
             yield ("step", {"step": "call", "skill": call["skill"], "data": call.get("data", {}), "status": response.status_code, "result": result})
 
-        # 4. The LLM turns the raw results into one answer, streamed as it arrives.
-        # It gets inner payloads only, never skill names or statuses; the trace keeps those.
-        facts = [answer_fact(item) for item in results]
+        # 4. The LLM turns the facts into one answer, streamed as it arrives.
         async for piece in chat_stream(client, ANSWER, {"question": question, "results": facts}):
             yield ("delta", piece)
 
@@ -186,11 +178,9 @@ def page():
 async def info():
     """The skills Sloth lets the assistant call, for the page's setup card."""
     async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(f"{GATEWAY}/catalog/skills", headers={"X-Source-Agent": NAME, "X-API-Key": SECRET})
+        status, skills = await fetch_skills(client)
 
-    skills = response.json().get("skills", []) if response.is_success else []
-
-    return {"status": response.status_code, "skills": [skill["id"] for skill in skills]}
+    return {"status": status, "skills": [skill["id"] for skill in skills]}
 
 
 @app.post("/ask")

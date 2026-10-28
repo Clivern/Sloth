@@ -4,9 +4,8 @@ import os
 from datetime import date
 
 import httpx
-from fastapi import FastAPI
 
-from util import lifespan
+from util import agent_app
 
 NAME = "weather"
 VERSION = "1.0.0"
@@ -17,8 +16,6 @@ RAIN = {176, 200, 263, 266, 293, 296, 299, 302, 305, 308, 311, 353, 356, 359, 36
 SNOW = {179, 182, 227, 230, 317, 320, 323, 326, 329, 332, 335, 338, 350, 371, 374, 377}
 FOG = {143, 248, 260}
 CLOUDY = {116, 119, 122}
-
-app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT))
 
 
 def condition(code, wind_kph=0, is_day=True):
@@ -108,64 +105,39 @@ def alerts(args):
     }
 
 
-SKILLS = {
-    "weather.current.get": current,
-    "weather.forecast.get": forecast,
-    "weather.alerts.list": alerts,
-}
-
-
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
-
-
-@app.get("/.well-known/agent-card.json")
-def agent_card():
-    return {
-        "name": "Weather",
-        "description": "Current conditions, forecasts and alerts for a city",
-        "version": VERSION,
-        "supportedInterfaces": [
-            {
-                "url": f"http://127.0.0.1:{PORT}/a2a/v1",
-                "protocolBinding": "HTTP+JSON",
-                "protocolVersion": "1.0",
-            }
-        ],
-        "defaultInputModes": ["application/json"],
-        "defaultOutputModes": ["application/json"],
-        "skills": [
-            {
-                "id": "weather.current.get",
-                "name": "Current weather",
-                "description": "Return temperature, humidity, wind and condition for a city. Data: {\"city\": \"Berlin\"}",
-                "tags": ["weather", "current"],
-                "inputModes": ["application/json"],
-                "examples": ['{"city": "Berlin"}'],
-            },
-            {
-                "id": "weather.forecast.get",
-                "name": "Weather forecast",
-                "description": "Return a daily high, low and condition forecast for a city. Data: {\"city\": \"Berlin\", \"days\": 3}",
-                "tags": ["weather", "forecast"],
-                "inputModes": ["application/json"],
-                "examples": ['{"city": "Cairo", "days": 5}'],
-            },
-            {
-                "id": "weather.alerts.list",
-                "name": "Weather alerts",
-                "description": "List active severe weather alerts for a city. Data: {\"city\": \"Miami\"}",
-                "tags": ["weather", "alerts"],
-                "inputModes": ["application/json"],
-                "examples": ['{"city": "Miami"}'],
-            },
-        ],
-    }
-
-
-@app.post("/a2a/v1/message:send")
-def message_send(body: dict):
-    skill = body.get("skill") or "weather.current.get"
-    data = body["message"]["parts"][0].get("data") or {}
-    return {"message": {"role": "ROLE_AGENT", "parts": [{"data": SKILLS[skill](data)}]}}
+app = agent_app(
+    NAME,
+    "Weather",
+    "Current conditions, forecasts and alerts for a city",
+    VERSION,
+    PORT,
+    [
+        {
+            "id": "weather.current.get",
+            "name": "Current weather",
+            "description": "Return temperature, humidity, wind and condition for a city. Data: {\"city\": \"Berlin\"}",
+            "tags": ["weather", "current"],
+            "inputModes": ["application/json"],
+            "examples": ['{"city": "Berlin"}'],
+            "func": current,
+        },
+        {
+            "id": "weather.forecast.get",
+            "name": "Weather forecast",
+            "description": "Return a daily high, low and condition forecast for a city. Data: {\"city\": \"Berlin\", \"days\": 3}",
+            "tags": ["weather", "forecast"],
+            "inputModes": ["application/json"],
+            "examples": ['{"city": "Cairo", "days": 5}'],
+            "func": forecast,
+        },
+        {
+            "id": "weather.alerts.list",
+            "name": "Weather alerts",
+            "description": "List active severe weather alerts for a city. Data: {\"city\": \"Miami\"}",
+            "tags": ["weather", "alerts"],
+            "inputModes": ["application/json"],
+            "examples": ['{"city": "Miami"}'],
+            "func": alerts,
+        },
+    ],
+)
