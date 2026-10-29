@@ -16,7 +16,6 @@ var rootCmd = &cobra.Command{
 	Use: "sloth",
 	Short: `🦥 One multi-tenant Gateway for your AI agents, APIs and MCP servers
 
-
 If you have any suggestions, bug reports, or annoyances please report
 them to our issue tracker at <https://github.com/clivern/sloth/issues>`,
 }
