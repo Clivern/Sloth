@@ -333,14 +333,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api_keys_api, auth_api } from '@/api'
 import AppNav from '@/comp/AppNav.vue'
 import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { showFlash } from '@/lib/flash'
 import { user, saveUser } from '@/lib/auth'
-import { applyUserPreferences, USER_LANGUAGE_EN, USER_THEME_DEFAULT } from '@/lib/preferences'
+import {
+  applyTheme,
+  applyUserPreferences,
+  USER_LANGUAGE_EN,
+  USER_THEME_DEFAULT,
+} from '@/lib/preferences'
 import { errorText } from '@/lib/error'
 import { formatDate, formatDateTime } from '@/utils/date'
 
@@ -352,6 +357,18 @@ const form = reactive({
   name: user.value?.name,
   language: user.value?.language ?? USER_LANGUAGE_EN,
   theme: user.value?.theme ?? USER_THEME_DEFAULT,
+})
+
+// The theme previews at once without saving; leaving without saving restores the saved one.
+watch(
+  () => form.theme,
+  (theme) => {
+    if (theme) applyTheme(theme)
+  }
+)
+
+onBeforeUnmount(() => {
+  if (user.value?.theme) applyTheme(user.value.theme)
 })
 
 const apiKeys = ref([])
