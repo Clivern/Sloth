@@ -1,14 +1,10 @@
 <template>
-  <section
-    id="traffic"
-    class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden"
-  >
-    <div class="border-b border-theme-border px-6 py-4">
-      <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.traffic_title') }}</h2>
-      <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.traffic_desc') }}</p>
-    </div>
-
-    <div class="px-6 py-4">
+  <div id="traffic" class="scroll-mt-6">
+    <ChartCard
+      :title="$t('agents_page.traffic_title')"
+      :subtitle="$t('agents_page.traffic_desc')"
+      :table="hasRows ? tableData : null"
+    >
       <div v-if="loading && !hasRows" class="py-4 text-center text-sm text-theme-textLight">
         {{ $t('common.loading') }}
       </div>
@@ -27,14 +23,15 @@
       <p v-if="hasRows" class="mt-2 text-xs text-theme-textLight">
         {{ $t('agents_page.traffic_scope', { window: TRAFFIC_WINDOW }) }}
       </p>
-    </div>
-  </section>
+    </ChartCard>
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BarChart from '@/comp/charts/BarChart.vue'
+import ChartCard from '@/comp/charts/ChartCard.vue'
 import { traffic_api } from '@/api'
 
 const props = defineProps({
@@ -106,6 +103,15 @@ const chartData = computed(() => {
 })
 
 const hasRows = computed(() => rows.value.length > 0)
+
+const tableData = computed(() => ({
+  columns: [
+    t('agents_page.traffic_day'),
+    t('agents_page.traffic_completed'),
+    t('agents_page.traffic_other'),
+  ],
+  rows: chartLabels.value.map((label, i) => [label, chartData.value[i][0], chartData.value[i][1]]),
+}))
 
 watch(
   () => props.agentName,

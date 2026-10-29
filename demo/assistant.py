@@ -12,7 +12,9 @@ server-sent events; the A2A message:send endpoint still gets one answer.
 
 Open http://127.0.0.1:9200 for the chat page. Besides the registration variables
 in util.py it needs SLOTH_AGENT_SECRET, any random value it issues as its own
-api_key identity on boot, and MODEL_API_KEY. ASSISTANT_MODEL picks the model.
+api_key identity on boot, and MODEL_API_KEY. ASSISTANT_MODEL picks the model
+and MODEL_API_URL picks the endpoint: the Meta responses API when the URL ends
+with /responses (default), OpenAI chat completions otherwise (e.g. OpenRouter).
 """
 
 import json
@@ -31,7 +33,13 @@ PORT = int(os.environ.get("PORT", "9200"))
 SECRET = os.environ.get("SLOTH_AGENT_SECRET", "")
 HEADERS = {"X-Source-Agent": NAME, "X-Source-Instance": INSTANCE or f"{NAME}-{PORT}", "X-API-Key": SECRET}
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
-MODEL = os.environ.get("ASSISTANT_MODEL", "muse-wonder-1.0")
+MODEL = os.environ.get("ASSISTANT_MODEL", "muse-spark-1.3-contributor")
+MODEL_API_URL = os.environ.get("MODEL_API_URL", "https://api.meta.ai/v1/responses")
+
+
+def is_meta_api():
+    """Whether the model endpoint speaks the Meta responses API; anything else uses OpenAI chat completions."""
+    return MODEL_API_URL.rstrip("/").endswith("/responses")
 GATEWAY = f"{URL}/api/v1/workspaces/{WORKSPACE}/agents"
 MAX_CALLS = 3
 PAGE = (Path(__file__).parent / "index.html").read_text()
@@ -55,26 +63,42 @@ app = FastAPI(lifespan=lifespan(NAME, VERSION, PORT, calls=["weather", "stock", 
 
 
 def prompt(system, content):
+    if is_meta_api():
+        return {
+            "model": MODEL,
+            "instructions": system,
+            "input": [
+                {
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": json.dumps(content)}],
+                }
+            ],
+            "reasoning": {"effort": "low"},
+            "stream": True,
+        }
+
     return {
         "model": MODEL,
-        "instructions": system,
-        "input": [
-            {
-                "role": "user",
-                "content": [{"type": "input_text", "text": json.dumps(content)}],
-            }
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(content)},
         ],
-        "reasoning": {"effort": "low"},
         "stream": True,
     }
 
 
 async def chat_stream(client, system, content):
-    """Yield answer text pieces from the Meta responses API as they arrive."""
+    """Yield answer text pieces from the model API as they arrive."""
+    headers = {"Authorization": f"Bearer {MODEL_API_KEY}"}
+
+    if not is_meta_api():
+        headers["HTTP-Referer"] = "https://github.com/clivern/sloth"
+        headers["X-Title"] = "Sloth demo"
+
     async with client.stream(
         "POST",
-        "https://api.meta.ai/v1/responses",
-        headers={"Authorization": f"Bearer {MODEL_API_KEY}"},
+        MODEL_API_URL,
+        headers=headers,
         json=prompt(system, content),
     ) as response:
         response.raise_for_status()
@@ -85,8 +109,12 @@ async def chat_stream(client, system, content):
 
             event = json.loads(line[6:])
 
-            if event.get("type") == "response.output_text.delta":
-                yield event.get("delta", "")
+            if is_meta_api():
+                if event.get("type") == "response.output_text.delta":
+                    yield event.get("delta", "")
+            else:
+                for choice in event.get("choices", []):
+                    yield choice.get("delta", {}).get("content", "")
 
 
 async def chat(client, system, content):

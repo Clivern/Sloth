@@ -52,6 +52,16 @@ export SLOTH_AGENT_SECRET="<assistant-secret>"  # any random value, min 8 charac
 export MODEL_API_KEY="<model-key>"
 ```
 
+`MODEL_API_URL` picks the model endpoint: the Meta responses API when the URL
+ends with `/responses` (default `https://api.meta.ai/v1/responses`), OpenAI
+chat completions otherwise. To run the assistant on OpenRouter instead:
+
+```bash
+export MODEL_API_URL="https://openrouter.ai/api/v1/chat/completions"
+export MODEL_API_KEY="<openrouter-key>"
+export ASSISTANT_MODEL="openai/gpt-4o-mini"
+```
+
 ## 4. Run
 
 ```bash

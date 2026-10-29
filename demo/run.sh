@@ -8,7 +8,7 @@ export SLOTH_WORKSPACE="<workspace-id>"
 export SLOTH_ACCESS_KEY="<access-key>"
 export SLOTH_AGENT_SECRET="<assistant-secret>"  # any random value, min 8 characters; the assistant issues it as its identity on boot
 export MODEL_API_KEY="<model-key>"
-export ASSISTANT_MODEL=muse-wonder-1.0
+export ASSISTANT_MODEL=muse-spark-1.3-contributor
 export PYTHONUNBUFFERED=1
 
 # Keep real values in run.local.sh, which git ignores.
