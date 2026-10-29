@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	ChatMaxRounds    = 3
 	ChatMaxCalls     = 3
 	ChatOutputLength = 8000
 	ChatTitleLength  = 60
@@ -258,7 +257,7 @@ func (c *Chat) Reply(chat *db.Chat, emit ChatEmit) {
 	emit(lo.Ternary(finished.Status == db.ChatStatusFailed, ChatEventError, ChatEventDone), finished)
 }
 
-// Answer runs the tool rounds, then streams and stores the answer; tool results are never stored.
+// Answer plans one round of tools, runs them, then streams and stores the answer; tool results are never stored.
 func (c *Chat) Answer(ctx context.Context, chat *db.Chat, emit ChatEmit) error {
 	messages, err := c.ChatRepository.ListMessages(chat.Id)
 	if err != nil {
@@ -272,25 +271,20 @@ func (c *Chat) Answer(ctx context.Context, chat *db.Chat, emit ChatEmit) error {
 
 	model := c.NewModel()
 	history := ChatHistory(messages)
-	results := []string{}
 
-	for round := 0; round < ChatMaxRounds; round++ {
-		plan, err := c.Plan(ctx, model, history, tools, results)
+	plan, err := c.Plan(ctx, model, history, tools, nil)
+	if err != nil {
+		return err
+	}
+
+	results := []string{}
+	for _, call := range plan.Calls {
+		result, err := c.Call(chat, tools, call)
 		if err != nil {
 			return err
 		}
-		if len(plan.Calls) == 0 {
-			break
-		}
 
-		for _, call := range plan.Calls {
-			result, err := c.Call(chat, tools, call)
-			if err != nil {
-				return err
-			}
-
-			results = append(results, result)
-		}
+		results = append(results, result)
 	}
 
 	// Looked-up data goes in the instructions, not the chat, so the model answers from it instead of narrating it.

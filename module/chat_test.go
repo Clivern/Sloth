@@ -60,17 +60,17 @@ func TestUnitChat(t *testing.T) {
 
 	everything := map[string]bool{CanListAgents: true, CanGetAgent: true}
 
-	t.Run("answer runs tools across rounds and stores only the answer", func(t *testing.T) {
+	t.Run("answer runs the planned tools once and stores only the answer", func(t *testing.T) {
 		assistant, repository, chat, ran := newAssistant(everything,
-			"```json\n{\"calls\": [{\"tool\": \"list_agents\"}, {\"tool\": \"drop_database\"}]}\n```",
-			`{"calls": [{"tool": "get_agent", "arguments": {"name": "users"}}]}`,
-			`{"calls": []}`,
+			"```json\n{\"calls\": [{\"tool\": \"list_agents\"}, {\"tool\": \"drop_database\"}, {\"tool\": \"get_agent\", \"arguments\": {\"name\": \"users\"}}]}\n```",
 			"You have two agents, users and weather.",
 		)
 		repository.messages = []*db.ChatMessage{{Kind: db.ChatMessageKindUser, Content: "Which agents do I have?"}}
 
 		require.NoError(t, assistant.Answer(context.Background(), repository.chat, func(string, any) {}))
 
+		// One plan, one answer; unknown tools are dropped, the rest run in order.
+		require.Len(t, chat.asked, 2)
 		require.Len(t, *ran, 2)
 		assert.Equal(t, "users", (*ran)[1]["name"])
 
@@ -79,11 +79,10 @@ func TestUnitChat(t *testing.T) {
 		assert.Equal(t, "You have two agents, users and weather.", repository.messages[1].Content)
 
 		// Looked-up data reaches the answer as instructions, never as chat turns.
-		answerPrompt := chat.asked[3]
+		answerPrompt := chat.asked[1]
 		require.Len(t, answerPrompt, 2)
 		assert.Contains(t, answerPrompt[0].Content, "weather")
 		assert.Contains(t, answerPrompt[0].Content, "could not be read (agent not found)")
-		assert.Contains(t, chat.asked[1][len(chat.asked[1])-1].Content, "weather")
 	})
 
 	t.Run("send message stores the question and reply streams the chat and answer, then stores it", func(t *testing.T) {
@@ -91,7 +90,6 @@ func TestUnitChat(t *testing.T) {
 		t.Cleanup(func() { viper.Set("app.ai.api_key", "") })
 		assistant, repository, _, _ := newAssistant(everything,
 			`{"calls": [{"tool": "list_agents"}]}`,
-			`{"calls": []}`,
 			"You have two agents.",
 		)
 

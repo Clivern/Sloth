@@ -158,8 +158,10 @@
           </div>
           <div class="p-6 space-y-6">
             <div class="space-y-4">
-              <div class="flex flex-wrap items-end gap-3">
-                <div class="min-w-0 flex-1" style="min-width: 200px">
+              <div
+                class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3"
+              >
+                <div class="min-w-0">
                   <label
                     for="new-key-name"
                     class="block text-sm font-medium text-theme-text mb-1.5"
@@ -175,7 +177,7 @@
                     @keydown.enter.prevent="handleCreateKey"
                   />
                 </div>
-                <div class="min-w-0 flex-1" style="min-width: 200px">
+                <div class="min-w-0">
                   <label
                     for="new-key-expires"
                     class="block text-sm font-medium text-theme-text mb-1.5"
@@ -193,7 +195,7 @@
                 </div>
                 <button
                   type="button"
-                  class="btn-primary shrink-0"
+                  class="btn-primary"
                   :disabled="apiKeysLoading || creatingKey"
                   @click="handleCreateKey"
                 >

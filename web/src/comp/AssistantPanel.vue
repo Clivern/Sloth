@@ -9,17 +9,19 @@
       <section
         v-if="open"
         :aria-label="$t('assistant_panel.title')"
-        class="fixed inset-x-4 bottom-24 z-40 flex h-[min(720px,calc(100vh-8rem))] origin-bottom-right flex-col overflow-hidden rounded-3xl bg-white shadow-[0_5px_40px_rgba(0,0,0,0.16)] sm:inset-x-auto sm:right-6 sm:w-[480px] lg:w-[560px]"
+        class="fixed inset-0 z-40 flex origin-bottom-right flex-col overflow-hidden bg-white pb-[env(safe-area-inset-bottom)] sm:inset-x-auto sm:bottom-24 sm:left-auto sm:right-6 sm:top-auto sm:h-[min(720px,calc(100dvh-8rem))] sm:w-[480px] sm:rounded-3xl sm:pb-0 sm:shadow-[0_5px_40px_rgba(0,0,0,0.16)] lg:w-[560px]"
         @keydown.esc="open = false"
       >
         <template v-if="view === 'list'">
-          <header class="flex items-center gap-3 border-b border-theme-border py-4 pl-5 pr-4">
+          <header
+            class="flex items-center gap-2 border-b border-theme-border py-3 pl-4 pr-3 sm:gap-3 sm:py-4 sm:pl-5 sm:pr-4"
+          >
             <AssistantAvatar />
             <div class="min-w-0 grow">
               <h2 class="text-base font-semibold text-theme-text">
                 {{ $t('assistant_panel.title') }}
               </h2>
-              <p class="mt-0.5 text-sm text-theme-textLight">
+              <p class="mt-0.5 hidden text-sm text-theme-textLight sm:block">
                 {{ $t('assistant_panel.subtitle') }}
               </p>
             </div>
@@ -82,7 +84,7 @@
             >
               <button
                 type="button"
-                class="flex min-w-0 grow flex-col gap-1 py-3.5 pl-5 pr-2 text-left"
+                class="flex min-w-0 grow flex-col gap-1 py-3.5 pl-4 pr-2 text-left sm:pl-5"
                 @click="openChat(item.id)"
               >
                 <span class="flex w-full items-center gap-2">
@@ -132,7 +134,7 @@
           </div>
 
           <footer
-            class="flex items-center gap-2 border-t border-theme-border px-5 py-3 text-xs text-theme-textLight"
+            class="flex items-center gap-2 border-t border-theme-border px-4 py-3 text-xs text-theme-textLight sm:px-5"
           >
             <svg
               class="h-3.5 w-3.5 shrink-0"
@@ -151,7 +153,9 @@
         </template>
 
         <template v-else>
-          <header class="flex items-center gap-2 border-b border-theme-border py-3 pl-2 pr-4">
+          <header
+            class="flex items-center gap-1 border-b border-theme-border py-2.5 pl-1 pr-3 sm:gap-2 sm:py-3 sm:pl-2 sm:pr-4"
+          >
             <button
               type="button"
               class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-theme-text hover:bg-theme-hover"
@@ -229,7 +233,7 @@
 
           <div
             ref="threadRef"
-            class="flex grow flex-col gap-3 overflow-y-auto px-5 py-4"
+            class="flex grow flex-col gap-3 overflow-y-auto px-4 py-4 sm:px-5"
             aria-live="polite"
           >
             <div class="flex max-w-[88%] items-end gap-2 self-start">
@@ -345,7 +349,7 @@
               rows="2"
               required
               maxlength="4000"
-              class="max-h-32 grow resize-none border-0 bg-transparent py-2 text-sm leading-snug text-theme-text placeholder:text-primary-400 focus:outline-none"
+              class="max-h-32 grow resize-none border-0 bg-transparent py-2 text-base leading-snug text-theme-text placeholder:text-primary-400 focus:outline-none sm:text-sm"
               :placeholder="$t('assistant_panel.placeholder')"
               @keydown.enter.exact.prevent="$event.target.form.requestSubmit()"
             ></textarea>
@@ -391,7 +395,8 @@
 
     <button
       type="button"
-      class="fixed bottom-6 right-4 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--btn-primary-bg)] text-white shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-transform duration-200 hover:scale-105 hover:bg-[var(--btn-primary-hover)] active:scale-95 motion-reduce:transition-none sm:right-6"
+      class="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 h-14 w-14 items-center justify-center rounded-full bg-[var(--btn-primary-bg)] text-white shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-transform duration-200 hover:scale-105 hover:bg-[var(--btn-primary-hover)] active:scale-95 motion-reduce:transition-none sm:right-6"
+      :class="open ? 'hidden sm:inline-flex' : 'inline-flex'"
       :aria-label="open ? $t('assistant_panel.close') : $t('assistant_panel.open')"
       :aria-expanded="open"
       @click="open = !open"
@@ -521,7 +526,11 @@ function showThread(chat) {
   greet(!chat.messages?.length)
   followRunning()
   scrollToEnd()
-  nextTick(() => inputRef.value?.focus())
+
+  // On touch screens focusing would pop the keyboard over the messages; let the user tap the input.
+  if (!window.matchMedia('(pointer: coarse)').matches) {
+    nextTick(() => inputRef.value?.focus())
+  }
 }
 
 function showList() {
