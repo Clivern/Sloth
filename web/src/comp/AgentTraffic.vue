@@ -1,0 +1,116 @@
+<template>
+  <section
+    id="traffic"
+    class="scroll-mt-6 rounded-xl border border-theme-border bg-white shadow-sm overflow-hidden"
+  >
+    <div class="border-b border-theme-border px-6 py-4">
+      <h2 class="text-lg font-semibold text-theme-text">{{ $t('agents_page.traffic_title') }}</h2>
+      <p class="mt-1 text-sm text-theme-textLight">{{ $t('agents_page.traffic_desc') }}</p>
+    </div>
+
+    <div class="px-6 py-4">
+      <div v-if="loading && !hasRows" class="py-4 text-center text-sm text-theme-textLight">
+        {{ $t('common.loading') }}
+      </div>
+      <p v-else-if="!hasRows" class="py-4 text-center text-sm text-theme-textLight">
+        {{ $t('agents_page.traffic_empty') }}
+      </p>
+      <BarChart
+        v-else
+        :data="chartData"
+        :labels="chartLabels"
+        :colors="['var(--chart-3)', 'var(--chart-2)']"
+        :series-names="[t('agents_page.traffic_completed'), t('agents_page.traffic_other')]"
+        :height="220"
+        :aria-label="$t('agents_page.traffic_title')"
+      />
+      <p v-if="hasRows" class="mt-2 text-xs text-theme-textLight">
+        {{ $t('agents_page.traffic_scope', { window: TRAFFIC_WINDOW }) }}
+      </p>
+    </div>
+  </section>
+</template>
+
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import BarChart from '@/comp/charts/BarChart.vue'
+import { traffic_api } from '@/api'
+
+const props = defineProps({
+  workspaceId: { type: String, required: true },
+  agentName: { type: String, required: true },
+})
+
+const TRAFFIC_WINDOW = 200
+const CHART_DAYS = 14
+
+const { t } = useI18n()
+const loading = ref(false)
+const rows = ref([])
+
+function isProblem(call) {
+  return call.result !== 'completed'
+}
+
+async function loadTraffic() {
+  loading.value = true
+
+  try {
+    const res = await traffic_api.list(props.workspaceId, {
+      limit: TRAFFIC_WINDOW,
+      offset: 0,
+    })
+    rows.value = (res.data.calls || []).filter(
+      (call) => call.sourceAgent === props.agentName || call.destinationAgent === props.agentName
+    )
+  } catch (_) {
+    rows.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const days = computed(() =>
+  [...Array(CHART_DAYS)].map((_, i) => {
+    const day = new Date()
+    day.setDate(day.getDate() - (CHART_DAYS - 1 - i))
+
+    return day
+  })
+)
+
+const chartLabels = computed(() =>
+  days.value.map((day) => day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }))
+)
+
+const chartData = computed(() => {
+  const byDay = Object.fromEntries(
+    days.value.map((day) => [day.toISOString().slice(0, 10), { ok: 0, bad: 0 }])
+  )
+
+  for (const call of rows.value) {
+    const bucket = byDay[new Date(call.createdAt).toISOString().slice(0, 10)]
+
+    if (bucket) {
+      if (isProblem(call)) bucket.bad++
+      else bucket.ok++
+    }
+  }
+
+  return days.value.map((day) => {
+    const bucket = byDay[day.toISOString().slice(0, 10)]
+
+    return [bucket.ok, bucket.bad]
+  })
+})
+
+const hasRows = computed(() => rows.value.length > 0)
+
+watch(
+  () => props.agentName,
+  () => loadTraffic()
+)
+
+onMounted(loadTraffic)
+</script>

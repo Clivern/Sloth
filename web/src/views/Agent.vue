@@ -164,6 +164,7 @@
 
         <div class="grid gap-6 lg:grid-cols-3">
           <div class="min-w-0 space-y-6 lg:col-span-2">
+            <AgentTraffic :workspace-id="currentWorkspace.id" :agent-name="agent.name" />
             <AgentInstances
               ref="instancesSection"
               v-model:total="instancesTotal"
@@ -256,6 +257,7 @@ import AgentIdentities from '@/comp/AgentIdentities.vue'
 import AgentInstances from '@/comp/AgentInstances.vue'
 import AgentProtection from '@/comp/AgentProtection.vue'
 import AgentSkills from '@/comp/AgentSkills.vue'
+import AgentTraffic from '@/comp/AgentTraffic.vue'
 import ConfirmModal from '@/comp/ConfirmModal.vue'
 import StatusBreakdown from '@/comp/StatusBreakdown.vue'
 import { agent_api } from '@/api'

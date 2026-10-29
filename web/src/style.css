@@ -29,6 +29,12 @@
   --btn-secondary-border: #e7e7e7;
   --btn-secondary-text: #0b0b0b;
   --btn-secondary-hover: #f9f9f7;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-grid: #efefef;
 }
 
 /* Blue theme */
@@ -150,6 +156,12 @@
   --btn-secondary-border: #374151;
   --btn-secondary-text: #f9fafb;
   --btn-secondary-hover: #1f2937;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-grid: var(--theme-border);
 }
 
 .theme-dark .bg-white {
@@ -205,6 +217,18 @@
 }
 
 @layer components {
+  .chart-tooltip {
+    @apply pointer-events-none absolute z-10 min-w-36 rounded-md border border-theme-border px-3 py-2 text-xs shadow-lg;
+    background-color: var(--surface);
+    color: var(--theme-text);
+  }
+
+  .chart-axis-label {
+    font-size: 11px;
+    fill: var(--theme-textLight);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Button Styles */
   .btn-primary {
     @apply px-4 py-2 text-white text-sm font-medium rounded-md cursor-pointer focus:outline-none transition-all duration-150;

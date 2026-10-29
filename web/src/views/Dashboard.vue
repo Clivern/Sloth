@@ -16,57 +16,93 @@
         </p>
       </header>
 
-      <section
-        v-if="showGettingStarted"
-        class="mb-8 overflow-hidden rounded-xl border border-theme-border bg-white shadow-sm"
-      >
-        <div
-          class="flex flex-wrap items-start justify-between gap-3 border-b border-theme-border px-6 py-4"
-        >
-          <div class="min-w-0">
+      <section class="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="section">
+          <p class="text-sm text-theme-textLight">{{ $t('dashboard.metrics_calls') }}</p>
+          <p class="mt-1 text-2xl font-semibold tabular-nums text-theme-text">
+            {{ formatCount(callsTotal) }}
+          </p>
+          <Sparkline v-if="callsSeries.length > 1" :values="callsSeries" class="mt-3" />
+          <p class="mt-2 text-xs text-theme-textLight">
+            {{ $t('dashboard.metrics_calls_sub', { window: METRICS_WINDOW }) }}
+          </p>
+        </div>
+        <div class="section">
+          <p class="text-sm text-theme-textLight">{{ $t('dashboard.metrics_problems') }}</p>
+          <p class="mt-1 text-2xl font-semibold tabular-nums text-theme-text">
+            {{ formatCount(problemsCount) }}
+          </p>
+          <Sparkline
+            v-if="problemsSeries.length > 1"
+            :values="problemsSeries"
+            color="var(--chart-2)"
+            class="mt-3"
+          />
+          <p class="mt-2 text-xs text-theme-textLight">
+            {{ $t('dashboard.metrics_problems_sub', { window: METRICS_WINDOW }) }}
+          </p>
+        </div>
+        <div class="section">
+          <p class="text-sm text-theme-textLight">{{ $t('dashboard.metrics_latency') }}</p>
+          <p class="mt-1 text-2xl font-semibold tabular-nums text-theme-text">
+            {{ avgLatency == null ? '—' : `${avgLatency} ms` }}
+          </p>
+          <Sparkline
+            v-if="latencySeries.length > 1"
+            :values="latencySeries"
+            color="var(--chart-4)"
+            class="mt-3"
+          />
+          <p class="mt-2 text-xs text-theme-textLight">
+            {{ $t('dashboard.metrics_latency_sub', { window: METRICS_WINDOW }) }}
+          </p>
+        </div>
+        <div class="section">
+          <p class="text-sm text-theme-textLight">{{ $t('dashboard.metrics_agents') }}</p>
+          <p class="mt-1 text-2xl font-semibold tabular-nums text-theme-text">
+            {{ formatCount(healthyAgents) }}
+          </p>
+          <p class="mt-2 text-xs text-theme-textLight">
+            {{
+              agentsTotal == null
+                ? '—'
+                : $t('dashboard.metrics_agents_sub', {
+                    passing: healthyAgents ?? 0,
+                    total: agentsTotal,
+                  })
+            }}
+          </p>
+        </div>
+      </section>
+
+      <section class="mb-8">
+        <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
+          <div>
             <h2 class="text-lg font-semibold text-theme-text">
-              {{ $t('dashboard.getting_started') }}
+              {{ $t('dashboard.agents_traffic_title') }}
             </h2>
-            <p class="mt-0.5 text-sm text-theme-textLight">
-              {{ $t('dashboard.getting_started_desc') }}
+            <p class="mt-1 text-sm text-theme-textLight">
+              {{ $t('dashboard.agents_traffic_desc') }}
             </p>
           </div>
-          <button
-            type="button"
-            class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
-            @click="dismissGettingStarted"
+          <select
+            v-model="selectedAgent"
+            class="input-field w-auto"
+            :aria-label="$t('dashboard.agents_traffic_title')"
+            :disabled="!agentNames.length"
           >
-            {{ $t('dashboard.getting_started_dismiss') }}
-          </button>
+            <option v-if="!agentNames.length" value="">
+              {{ $t('dashboard.agents_traffic_empty') }}
+            </option>
+            <option v-for="name in agentNames" :key="name" :value="name">{{ name }}</option>
+          </select>
         </div>
-
-        <ol class="grid grid-cols-1 gap-px bg-theme-border sm:grid-cols-2 lg:grid-cols-3">
-          <li
-            v-for="(step, index) in gettingStartedSteps"
-            :key="step.id"
-            class="flex gap-4 bg-white px-6 py-5"
-          >
-            <span
-              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-theme-hover text-sm font-semibold text-theme-text"
-              aria-hidden="true"
-            >
-              {{ index + 1 }}
-            </span>
-            <span class="sr-only">{{ $t('dashboard.step_label', { number: index + 1 }) }}</span>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-theme-text">{{ step.title }}</p>
-              <p class="mt-0.5 text-sm leading-relaxed text-theme-textLight">
-                {{ step.description }}
-              </p>
-              <router-link
-                :to="step.to"
-                class="mt-2 inline-flex text-sm font-medium text-primary-800 hover:underline"
-              >
-                {{ step.action }}
-              </router-link>
-            </div>
-          </li>
-        </ol>
+        <AgentTraffic
+          v-if="selectedAgent"
+          :key="selectedAgent"
+          :workspace-id="currentWorkspace.id"
+          :agent-name="selectedAgent"
+        />
       </section>
 
       <section class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -113,90 +149,44 @@
           </ul>
         </div>
 
-        <div class="section overflow-hidden !p-0">
+        <div v-if="showWhatsNew" class="section overflow-hidden !p-0">
           <div class="border-b border-theme-border px-6 py-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 class="text-lg font-semibold text-theme-text">
-                  {{ $t('dashboard.activity_title') }}
-                </h2>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold text-theme-text">
+                    {{ $t('dashboard.whats_new_title') }}
+                  </h2>
+                  <span
+                    class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                  >
+                    {{ $t('dashboard.mock_badge') }}
+                  </span>
+                </div>
                 <p class="mt-0.5 text-sm text-theme-textLight">
-                  {{ $t('dashboard.activity_subtitle') }}
+                  {{ $t('dashboard.whats_new_subtitle') }}
                 </p>
               </div>
-              <span
-                class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+              <button
+                type="button"
+                class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
+                @click="dismissWhatsNew"
               >
-                {{ $t('dashboard.mock_badge') }}
-              </span>
+                {{ $t('dashboard.whats_new_dismiss') }}
+              </button>
             </div>
           </div>
-
-          <ul class="divide-y divide-theme-border">
-            <li v-for="event in recentActivity" :key="event.id" class="flex gap-3 px-6 py-3.5">
-              <span
-                class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-theme-hover text-theme-textLight"
-                aria-hidden="true"
-              >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.75"
-                    :d="activityIcons[event.icon]"
-                  />
-                </svg>
-              </span>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm text-theme-text">
-                  <span class="font-medium">{{ event.actor }}</span>
-                  {{ event.action }}
-                  <span class="font-medium">{{ event.target }}</span>
-                </p>
-                <p class="mt-0.5 text-xs text-theme-textLight">{{ event.time }}</p>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section v-if="showWhatsNew" class="section mb-8 overflow-hidden !p-0">
-        <div class="border-b border-theme-border px-6 py-4">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg font-semibold text-theme-text">
-                  {{ $t('dashboard.whats_new_title') }}
-                </h2>
-                <span
-                  class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800"
-                >
-                  {{ $t('dashboard.mock_badge') }}
-                </span>
-              </div>
-              <p class="mt-0.5 text-sm text-theme-textLight">
-                {{ $t('dashboard.whats_new_subtitle') }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="rounded-md px-2 py-1 text-sm text-theme-textLight transition hover:bg-theme-hover hover:text-theme-text"
-              @click="dismissWhatsNew"
-            >
-              {{ $t('dashboard.whats_new_dismiss') }}
-            </button>
+          <div class="px-6 py-5">
+            <p class="text-xs font-medium uppercase tracking-wide text-theme-textLight">
+              {{ $t('dashboard.whats_new_tip_label') }}
+            </p>
+            <p class="mt-2 text-base font-medium text-theme-text">
+              {{ $t('dashboard.whats_new_tip_title') }}
+            </p>
+            <p class="mt-1 text-sm leading-relaxed text-theme-textLight">
+              {{ $t('dashboard.whats_new_tip_body') }}
+            </p>
           </div>
-        </div>
-        <div class="px-6 py-5">
-          <p class="text-xs font-medium uppercase tracking-wide text-theme-textLight">
-            {{ $t('dashboard.whats_new_tip_label') }}
-          </p>
-          <p class="mt-2 text-base font-medium text-theme-text">
-            {{ $t('dashboard.whats_new_tip_title') }}
-          </p>
-          <p class="mt-1 text-sm leading-relaxed text-theme-textLight">
-            {{ $t('dashboard.whats_new_tip_body') }}
-          </p>
         </div>
       </section>
     </main>
@@ -204,9 +194,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppNav from '@/comp/AppNav.vue'
+import AgentTraffic from '@/comp/AgentTraffic.vue'
+import Sparkline from '@/comp/Sparkline.vue'
+import { agent_api, traffic_api } from '@/api'
 import { user } from '@/lib/auth'
 import { useWorkspaceContext } from '@/lib/permission'
 import { isSaaS } from '@/lib/edition'
@@ -214,69 +207,118 @@ import { isSaaS } from '@/lib/edition'
 const { t } = useI18n()
 
 const WHATS_NEW_KEY = 'dashboard_whats_new_v1'
-const GETTING_STARTED_KEY = 'dashboard_getting_started_v1'
+const METRICS_WINDOW = 200
+const SPARK_DAYS = 14
 
-const { canManage } = useWorkspaceContext()
+const { currentWorkspace } = useWorkspaceContext()
 const showWhatsNew = ref(localStorage.getItem(WHATS_NEW_KEY) !== '1')
-const showGettingStarted = ref(localStorage.getItem(GETTING_STARTED_KEY) !== '1')
+
+const callsTotal = ref(null)
+const problemsCount = ref(null)
+const avgLatency = ref(null)
+const healthyAgents = ref(null)
+const agentsTotal = ref(null)
+const callsSeries = ref([])
+const problemsSeries = ref([])
+const latencySeries = ref([])
+const agentNames = ref([])
+const selectedAgent = ref('')
+
+function formatCount(value) {
+  return value == null ? '—' : value.toLocaleString()
+}
+
+function lastDays(count) {
+  return [...Array(count)].map((_, i) => {
+    const day = new Date()
+    day.setDate(day.getDate() - (count - 1 - i))
+
+    return day.toISOString().slice(0, 10)
+  })
+}
+
+async function loadMetrics() {
+  try {
+    const res = await traffic_api.list(currentWorkspace.id, {
+      limit: METRICS_WINDOW,
+      offset: 0,
+    })
+    const rows = res.data.calls || []
+    callsTotal.value = res.data._meta?.total ?? rows.length
+
+    const problems = rows.filter((call) => call.decision === 'deny' || call.result === 'failed')
+    problemsCount.value = problems.length
+
+    const latencies = rows.map((call) => call.latencyMs).filter((ms) => ms != null)
+    avgLatency.value = latencies.length
+      ? Math.round(latencies.reduce((sum, ms) => sum + ms, 0) / latencies.length)
+      : null
+
+    const days = lastDays(SPARK_DAYS)
+    const perDay = Object.fromEntries(
+      days.map((day) => [day, { calls: 0, problems: 0, latency: [] }])
+    )
+
+    for (const call of rows) {
+      const bucket = perDay[new Date(call.createdAt).toISOString().slice(0, 10)]
+
+      if (bucket) {
+        bucket.calls++
+        if (call.decision === 'deny' || call.result === 'failed') bucket.problems++
+        if (call.latencyMs != null) bucket.latency.push(call.latencyMs)
+      }
+    }
+
+    callsSeries.value = days.map((day) => perDay[day].calls)
+    problemsSeries.value = days.map((day) => perDay[day].problems)
+    latencySeries.value = days.map((day) =>
+      perDay[day].latency.length
+        ? Math.round(
+            perDay[day].latency.reduce((sum, ms) => sum + ms, 0) / perDay[day].latency.length
+          )
+        : 0
+    )
+  } catch (_) {
+    // Metrics stay blank when the traffic cannot be read.
+  }
+}
+
+async function loadAgentHealth() {
+  try {
+    const loaded = []
+
+    for (;;) {
+      const res = await agent_api.list(currentWorkspace.id, {
+        limit: 100,
+        offset: loaded.length,
+      })
+      const page = res.data.agents || []
+      loaded.push(...page)
+
+      if (page.length < 100 || loaded.length >= (res.data._meta?.total || 0)) break
+    }
+
+    agentsTotal.value = loaded.length
+    healthyAgents.value = loaded.filter((agent) => agent.health === 'passing').length
+    agentNames.value = loaded.map((agent) => agent.name).sort()
+
+    if (!selectedAgent.value && agentNames.value.length) {
+      selectedAgent.value = agentNames.value[0]
+    }
+  } catch (_) {
+    // Metrics stay blank when the agents cannot be read.
+  }
+}
+
+onMounted(() => {
+  loadMetrics()
+  loadAgentHealth()
+})
 
 function dismissWhatsNew() {
   showWhatsNew.value = false
   localStorage.setItem(WHATS_NEW_KEY, '1')
 }
-
-function dismissGettingStarted() {
-  showGettingStarted.value = false
-  localStorage.setItem(GETTING_STARTED_KEY, '1')
-}
-
-const gettingStartedSteps = computed(() =>
-  [
-    {
-      id: 'access_key',
-      title: t('dashboard.step_access_key'),
-      description: t('dashboard.step_access_key_desc'),
-      action: t('dashboard.step_access_key_link'),
-      to: '/settings',
-      requiresManage: true,
-    },
-    {
-      id: 'register_agent',
-      title: t('dashboard.step_register_agent'),
-      description: t('dashboard.step_register_agent_desc'),
-      action: t('dashboard.step_register_agent_link'),
-      to: '/agents',
-    },
-    {
-      id: 'register_instance',
-      title: t('dashboard.step_register_instance'),
-      description: t('dashboard.step_register_instance_desc'),
-      action: t('dashboard.step_register_instance_link'),
-      to: '/agents',
-    },
-    {
-      id: 'health_check',
-      title: t('dashboard.step_health_check'),
-      description: t('dashboard.step_health_check_desc'),
-      action: t('dashboard.step_health_check_link'),
-      to: '/agents',
-    },
-    {
-      id: 'intention',
-      title: t('dashboard.step_intention'),
-      description: t('dashboard.step_intention_desc'),
-      action: t('dashboard.step_intention_link'),
-      to: '/intentions',
-    },
-    {
-      id: 'traffic',
-      title: t('dashboard.step_traffic'),
-      description: t('dashboard.step_traffic_desc'),
-      action: t('dashboard.step_traffic_link'),
-      to: '/traffic',
-    },
-  ].filter((step) => !step.requiresManage || canManage.value)
-)
 
 const attentionItems = computed(() =>
   [
@@ -341,28 +383,4 @@ function attentionDotClass(level) {
     }[level] || 'bg-theme-textLight'
   )
 }
-
-const activityIcons = {
-  member: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
-  key: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z',
-}
-
-const recentActivity = computed(() => [
-  {
-    id: 2,
-    icon: 'member',
-    actor: 'Ahmed',
-    action: t('dashboard.activity_invited'),
-    target: 'maya@example.com',
-    time: t('dashboard.activity_time_3h'),
-  },
-  {
-    id: 3,
-    icon: 'key',
-    actor: 'Ahmed',
-    action: t('dashboard.activity_created_key'),
-    target: 'production-ci',
-    time: t('dashboard.activity_time_1d'),
-  },
-])
 </script>
