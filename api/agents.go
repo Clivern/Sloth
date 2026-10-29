@@ -20,7 +20,12 @@ func (a *API) SendAgentMessageAction(w http.ResponseWriter, r *http.Request) {
 	agentName := chi.URLParam(r, "agentName")
 	caller, _ := module.AgentFrom(r.Context())
 
-	proxy, err := a.Agents.SendMessage(db.Id(wid), caller, agentName, r.Header.Get("X-Source-Instance"))
+	proxy, err := a.Agents.SendMessage(
+		db.Id(wid),
+		caller,
+		agentName,
+		r.Header.Get("X-Source-Instance"),
+	)
 
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
@@ -54,7 +59,12 @@ func (a *API) SendSkillMessageAction(w http.ResponseWriter, r *http.Request) {
 	skill := chi.URLParam(r, "skill")
 	caller, _ := module.AgentFrom(r.Context())
 
-	proxy, err := a.Agents.SendSkillMessage(db.Id(wid), caller, skill, r.Header.Get("X-Source-Instance"))
+	proxy, err := a.Agents.SendSkillMessage(
+		db.Id(wid),
+		caller,
+		skill,
+		r.Header.Get("X-Source-Instance"),
+	)
 
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
@@ -88,7 +98,12 @@ func (a *API) GetTaskAction(w http.ResponseWriter, r *http.Request) {
 	taskId := chi.URLParam(r, "taskId")
 	caller, _ := module.AgentFrom(r.Context())
 
-	proxy, err := a.Agents.GetTask(db.Id(wid), caller, taskId, r.Header.Get("X-Source-Instance"))
+	proxy, err := a.Agents.GetTask(
+		db.Id(wid),
+		caller,
+		taskId,
+		r.Header.Get("X-Source-Instance"),
+	)
 
 	if err != nil {
 		if a.WriteError(w, err, []ErrorMapping{
