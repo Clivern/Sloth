@@ -50,10 +50,8 @@
                 >
                   {{ $t('events_page.time') }}
                 </th>
-                <th
-                  class="px-6 py-3 text-right text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('events_page.details') }}
+                <th class="px-6 py-3 text-right">
+                  <span class="sr-only">{{ $t('events_page.details') }}</span>
                 </th>
               </tr>
             </thead>
@@ -70,7 +68,7 @@
               </tr>
               <template v-else>
                 <template v-for="item in events" :key="item.id">
-                  <tr class="hover:bg-theme-hover">
+                  <tr class="cursor-pointer hover:bg-theme-hover" @click="toggle(item.id)">
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                       <span
                         class="inline-flex rounded-full bg-theme-hover px-2 py-0.5 text-xs font-medium text-theme-text"
@@ -106,17 +104,22 @@
                         formatRelative(item.createdAt)
                       }}</time>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button
-                        type="button"
-                        class="font-medium text-primary-700 hover:underline"
-                        :aria-expanded="expandedId === item.id"
-                        @click="expandedId = expandedId === item.id ? null : item.id"
+                    <td class="px-6 py-4 text-right">
+                      <svg
+                        class="ml-auto h-4 w-4 text-theme-textLight transition-transform"
+                        :class="{ 'rotate-180': expandedId === item.id }"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
                       >
-                        {{
-                          expandedId === item.id ? $t('events_page.hide') : $t('events_page.view')
-                        }}
-                      </button>
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
                     </td>
                   </tr>
                   <tr v-if="expandedId === item.id" class="bg-theme-hover">
@@ -255,6 +258,10 @@ async function loadEvents() {
   } finally {
     loading.value = false
   }
+}
+
+function toggle(id) {
+  expandedId.value = expandedId.value === id ? null : id
 }
 
 function goToPage(newOffset) {

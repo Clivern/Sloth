@@ -30,7 +30,8 @@ type Traffic struct {
 type TrafficCallResponse struct {
 	Id                  db.Id  `json:"id"`
 	WorkspaceId         db.Id  `json:"workspaceId"`
-	SourceInstance      string `json:"sourceInstance"`
+	SourceAgent         string `json:"sourceAgent"`
+	SourceInstance      string `json:"sourceInstance,omitempty"`
 	DestinationAgent    string `json:"destinationAgent"`
 	DestinationInstance string `json:"destinationInstance"`
 	Skill               string `json:"skill"`
@@ -61,6 +62,7 @@ func toTrafficCallResponse(call *db.TrafficCall) *TrafficCallResponse {
 	return &TrafficCallResponse{
 		Id:                  call.Id,
 		WorkspaceId:         call.WorkspaceId,
+		SourceAgent:         call.SourceAgent,
 		SourceInstance:      call.SourceInstance,
 		DestinationAgent:    call.DestinationAgent,
 		DestinationInstance: call.DestinationInstance,

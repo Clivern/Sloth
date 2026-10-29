@@ -207,15 +207,17 @@
             <label for="intention-skill" class="form-label">{{
               $t('intentions_page.skill')
             }}</label>
-            <input
+            <select
               id="intention-skill"
               v-model="form.skill"
-              type="text"
               class="input-field font-mono"
-              placeholder="user.profile.get"
-              autocomplete="off"
               :disabled="saving"
-            />
+            >
+              <option value="">{{ $t('intentions_page.all_skills') }}</option>
+              <option v-for="skill in availableSkills" :key="skill" :value="skill">
+                {{ skill }}
+              </option>
+            </select>
             <p class="mt-1 text-xs text-theme-textLight">{{ $t('intentions_page.skill_hint') }}</p>
           </div>
           <div>
@@ -271,6 +273,7 @@ import { useI18n } from 'vue-i18n'
 import AppNav from '@/comp/AppNav.vue'
 import ConfirmModal from '@/comp/ConfirmModal.vue'
 import { agent_api, intention_api } from '@/api'
+import { parseCard } from '@/lib/agent'
 import { useUrlPagination } from '@/lib/pagination'
 import { useWorkspaceContext } from '@/lib/permission'
 import { errorText } from '@/lib/error'
@@ -288,6 +291,25 @@ const loading = ref(false)
 const errorMessage = ref(null)
 
 const columns = computed(() => (canManage.value ? 5 : 4))
+
+const availableSkills = computed(() => {
+  const picked = agents.value.find((agent) => agent.name === form.value.destination)
+  const pool = picked ? [picked] : agents.value
+
+  const ids = [
+    ...new Set(
+      pool.flatMap((agent) =>
+        parseCard(agent.card)
+          .skills.map((skill) => skill.id)
+          .filter(Boolean)
+      )
+    ),
+  ].sort()
+
+  if (form.value.skill && !ids.includes(form.value.skill)) ids.push(form.value.skill)
+
+  return ids
+})
 
 const showForm = ref(false)
 const editingId = ref(null)

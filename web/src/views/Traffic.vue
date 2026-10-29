@@ -26,125 +26,149 @@
             <thead class="bg-theme-hover">
               <tr>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                  class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
                 >
-                  {{ $t('traffic_page.when') }}
+                  {{ $t('traffic_page.call') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                  class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
                 >
-                  {{ $t('traffic_page.source') }}
+                  {{ $t('traffic_page.status') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('traffic_page.destination') }}
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('traffic_page.skill') }}
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('traffic_page.verb') }}
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('traffic_page.decision') }}
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
-                >
-                  {{ $t('traffic_page.result') }}
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                  class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
                 >
                   {{ $t('traffic_page.latency') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
+                  class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-theme-textLight uppercase tracking-wider"
                 >
-                  {{ $t('traffic_page.task') }}
+                  {{ $t('traffic_page.when') }}
+                </th>
+                <th class="px-4 sm:px-6 py-3 text-right">
+                  <span class="sr-only">{{ $t('traffic_page.details') }}</span>
                 </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-theme-border">
               <tr v-if="loading && !calls.length">
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-theme-textLight">
                   {{ $t('common.loading') }}
                 </td>
               </tr>
               <tr v-else-if="!calls.length">
-                <td colspan="9" class="px-6 py-4 text-center text-sm text-theme-textLight">
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-theme-textLight">
                   {{ $t('traffic_page.empty') }}
                 </td>
               </tr>
-              <template v-else>
-                <tr v-for="call in calls" :key="call.id" class="hover:bg-theme-hover">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">
-                    <time :datetime="call.createdAt" :title="formatTimestamp(call.createdAt)">{{
-                      formatRelative(call.createdAt)
-                    }}</time>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">
+              <template v-else v-for="call in calls" :key="call.id">
+                <tr
+                  class="cursor-pointer hover:bg-theme-hover"
+                  :class="{ 'bg-red-50/50 hover:bg-red-50/80': isBad(call) }"
+                  @click="toggle(call.id)"
+                >
+                  <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-mono">
                     <router-link
-                      :to="{ name: 'Agent', params: { name: call.sourceInstance } }"
-                      class="text-primary-800 hover:underline"
+                      :to="{ name: 'Agent', params: { name: call.sourceAgent } }"
+                      class="font-medium text-primary-800 hover:underline"
+                      @click.stop
                     >
-                      {{ call.sourceInstance }}
+                      {{ call.sourceAgent }}
                     </router-link>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium font-mono">
+                    <span class="mx-1 text-theme-textLight" aria-hidden="true">→</span>
                     <router-link
                       v-if="call.destinationAgent"
                       :to="{ name: 'Agent', params: { name: call.destinationAgent } }"
-                      class="text-primary-800 hover:underline"
+                      class="font-medium text-primary-800 hover:underline"
+                      @click.stop
                     >
                       {{ call.destinationAgent }}
                     </router-link>
                     <span v-else class="text-theme-textLight">—</span>
-                    <div
-                      v-if="call.destinationInstance"
-                      class="text-xs font-normal text-theme-textLight"
-                    >
-                      {{ call.destinationInstance }}
-                    </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
-                    {{ call.skill || '—' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
-                    {{ call.verb }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                     <span
                       class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="
-                        call.decision === 'allow'
-                          ? 'bg-emerald-50 text-emerald-800'
-                          : 'bg-red-50 text-red-800'
-                      "
+                      :class="resultClass(statusOf(call))"
                     >
-                      {{ $t(`traffic_page.decision_${call.decision}`) }}
+                      {{ $t(`traffic_page.result_${statusOf(call)}`) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span
-                      class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="resultClass(call.result)"
+                  <td
+                    class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm tabular-nums text-theme-text"
+                    :class="latencyClass(call.latencyMs)"
+                  >
+                    {{ call.latencyMs != null ? `${call.latencyMs} ms` : '—' }}
+                  </td>
+                  <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-theme-textLight">
+                    <time :datetime="call.createdAt" :title="formatTimestamp(call.createdAt)">{{
+                      formatRelative(call.createdAt)
+                    }}</time>
+                  </td>
+                  <td class="px-4 sm:px-6 py-4 text-right">
+                    <svg
+                      class="ml-auto h-4 w-4 text-theme-textLight transition-transform"
+                      :class="{ 'rotate-180': expandedId === call.id }"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
                     >
-                      {{ $t(`traffic_page.result_${call.result}`) }}
-                    </span>
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text">
-                    {{ call.latencyMs ? `${call.latencyMs} ms` : '—' }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-theme-text font-mono">
-                    {{ call.taskId || '—' }}
+                </tr>
+                <tr v-if="expandedId === call.id" class="bg-theme-bg/50">
+                  <td colspan="5" class="px-4 sm:px-6 py-4">
+                    <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">
+                          {{ $t('traffic_page.source_instance') }}
+                        </dt>
+                        <dd class="mt-0.5 truncate font-mono text-sm text-theme-text">
+                          {{ call.sourceInstance || '—' }}
+                        </dd>
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">{{ $t('traffic_page.verb') }}</dt>
+                        <dd class="mt-0.5 truncate font-mono text-sm text-theme-text">
+                          {{ call.verb }}
+                        </dd>
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">{{ $t('traffic_page.skill') }}</dt>
+                        <dd class="mt-0.5 truncate font-mono text-sm text-theme-text">
+                          {{ call.skill || '—' }}
+                        </dd>
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">{{ $t('traffic_page.task') }}</dt>
+                        <dd class="mt-0.5 truncate font-mono text-sm text-theme-text">
+                          {{ call.taskId || '—' }}
+                        </dd>
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">
+                          {{ $t('traffic_page.target_instance') }}
+                        </dt>
+                        <dd class="mt-0.5 truncate font-mono text-sm text-theme-text">
+                          {{ call.destinationInstance || '—' }}
+                        </dd>
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-xs text-theme-textLight">
+                          {{ $t('traffic_page.recorded_at') }}
+                        </dt>
+                        <dd class="mt-0.5 text-sm text-theme-text">
+                          {{ formatTimestamp(call.createdAt) }}
+                        </dd>
+                      </div>
+                    </dl>
                   </td>
                 </tr>
               </template>
@@ -210,6 +234,7 @@ const calls = ref([])
 const total = ref(0)
 const loading = ref(false)
 const errorMessage = ref(null)
+const expandedId = ref(null)
 
 function resultClass(result) {
   return (
@@ -221,6 +246,26 @@ function resultClass(result) {
       no_instance: 'bg-amber-50 text-amber-800',
     }[result] || 'bg-theme-hover text-theme-textLight'
   )
+}
+
+// A denied call never completes, so decision and result fold into one status.
+function statusOf(call) {
+  return call.decision === 'deny' ? 'denied' : call.result
+}
+
+function isBad(call) {
+  return call.decision === 'deny' || call.result === 'failed'
+}
+
+function latencyClass(ms) {
+  if (ms == null) return ''
+  if (ms >= 1000) return 'text-red-700 font-medium'
+  if (ms >= 200) return 'text-amber-700'
+  return ''
+}
+
+function toggle(id) {
+  expandedId.value = expandedId.value === id ? null : id
 }
 
 async function loadTraffic() {

@@ -3758,6 +3758,8 @@ components:
         workspaceId:
           type: string
           format: uuid
+        sourceAgent:
+          type: string
         sourceInstance:
           type: string
         destinationAgent:

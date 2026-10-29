@@ -23,13 +23,13 @@ import httpx
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, StreamingResponse
 
-from util import URL, WORKSPACE, lifespan
+from util import INSTANCE, URL, WORKSPACE, lifespan
 
 NAME = "assistant"
 VERSION = "1.0.0"
 PORT = int(os.environ.get("PORT", "9200"))
 SECRET = os.environ.get("SLOTH_AGENT_SECRET", "")
-HEADERS = {"X-Source-Agent": NAME, "X-API-Key": SECRET}
+HEADERS = {"X-Source-Agent": NAME, "X-Source-Instance": INSTANCE or f"{NAME}-{PORT}", "X-API-Key": SECRET}
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
 MODEL = os.environ.get("ASSISTANT_MODEL", "muse-wonder-1.0")
 GATEWAY = f"{URL}/api/v1/workspaces/{WORKSPACE}/agents"

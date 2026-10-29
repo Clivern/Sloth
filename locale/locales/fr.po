@@ -540,6 +540,9 @@ msgstr "Échec de la lecture de l'événement."
 msgid "invalid_agent_identity"
 msgstr "Identité d'agent invalide."
 
+msgid "unknown_source_instance"
+msgstr "Instance source inconnue pour cet agent."
+
 msgid "a2a_call_denied"
 msgstr "Aucune intention n'autorise cet agent à effectuer cet appel."
 
