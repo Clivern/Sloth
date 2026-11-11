@@ -218,12 +218,7 @@ import AppNav from '@/comp/AppNav.vue'
 import AgentTraffic from '@/comp/AgentTraffic.vue'
 import Sparkline from '@/comp/Sparkline.vue'
 import StatusBreakdown from '@/comp/StatusBreakdown.vue'
-import {
-  agent_api,
-  traffic_api,
-  workspace_access_key_api,
-  workspace_invite_api,
-} from '@/api'
+import { agent_api, traffic_api, workspace_access_key_api, workspace_invite_api } from '@/api'
 import { user } from '@/lib/auth'
 import { useWorkspaceContext } from '@/lib/permission'
 
