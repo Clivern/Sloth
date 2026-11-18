@@ -13,22 +13,23 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "axios": "^1.20.0",
-    "marked": "^18.1.1",
+    "axios": "^1.21.1",
+    "marked": "^18.2.1",
     "pinia": "^4.1.0",
-    "vue": "^3.5.44",
-    "vue-i18n": "^11.4.14",
-    "vue-router": "^5.4.0"
+    "vue": "^3.5.45",
+    "vue-i18n": "^11.4.22",
+    "vue-router": "^5.5.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-vue": "^6.0.10",
-    "eslint": "^9.39.5",
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-vue": "^10.11.1",
-    "globals": "^17.13.0",
-    "prettier": "^3.9.10",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.3.4"
+    "eslint-plugin-vue": "^10.12.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8"
   }
 }
