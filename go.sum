@@ -1,5 +1,5 @@
-github.com/OpenRouterTeam/go-sdk v0.9.137 h1:dJ7nQ5Jsvu11Q7XX7o5swcp4sJ/H7cLMMFRGdq608nM=
-github.com/OpenRouterTeam/go-sdk v0.9.137/go.mod h1:4a0ze9dCIvO81DQGO5ZmCZsHLCmglMwwp8pZfKkEicE=
+github.com/OpenRouterTeam/go-sdk v0.9.139 h1:2NMpaLsqDrlslhOyE2sbmuHVEhdUd4CpXH76yYhmOvg=
+github.com/OpenRouterTeam/go-sdk v0.9.139/go.mod h1:4a0ze9dCIvO81DQGO5ZmCZsHLCmglMwwp8pZfKkEicE=
 github.com/andybalholm/brotli v1.3.0 h1:IdkhjSe/+34U+fP7FSR2Q6Poj1hnHUa2GoWmzXJd6qY=
 github.com/andybalholm/brotli v1.3.0/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
