@@ -1,0 +1,1 @@
+import{ot as e,st as t}from"./index-ddnSb2be.js";function n(n,r=15e3){let i=null;function a(){o(),i=setInterval(n,r)}function o(){clearInterval(i),i=null}function s(){document.hidden?o():(n(),a())}t(()=>{a(),document.addEventListener(`visibilitychange`,s)}),e(()=>{o(),document.removeEventListener(`visibilitychange`,s)})}export{n as t};
